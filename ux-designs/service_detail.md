@@ -1,63 +1,58 @@
-# Service Detail – Braeburn Apples
+# UX Design Brief: Service Detail
 
-## Purpose
-The **Service Detail** screen shows the full description and metadata of a selected service.  
-In this demo: **Braeburn Apples** is a community food provisioning service that consumes policies around **Food Access** and **Distribution**.
-
-This screen allows the user (stakeholder, service, or policy participant) to:
-- View the service name, description, and key metadata.
-- See linked policies (e.g., Food Provision, Housing, Healthcare).
-- Interact with associated forums (discussions on rules).
-- Connect or subscribe their own participation (stakeholder join).
+**Screen:** Service Detail  
+**Example:** Braeburn Apples (Food Provision Service).  
 
 ---
 
-## Layout & Sections
+## Purpose
+The **Service Detail** screen provides full metadata about a specific service.  
+It connects the service to its governing policies and forums, and allows stakeholders to engage.  
 
-### Header
-- Service Title: **Braeburn Apples**
-- Category: **Food Provision Service**
-- Owner: [Org/Community Name]
-- Created: [Creation Date]
+---
 
-### Core Details
-- **Description**:  
-  A food access service enabling local communities to distribute Braeburn apples (and similar produce) through shared provisioning policies.  
-- **Status**: Active / Pending / Archived  
-- **Policy Link(s)**: Points to `Food Policy` → `Provision` → `Community Pantry`.
+## Key Components
 
-### Metadata
-- Location (geo-tag or address).  
-- Capacity (units, kg, or participants).  
-- Contact / Maintainer.
+1. **Header**
+   - Service title.  
+   - Category/domain (e.g., Food, Housing).  
+   - Owner (organisation or individual).  
 
-### Forums
-- Auto-generated from rules (e.g., “Fair Distribution Rule”, “Expiry Rule”).  
-- Each rule becomes a clickable forum where stakeholders debate or manage the specifics.
+2. **Core Details**
+   - Description of service.  
+   - Status (Active / Pending / Archived).  
+   - Policy link(s).  
 
-### Actions
-- **Join as Stakeholder** → adds user/service to forum + policy.  
-- **Consume Policy** → service pulls live policy rules (real-time).  
-- **Trigger Service** → run process or event (IoT, cron job, etc.).  
+3. **Metadata**
+   - Location.  
+   - Capacity (units, kg, or participants).  
+   - Contact or maintainer.  
+
+4. **Forums**
+   - Auto-generated from rules in linked policies.  
+   - Stakeholders can join discussions or debate rules.  
+
+5. **Actions**
+   - **Join as Stakeholder** (service, person, IoT, API, AI).  
+   - **Consume Policy** (inherit rules live).  
+   - **Trigger Service** (e.g., API call, scheduled job).  
 
 ---
 
 ## Data Model Links
-- **PolicyRef**: `Food > Provision` (policy → service relationship).  
-- **ForumRef**: Generated forums from rules.  
-- **ServiceRef**: This screen = service instance.  
-- **Data Layer**: Logs interactions (who joined, what rules were invoked, etc.).
-
----
-
-## Visual (See Image)
-- **Left Panel**: Service logo + metadata.  
-- **Right Panel**: Description, linked policies, and rules → forums.  
-- **Bottom**: Call-to-action buttons.
+- **ServiceRef**: This is the active service instance.  
+- **PolicyRef**: Shows which policies this service consumes.  
+- **ForumRef**: Derived forums for each rule.  
+- **StakeholderRef**: Service is itself a stakeholder.  
 
 ---
 
 ## Notes for Developers
-- Ensure **services dynamically pull current rules** at runtime (no static copies).  
-- Build with extendable schema so any service type (food, housing, health) follows this same pattern.  
-- Permissions: Only **Owner** can edit; **Stakeholders** can comment in forums; **Participants** can view.  
+- Services must **pull current rules dynamically** (not copy static versions).  
+- Schema must allow any type of service: human, organisation, IoT, API, AI.  
+- Permissions:
+  - Owner edits.  
+  - Stakeholders can comment in linked forums.  
+  - Public can view.  
+
+---
