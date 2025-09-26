@@ -1,57 +1,44 @@
-# UX Design Brief: Add Service Screen
+# UX Design Brief: Add Service
 
 **Screen:** Add Service  
-**Example:** Link a doctor’s clinic to a healthcare policy  
+**Example:** Add "Community Shelter" to Housing Policy  
 
 ---
 
 ## Purpose
-The **Add Service** screen allows a policymaker, forum manager, or stakeholder to attach an existing or new **Service** into the Eleutherios ecosystem.  
-
-This is essential for:
-- Expanding what a **Policy** can instantiate.  
-- Letting stakeholders (e.g., KO, MSD, or an individual doctor) formally register their service.  
-- Allowing analogue (human) or digital (IoT, API, AI) services to coexist under the same framework.  
+The **Add Service** screen allows a policymaker or stakeholder to attach a new service to an existing policy or forum.  
+Services can be analogue (person, org) or digital (API, IoT, AI).  
 
 ---
 
 ## Key Components
 
-1. **Service Information**  
-   - Service Name  
-   - Short Description  
-   - Category (Food, Housing, Healthcare, Identity, etc.)  
-   - Type: Analogue (human, organisation) / Digital (API, IoT, AI).  
+1. **Service Details**
+   - Service Name (text field).  
+   - Description (long text).  
+   - Category dropdown (Housing, Food, Healthcare, Identity, etc).  
 
-2. **Policy Links**  
-   - Attach to one or more **Policies**.  
-   - Policies determine the rules that service must follow.  
+2. **Policy Link**
+   - Search + select an existing Policy.  
+   - Services must be linked to at least one Policy.  
 
-3. **Forum Association**  
-   - Choose which forums this service interacts with.  
-   - Example: Doctor service joins “Community Health Forum.”  
+3. **Forum Link (Optional)**
+   - Attach to a Forum where the rule is instantiated.  
 
-4. **Metadata**  
-   - Location / Geotag  
-   - Contact info / Maintainer  
-   - Capacity (patients, kg of food, housing units, etc.)  
+4. **Ownership**
+   - Define who owns/operates the service (person, org, or digital agent).  
 
-5. **Payments Integration**  
-   - Stripe (or equivalent).  
-   - Options: one-off fee (doctor visit), subscription (weekly veges), donation model.  
-
-6. **Attachments**  
-   - Documents (plans, eligibility criteria).  
-   - Images (logos, ID docs, photos).  
+5. **Pricing**
+   - Free or Paid.  
+   - Paid → integrates with Stripe Connect (default) or other providers (e.g., PayPal).  
 
 ---
 
 ## User Flow
-1. User clicks **Add Service**.  
-2. Enters basic service details.  
-3. Links the service to **Policies** (required) and optionally **Forums**.  
-4. Configures metadata (location, capacity, payment options).  
-5. Submits → service appears in **Service Search** and **Policy Detail**.  
+1. Policymaker clicks **Add Service**.  
+2. Enters details, links service to Policy (mandatory), Forum (optional).  
+3. Defines ownership + pricing.  
+4. Clicks **Save Service** → service becomes discoverable in **Service Search**.  
 
 ---
 
@@ -59,20 +46,18 @@ This is essential for:
 - **Firestore Document Type:** `Service`  
 - **Schema Reference:** See `schema.md > Services`  
 - **Relationships:**  
-  - `Service -> Policy` (many-to-many)  
-  - `Service -> Forum` (many-to-many)  
-  - `Service -> Data` (logs, analytics, receipts)  
-- Must store payment configuration (Stripe keys, pricing models).  
+  - `Service -> Policy` (one-to-many).  
+  - `Service -> Forum` (optional).  
+- **Payments:** Store payment provider + terms if applicable.  
 
 ---
 
 ## Future Extensions
-- Federated integration with KO/MSD/RealMe identity systems.  
-- Automated service validation (e.g., health license check).  
-- Service reputation scores from user reviews.  
-- AI-assisted service discovery (recommendations).  
+- Allow multiple pricing tiers (e.g., subscription, one-off).  
+- Federation: Services from other platforms (via APIs) can be imported.  
+- Automatic AI-assistance to suggest links (Policy ↔ Service).  
 
 ---
 
-**Status:** MVP priority.  
-Adds the ability to operationalise Eleutherios by connecting **Services** to **Policies** and making them available in **Forums**.
+**Status:** MVP essential.  
+Adding services is the bridge between **Policy rules** and real-world provisioning.
