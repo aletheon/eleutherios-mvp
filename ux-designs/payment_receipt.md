@@ -1,77 +1,79 @@
 # UX Design Brief: Payment Receipt
 
 **Screen:** Payment Receipt  
-**Example:** Confirmation of Service Purchase (e.g., Housing Consultation, Braeburn Apples)
+**Example:** Braeburn Apples service purchase  
 
 ---
 
 ## Purpose
-The **Payment Receipt** screen provides confirmation of completed transactions.  
-It ensures transparency for users and services, documenting key payment details.  
-Receipts form part of the **Data Layer**, linked back to the policies and services consumed.
+The **Payment Receipt** screen confirms a successful transaction inside Eleutherios.  
+It provides transparency, record-keeping, and proof of payment for services linked to policies.  
+
+This is critical for:
+- Homeless person accessing housing services (MSD/KO supported).  
+- Healthcare patient paying a GP fee.  
+- Community stakeholder recording payment for shared resources.  
 
 ---
 
 ## Key Components
 
-1. **Receipt Header**
-   - Title: "Payment Receipt"
-   - Date & Time of Transaction
-   - Receipt/Invoice ID
+1. **Header**
+   - Title: **Payment Receipt**  
+   - Status: ✅ Successful (or ❌ Failed for errors).  
 
-2. **Service Details**
-   - Service Name: e.g., *Braeburn Apples*  
-   - Description: "Purchase of 5kg apples through community provisioning service."
-   - Linked Policy: `Food Policy → Provision → Community Pantry`
+2. **Receipt Details**
+   - Receipt ID / Transaction reference.  
+   - Service purchased.  
+   - Policy link(s).  
+   - Forum (rule) references if applicable.  
 
-3. **Payment Details**
-   - Amount Paid (e.g., $25.00 NZD)  
-   - Payment Method (Stripe, PayPal, Subscription Credit, etc.)  
-   - Transaction ID (from provider, e.g., Stripe/PayPal ID)  
+3. **Payment Information**
+   - Amount paid.  
+   - Currency.  
+   - Payment method (e.g., Stripe, PayPal, RealMe Pay, KO/MSD subsidy).  
+   - Date/time of payment.  
 
-4. **Buyer & Seller Info**
-   - Buyer: End-user identity or service account.  
-   - Seller: Service owner or organisation name.  
-   - Contact details if provided.
+4. **Buyer / Seller Info**
+   - Buyer name (or anonymised ID if sensitive).  
+   - Seller / Service Provider name.  
 
 5. **Actions**
-   - **Download PDF** receipt.  
-   - **Email Receipt** to buyer.  
-   - **Refund Request** (if allowed).  
+   - Download PDF receipt.  
+   - Email / share receipt.  
+   - Go to Service Detail.  
+   - Continue Shopping.  
 
 ---
 
 ## User Flow
-1. User confirms payment in shopping cart.  
-2. Payment provider processes transaction.  
-3. Receipt generated dynamically with reference to policies/services.  
-4. Receipt visible in-app and stored in user’s account history.  
-5. Option to export/share.
+1. User confirms payment in **Shopping Cart**.  
+2. Payment provider (e.g., Stripe) returns transaction success.  
+3. Eleutherios generates receipt, links to **Policy + Service + Forum**.  
+4. Receipt stored in **Data Layer** for audit and reporting.  
 
 ---
 
 ## Backend Considerations
-- **Firestore Document Type:** `Receipt`
-- **Schema Reference:** See `schema.md > Payments`
-- **Relationships:**
-  - `Receipt -> Service` (one-to-one, records what was purchased)  
-  - `Receipt -> Policy` (policy underpinning the service)  
-  - `Receipt -> PaymentProvider` (Stripe, PayPal, etc.)
-
-- Store securely:
-  - Transaction metadata (amount, currency, payment method, ID).  
-  - Service reference + buyer/seller IDs.  
-  - Policy references.  
+- **Firestore Document Type:** `Receipt`  
+- **Schema Reference:** `schema.md > Receipts`  
+- Must link:
+  - `Receipt → Service` (mandatory)  
+  - `Receipt → Policy` (mandatory)  
+  - `Receipt → Forum` (optional, if rule instantiated).  
+- Store:  
+  - Provider transaction ID.  
+  - Provider metadata (fees, taxes, subsidy).  
+  - User + Service IDs.  
 
 ---
 
 ## Future Extensions
-- Subscription management (recurring receipts).  
-- Aggregated annual report for tax purposes.  
-- Cross-border multi-currency support.  
-- Smart contracts: blockchain receipts for immutability.  
+- Refund / dispute handling.  
+- Integration with government subsidies (e.g., MSD housing, KO tenancy).  
+- Automatic receipts into user’s **Identity Policy > Records**.  
+- AI summaries of recurring payments.  
 
 ---
 
-**Status:** MVP-ready.  
-Payment receipts are critical for trust, accountability, and compliance in Eleutherios’ service marketplace.
+**Status:** MVP feature, needed for trust + compliance.  
