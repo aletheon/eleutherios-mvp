@@ -1,79 +1,78 @@
 # UX Design Brief: Payment Receipt
 
 **Screen:** Payment Receipt  
-**Example:** Braeburn Apples service purchase  
+**Example:** Confirmation page after a user completes checkout of services (paid and/or free).  
 
 ---
 
 ## Purpose
-The **Payment Receipt** screen confirms a successful transaction inside Eleutherios.  
-It provides transparency, record-keeping, and proof of payment for services linked to policies.  
-
-This is critical for:
-- Homeless person accessing housing services (MSD/KO supported).  
-- Healthcare patient paying a GP fee.  
-- Community stakeholder recording payment for shared resources.  
+The **Payment Receipt** screen provides users with a clear record of their completed transaction.  
+It confirms the services obtained, how they were paid (or marked free), and generates proof for both the user and the service providers.  
 
 ---
 
 ## Key Components
 
 1. **Header**
-   - Title: **Payment Receipt**  
-   - Status: ✅ Successful (or ❌ Failed for errors).  
+   - Title: **Payment Successful** (or **Receipt**)  
+   - Receipt ID / Transaction Number.  
+   - Date & Time of payment.  
 
-2. **Receipt Details**
-   - Receipt ID / Transaction reference.  
-   - Service purchased.  
-   - Policy link(s).  
-   - Forum (rule) references if applicable.  
+2. **Service Summary**
+   - List of all services purchased or confirmed (free).  
+   - Each item shows:  
+     - Service name.  
+     - Linked Policy.  
+     - Amount paid (or Free).  
+     - Provider/Owner name.  
 
-3. **Payment Information**
-   - Amount paid.  
-   - Currency.  
-   - Payment method (e.g., Stripe, PayPal, RealMe Pay, KO/MSD subsidy).  
-   - Date/time of payment.  
+3. **Totals**
+   - Subtotal.  
+   - Fees / Taxes.  
+   - Final Total.  
 
-4. **Buyer / Seller Info**
-   - Buyer name (or anonymised ID if sensitive).  
-   - Seller / Service Provider name.  
+4. **Payment Method**
+   - Stripe, PayPal, MSD subsidy, or *Free Service*.  
+   - Last 4 digits of card (if applicable).  
 
 5. **Actions**
-   - Download PDF receipt.  
-   - Email / share receipt.  
-   - Go to Service Detail.  
-   - Continue Shopping.  
+   - **Download Receipt (PDF)**.  
+   - **View Services** → links back into Eleutherios, opens service detail pages.  
+   - **Join Forums** → quick links to discussions tied to purchased/consumed services.  
 
 ---
 
 ## User Flow
-1. User confirms payment in **Shopping Cart**.  
-2. Payment provider (e.g., Stripe) returns transaction success.  
-3. Eleutherios generates receipt, links to **Policy + Service + Forum**.  
-4. Receipt stored in **Data Layer** for audit and reporting.  
+1. User completes checkout from **Shopping Cart**.  
+2. Backend records payment event.  
+3. Receipt screen is generated:  
+   - Shows all confirmed services.  
+   - Creates proof for user + service providers.  
+   - Updates logs in Firestore (or DB).  
+4. User may download/save receipt and navigate to services.  
 
 ---
 
 ## Backend Considerations
 - **Firestore Document Type:** `Receipt`  
 - **Schema Reference:** `schema.md > Receipts`  
-- Must link:
-  - `Receipt → Service` (mandatory)  
-  - `Receipt → Policy` (mandatory)  
-  - `Receipt → Forum` (optional, if rule instantiated).  
-- Store:  
-  - Provider transaction ID.  
-  - Provider metadata (fees, taxes, subsidy).  
-  - User + Service IDs.  
+- Must support:  
+  - Multi-merchant payments (Stripe Connect → each service owner).  
+  - Free services logged the same as paid ones (price = 0).  
+  - Receipts accessible in user account history.  
+- **Integration:**  
+  - Stripe webhook confirms payment.  
+  - Free services confirmed instantly (no payment gateway).  
 
 ---
 
 ## Future Extensions
-- Refund / dispute handling.  
-- Integration with government subsidies (e.g., MSD housing, KO tenancy).  
-- Automatic receipts into user’s **Identity Policy > Records**.  
-- AI summaries of recurring payments.  
+- Send receipts by email/SMS automatically.  
+- Government subsidy tracking (e.g., MSD covers part of service fee).  
+- Tax-compliant invoices for service providers.  
+- Aggregate reporting for policymakers: “How many free vs paid services consumed?”  
 
 ---
 
-**Status:** MVP feature, needed for trust + compliance.  
+**Status:** MVP required.  
+This screen closes the loop between **Cart → Payment → Service Activation**, ensuring accountability and auditability of Eleutherios services.
