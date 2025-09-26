@@ -1,55 +1,78 @@
-# UX Design Brief: Add Service
+# UX Design Brief: Add Service Screen
 
 **Screen:** Add Service  
-**Example:** Linking *Braeburn Apples* service into a policy or forum.  
+**Example:** Link a doctor’s clinic to a healthcare policy  
 
 ---
 
 ## Purpose
-The **Add Service** screen lets users (including policymakers, managers, or forum members) attach an existing service to a **Policy** or **Forum**.  
+The **Add Service** screen allows a policymaker, forum manager, or stakeholder to attach an existing or new **Service** into the Eleutherios ecosystem.  
 
-This enables:
-- Policymakers to include services in their policy domain.  
-- Forum participants to suggest relevant services.  
-- Multi-modal services (human, organisation, IoT, API, AI) to join as stakeholders.  
+This is essential for:
+- Expanding what a **Policy** can instantiate.  
+- Letting stakeholders (e.g., KO, MSD, or an individual doctor) formally register their service.  
+- Allowing analogue (human) or digital (IoT, API, AI) services to coexist under the same framework.  
 
 ---
 
 ## Key Components
 
-1. **Search Filters**
-   - Range filter (price, capacity, etc.).  
-   - Service owner filter (e.g., “Farmer LLC: Braeburn”).  
-   - Tag filter (policy-aware tags like `Apples`, `Housing`).  
+1. **Service Information**  
+   - Service Name  
+   - Short Description  
+   - Category (Food, Housing, Healthcare, Identity, etc.)  
+   - Type: Analogue (human, organisation) / Digital (API, IoT, AI).  
 
-2. **Results List**
-   - Thumbnail, title, and tags.  
-   - Service metadata (e.g., quantity, unit).  
-   - “Add” button to attach this service to the current forum or policy.  
+2. **Policy Links**  
+   - Attach to one or more **Policies**.  
+   - Policies determine the rules that service must follow.  
 
-3. **Confirmation**
-   - Selected services become linked to the policy/forum.  
-   - Permissions flow is inherited from the parent policy.  
+3. **Forum Association**  
+   - Choose which forums this service interacts with.  
+   - Example: Doctor service joins “Community Health Forum.”  
 
----
+4. **Metadata**  
+   - Location / Geotag  
+   - Contact info / Maintainer  
+   - Capacity (patients, kg of food, housing units, etc.)  
 
-## Data Model Links
-- **ServiceRef**: The service instance being attached.  
-- **PolicyRef / ForumRef**: Destination for the service link.  
-- **StakeholderRef**: Any attached service automatically registers as a stakeholder.  
+5. **Payments Integration**  
+   - Stripe (or equivalent).  
+   - Options: one-off fee (doctor visit), subscription (weekly veges), donation model.  
+
+6. **Attachments**  
+   - Documents (plans, eligibility criteria).  
+   - Images (logos, ID docs, photos).  
 
 ---
 
 ## User Flow
-1. Search for an existing service.  
-2. Select service(s).  
-3. Confirm → service appears inside the **Policy** or **Forum** context.  
+1. User clicks **Add Service**.  
+2. Enters basic service details.  
+3. Links the service to **Policies** (required) and optionally **Forums**.  
+4. Configures metadata (location, capacity, payment options).  
+5. Submits → service appears in **Service Search** and **Policy Detail**.  
 
 ---
 
-## Developer Notes
-- A **service = stakeholder** (analogue or digital).  
-- Attaching service updates both `Policy` and `Service` documents with bidirectional links.  
-- Audit trail: log *who attached which service where*.  
+## Backend Considerations
+- **Firestore Document Type:** `Service`  
+- **Schema Reference:** See `schema.md > Services`  
+- **Relationships:**  
+  - `Service -> Policy` (many-to-many)  
+  - `Service -> Forum` (many-to-many)  
+  - `Service -> Data` (logs, analytics, receipts)  
+- Must store payment configuration (Stripe keys, pricing models).  
 
 ---
+
+## Future Extensions
+- Federated integration with KO/MSD/RealMe identity systems.  
+- Automated service validation (e.g., health license check).  
+- Service reputation scores from user reviews.  
+- AI-assisted service discovery (recommendations).  
+
+---
+
+**Status:** MVP priority.  
+Adds the ability to operationalise Eleutherios by connecting **Services** to **Policies** and making them available in **Forums**.
