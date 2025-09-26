@@ -1,73 +1,76 @@
-# UX Design Brief: Create Service Screen
-
-**Screen:** Create Service  
-**Example:** Braeburn Apples
-
----
+# Create Service – Link Services to Policies
 
 ## Purpose
-The **Create Service** screen allows a user (e.g., a farmer, wholesaler, or housing provider) to define a new service or product that they want to make available within the Eleutherios system.  
-This service can then be linked to relevant **Policies** and **Forums**, enabling governance and collaboration.
+The **Create Service** screen lets users define a new service instance that consumes a policy.  
+Services can be human (e.g., social worker, housing provider) or non-human (IoT sensor, API, AI agent).  
+
+This is how stakeholders extend Eleutherios into the world.
 
 ---
 
-## Key Components
+## Layout & Sections
 
-1. **Details Section**
-   - Title field: "Braeburn Apples"
-   - Type selector: Product / Service (dropdown)
-   - Description: "1000Kg fresh picked braeburn apples."
-   - Quantity: Example shows `5` units.
+### Header
+- Title: **Create a New Service**.  
+- Short explainer: *“A service is how you or your organisation bring a policy to life.”*  
 
-2. **Price & Payments**
-   - Integration with **Stripe** for payments.
-   - Example: Price set to `USD 799.00`.
+### Input Fields
+1. **Service Name** (text, required).  
+   - Example: “Temporary Housing Support Christchurch”.  
 
-3. **Photo**
-   - Service/product image upload (Braeburn apples photo shown).
+2. **Description** (long text).  
+   - Purpose of the service and how it links to the policy.  
 
-4. **Tags**
-   - Helps with categorisation and discovery.
-   - Example tags: `Apples`, `Braeburn`.
+3. **Policy Reference** (search + select).  
+   - Attach to existing policy node (e.g., Housing → Tenancy).  
+   - If none exists, propose a new policy.  
 
-5. **Policies**
-   - Services can be bound by governance rules (e.g., eligibility, compliance).
-   - Shown as a counter (`1` policy attached).
+4. **Type** (dropdown).  
+   - Human / Organisation.  
+   - IoT Device.  
+   - API.  
+   - AI Agent.  
 
-6. **Forums**
-   - Services can link to active forums where rules are instantiated into actions/discussions.
-   - Shown as a counter (`1` forum attached).
+5. **Location / Coverage** (geotag or text).  
+   - Single address, region, or nationwide.  
 
----
+6. **Contact or Endpoint**  
+   - For humans: email/phone.  
+   - For IoT/API/AI: endpoint URL or token.  
 
-## User Flow
-1. User enters basic service details (name, type, description).
-2. User sets price and quantity (optionally attaches payment integration).
-3. User uploads an image.
-4. User attaches tags for classification.
-5. User links the service to one or more **Policies**.
-6. User links the service to one or more **Forums**.
-7. Service is published into the system and becomes visible/searchable.
+7. **Status**  
+   - Active / Pending / Archived.  
 
 ---
 
-## Backend Considerations
-- **Firestore Document Type:** `Service`
-- **Schema Reference:** See `schema.md > Services`
-- **Relationships:**
-  - `Service -> Policy` (one-to-many)
-  - `Service -> Forum` (one-to-many)
-- **Stripe Integration:** Store product ID and pricing reference securely.
+## Actions
+- **Save Service** → creates a new service instance linked to selected policy.  
+- **Cancel** → returns to previous screen.  
 
 ---
 
-## Future Extensions
-- Support multiple currencies beyond USD/INR.
-- Enable multiple payment providers (PayPal, MSD subsidies, KO subsidies).
-- Allow bulk upload of services via CSV/Excel for enterprise users.
-- Advanced tagging and recommendation engine.
+## Flow Example
+1. KO staff logs in.  
+2. Clicks *“Create Service”*.  
+3. Names service: *“Ngāi Tahu Housing Advisory – South Island”*.  
+4. Chooses Policy Reference: *Housing → Tenancy*.  
+5. Marks type: *Organisation*.  
+6. Sets region: *South Island*.  
+7. Saves.  
+8. Service is visible in **Service Search** and **Policy Detail**.  
 
 ---
 
-**Status:** MVP priority.  
-This screen is essential for initial user testing and onboarding.
+## Data Model Links
+- **Service Table**: `serviceId`, `name`, `description`, `policyRefId`, `type`, `location`, `contact`, `status`.  
+- **Policy Table**: Service must store a foreign key to the referenced policy.  
+- **Forum Link**: Optional forum auto-generated for stakeholder discussion.  
+
+---
+
+## Notes for Developers
+- Validation: Require service name + policyRef.  
+- Auto-generate `serviceId` (UUID).  
+- Inherit breadcrumbs from policy tree for navigation.  
+- Support both **manual creation** and **API-based onboarding** (for partner systems like MSD/KO).  
+
