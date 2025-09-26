@@ -6,70 +6,43 @@
 ---
 
 ## Purpose
-The **Create Data** screen allows users to upload, define, or reference data assets.  
-Data underpins all **Policies**, **Forums**, and **Services**, providing the factual basis for governance.  
+The **Create Data** screen allows users to define and expose datasets used across Forums and Services.  
+Data objects are evidence and knowledge sources within the Eleutherios architecture.  
 
 ---
 
 ## Key Components
-
-1. **Details Section**
-   - Data name: "Housing Plans Dataset"
-   - Description: "Blueprints and plans for social housing."
-   - Editable fields for metadata.  
-
-2. **Data Type**
-   - File upload (PDF, CSV, Image, etc.)  
-   - API endpoint (external dataset)  
-   - Structured dataset (Firestore or Postgres schema)  
-
-3. **Tags**
-   - Categorisation for discoverability.  
-   - Example tags: `Housing`, `Blueprints`, `Construction`.  
-
-4. **Linked Entities**
-   - **Policies:** Rules this data informs.  
-   - **Forums:** Discussions where this data is shared.  
-   - **Services:** Services consuming this dataset.  
-
-5. **Access & Permissions**
-   - Public, private, or restricted (invite-only).  
-   - Controls who can view or update the dataset.  
+1. **Data Name** – e.g., "Housing Plans".  
+2. **Description** – context and purpose.  
+3. **Source** – uploaded file, API link, or external DB.  
+4. **Tags** – for categorisation.  
+5. **Permissions** – access rules.  
 
 ---
 
 ## User Flow
-1. User names and describes the dataset.  
-2. Uploads file or enters API/data source reference.  
-3. Adds tags and metadata.  
-4. Links to relevant **Policies**, **Forums**, or **Services**.  
-5. Sets access permissions.  
-6. Publishes dataset, available to authorised users or services.  
+1. User names/describes dataset.  
+2. Uploads or links source.  
+3. Tags dataset.  
+4. Sets access permissions.  
+5. Publishes data, making it queryable.  
 
 ---
 
 ## Backend Considerations
-- **Firestore Document Type:** `Data`
-- **Schema Reference:** See `schema.md > Data`
-- **Relationships:**
-  - `Data -> Policy` (many-to-many)  
-  - `Data -> Forum` (many-to-many)  
-  - `Data -> Service` (many-to-many)  
-- Must store:
-  - File storage reference (cloud link)  
-  - Metadata (format, size, type, owner)  
-  - Linked entity IDs  
-  - Permissions  
+- **Firestore Document Type:** `Data`  
+- **Schema Reference:** See `schema.md > Data`  
+- **Relationships:**  
+  - `Data -> Service` (consumed by services)  
+  - `Data -> Forum` (referenced in discussions)  
 
 ---
 
 ## Future Extensions
-- Versioning and dataset history.  
-- Integration with open data portals.  
-- AI summarisation of datasets.  
-- Data provenance and trust scoring.  
+- Real-time streaming data.  
+- AI-enriched semantic search.  
+- Data provenance & lineage tracking.  
 
 ---
 
-**Status:** MVP priority.  
-Data is the *knowledge layer* of Eleutherios, informing and sustaining the **Policy–Forum–Service** cycle.  
+**Status:** MVP priority.
