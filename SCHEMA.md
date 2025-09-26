@@ -81,7 +81,7 @@ Collections Overview
 
 Example Structure
 
-<!-- prettier-ignore-start -->
+
 users/{userId}
     └── policies/{policyId} (kind=userRoot)
           ├── policies/{policyId} (kind=domain: Housing)
@@ -90,8 +90,6 @@ users/{userId}
           │     └── forums/{forumId}
           └── services/{serviceId}
                 └── data/{dataId}
-<!-- prettier-ignore-end -->
-
   
 
 Notes
