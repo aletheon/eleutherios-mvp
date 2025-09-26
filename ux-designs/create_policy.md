@@ -1,86 +1,69 @@
-# Create Policy – Defining the Root of Governance
+# UX Design Brief: Create Policy Screen
+
+**Screen:** Create Policy  
+**Example:** Social Housing Policy  
+
+---
 
 ## Purpose
-The **Create Policy** screen lets stakeholders design a new **Policy** node.  
-Policies are the core building blocks of Eleutherios: they define rules, contexts, and relationships that can then instantiate forums or link to services.  
+The **Create Policy** screen allows a user (individual, organisation, or institution) to define a new governance **Policy**.  
+Policies are the root structure in Eleutherios: they contain **Rules**, which can be instantiated into **Forums**, **Services**, or **Data calls**.  
 
 ---
 
-## Layout & Sections
+## Key Components
 
-### Header
-- Title: **Create a New Policy**  
-- Short explainer: *“A policy is the root object that holds rules, forums, and services. Everything in Eleutherios starts with a policy.”*
+1. **Policy Details**
+   - Policy name (e.g., "Social Housing Policy").
+   - Description (context, purpose, goals).
+   - Optional cover image.
 
----
+2. **Rules Section**
+   - Add individual rules (e.g., "Eligibility criteria for social housing").
+   - Each rule can be:
+     - **Policy in Policy** (sub-policy reference).
+     - **Forum Instantiation** (create discussion around the rule).
+     - **Service Call** (invoke a service defined elsewhere).
+     - **Data Call** (query an external dataset).
 
-### Input Fields
-1. **Policy Title** (text, required)  
-   - Example: “Social Housing Access 2025”  
+3. **Tags**
+   - Used for classification and discoverability (e.g., Housing, Social Impact).
 
-2. **Description** (long text, optional)  
-   - Outline the intent, scope, or kaupapa of this policy.  
-
-3. **Parent Policy** (search + select, optional)  
-   - Allows nesting: *Policy-in-Policy*.  
-   - Example: Parent = “Housing” → New Policy = “Tenancy Support”.  
-
-4. **Category / Kind** (dropdown)  
-   - Domain (e.g., Housing, Healthcare, Food).  
-   - Subdomain (e.g., Rooms, Allergies).  
-   - Attribute Rule (e.g., No. of bedrooms).  
-   - Service Link (points to an existing Service).  
-
-5. **Ruleset** (list builder, optional)  
-   - Each rule may:  
-     - Become a Forum (for discussion).  
-     - Reference another Policy (policy-in-policy).  
-     - Reference a Service (service consumes this rule).  
-
-6. **Start / End Date** (optional)  
-   - Define temporal validity of the policy or rule.  
-
-7. **Trigger (optional)**  
-   - Cron job, IoT signal, or external API event.  
+4. **Attachments**
+   - Upload supporting files or documents (e.g., government PDFs, legal references).
 
 ---
 
-## Actions
-- **Save Policy** → creates a new policy node.  
-- **Cancel** → returns to Policy Explorer.  
+## User Flow
+1. User enters policy name and description.  
+2. User adds one or more rules.  
+3. For each rule, user specifies whether it links to another policy, creates a forum, triggers a service, or queries data.  
+4. User saves/publishes the policy.  
+5. Published policies are visible to others for linking, instantiation, or adoption.  
 
 ---
 
-## Flow Example
-1. MSD policymaker logs in.  
-2. Clicks *“Create Policy”*.  
-3. Names it: *“Youth Housing Access Pilot 2026”*.  
-4. Selects Parent = *Housing*.  
-5. Adds rule: *“If applicant under 25, route to Youth Services Forum”*.  
-6. Saves.  
-7. New policy appears in the **Policy Tree**, with breadcrumb path back to *Housing*.  
+## Backend Considerations
+- **Firestore Document Type:** `Policy`
+- **Schema Reference:** See `schema.md > Policies`
+- **Relationships:**
+  - `Policy -> Rule` (one-to-many).
+  - `Rule -> Forum/Service/Data/Policy` (flexible, many-to-one).  
+- Must support:
+  - Nested policies.
+  - Linking to multiple forums or services.  
+  - References to external data APIs.
 
 ---
 
-## Data Model Links
-- **Policy Table**: `policyId`, `parentPolicyId`, `title`, `description`, `kind`, `status`, `createdBy`.  
-- **Rule Table**: Rules are nested, each with `ruleId`, `policyId`, `type`, `referenceId`.  
-- **Forum Table**: A rule of type “forum” auto-creates a forum instance.  
-- **Service Table**: A rule of type “service” references an existing serviceId.  
+## Future Extensions
+- Policy versioning (track changes over time).  
+- Public vs private policies (visibility controls).  
+- AI-assisted policy drafting (suggesting new rules).  
+- Policy templates for common use cases (e.g., housing, healthcare, food).  
+- Policy analytics (impact tracking, adoption metrics).  
 
 ---
 
-## Notes for Developers
-- Validation: Require policy title.  
-- Enforce no **circular parent references** (policy cannot point to itself).  
-- Breadcrumb generation: recursively climb parentId to root.  
-- Forum auto-creation on save when ruleset includes forum-type rule.  
-- Support both **human authors** and **API imports**.  
-
----
-
-## Example Use
-- KO policymaker drafts “Housing Tenancy 2026” as parent.  
-- Adds child policy “Emergency Housing”.  
-- Adds service reference “Marae Accommodation Rotorua”.  
-- Adds rule → auto-creates forum for stakeholders to debate the rule.  
+**Status:** MVP priority.  
+Policies are the *core abstraction* of Eleutherios. All other layers (Forums, Services, Data) derive from them.
