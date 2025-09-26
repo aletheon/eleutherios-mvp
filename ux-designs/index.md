@@ -47,8 +47,8 @@ Each screen is documented with purpose, layout, flows, and backend consideration
 - [Rate a Service](rate_service.md)  
   ![Rate Service](images/rate_service.jpg)
 
-- [Shopping Cart](shopping_cart_enter_payment_details.md)  
-  ![Shopping Cart](images/shopping_cart_enter_payment_details.jpg)
+- [Shopping Cart Enter Payment Detail](shopping_cart_enter_payment_details.md)  
+  ![Shopping Cart Enter Payment Detail](images/shopping_cart_enter_payment_details.jpg)
 
 - [Payment Receipt](payment_receipt.md)  
   ![Receipt](images/payment_receipt.jpg)
