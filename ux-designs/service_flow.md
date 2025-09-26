@@ -15,7 +15,7 @@ The Service Flow enables a user (homeless person, policymaker, organisation, or 
 ---
 
 ## Flow Diagram
-![Service Flow](eleutherios_service_flow.png)
+![Service Flow](images/service_flow_diagram.png)
 
 ---
 
