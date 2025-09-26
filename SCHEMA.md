@@ -77,9 +77,12 @@ Collections Overview
   * timestamp (timestamp)
   * source (string: API, IoT device, manual entry, etc.)
 
+  
+
 Example Structure
 
-  users/{userId}
+<!-- prettier-ignore-start -->
+users/{userId}
     └── policies/{policyId} (kind=userRoot)
           ├── policies/{policyId} (kind=domain: Housing)
           │     ├── policies/{policyId} (kind=subdomain: Rooms)
@@ -87,6 +90,9 @@ Example Structure
           │     └── forums/{forumId}
           └── services/{serviceId}
                 └── data/{dataId}
+<!-- prettier-ignore-end -->
+
+  
 
 Notes
 * Circular references are prevented (policy cannot reference itself).
