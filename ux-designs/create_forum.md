@@ -59,6 +59,14 @@ Forums are the *instantiated expression* of a rule within a **Policy**, enabling
 
 ---
 
+## Lifecycle Rules
+- Forums must always trace back to a **Policy Rule**.  
+- Deleting a Forum does not delete the Policy or Service; only the instantiated discussion.  
+- Archived Forums remain read-only but searchable.  
+- Versioning: If a linked Policy updates, Forum displays a banner prompting participants to review changes.  
+
+---
+
 ## Future Extensions
 - Rich text / multimedia support inside forum threads.  
 - Integration with video conferencing (Zoom, Meet).  
