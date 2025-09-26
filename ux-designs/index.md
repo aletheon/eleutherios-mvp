@@ -30,7 +30,7 @@ Each screen is documented with purpose, layout, flows, and backend consideration
 
 ### 3. Services
 - [Create Service](create_service.md)  
-  ![Create Service](images/create_service.jpg)
+  ![Create Service](images/create_a_service.jpg)
 
 - [Add Service](add_service.md)  
   ![Add Service](images/add_service.jpg)
