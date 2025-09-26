@@ -1,71 +1,78 @@
-# Shopping Cart – Multi-Service Checkout
+# UX Design Brief: Shopping Cart
+
+**Screen:** Shopping Cart  
+**Example:** Mixed services purchase (Food, Housing, Healthcare).  
+
+---
 
 ## Purpose
-The **Shopping Cart** screen allows users to review and purchase multiple services (local or global) in a single flow.  
-It supports both free and paid services, integrating payment providers such as **Stripe Connect** and **PayPal**.
+The **Shopping Cart** screen allows a user (service, stakeholder, or policy participant) to review, manage, and pay for multiple services at once.  
+
+It is the bridge between **Service Discovery** (search/detail) and **Payment Receipts**, enabling Eleutherios to handle transactions at scale across diverse providers.  
 
 ---
 
-## Layout & Sections
+## Key Components
 
-### Header
-- Title: **Your Cart**  
-- Breadcrumb: Home → Cart  
+1. **Header**
+   - Title: **Shopping Cart**  
+   - Badge: Number of items.  
 
-### Cart Items
-For each service added:
-- **Service Name** (e.g., "Temporary Shelter", "GP Consultation", "Braeburn Apples").  
-- Description (short).  
-- Linked **Policy Reference**.  
-- Quantity / Unit (if applicable).  
-- Price (can be $0 for free services).  
-- Remove button (trash icon).  
+2. **Cart Items List**
+   Each entry shows:
+   - Service name + description.  
+   - Linked policy reference (e.g., Housing > Tenancy).  
+   - Quantity or unit (where applicable, e.g., food items).  
+   - Price (or “Free” if no charge).  
+   - Provider name.  
+   - Option: remove item from cart.  
 
-### Totals
-- Subtotal  
-- Tax (if any, based on service provider’s rules).  
-- Platform Fees (only if configured by Aletheon/Eleutherios).  
-- Grand Total  
+3. **Cart Summary**
+   - Subtotal.  
+   - Fees (transaction, Stripe, subsidies applied).  
+   - Taxes (if any).  
+   - Total.  
 
-### Payment Options
-- **Stripe** (default, with Stripe Connect for cross-merchant payments).  
-- **PayPal** (future option).  
-- Free services auto-bypass payment, but still generate a receipt.  
+4. **Payment Options**
+   - Default: Stripe (Stripe Connect).  
+   - Alternatives: PayPal, RealMe Pay, MSD/KO subsidy integration.  
+   - Future: Crypto wallet, direct IoT/AI payment agents.  
 
-### Actions
-- **Checkout** → goes to payment details (or auto-confirms if all free).  
-- **Continue Browsing** → returns to Service Search.  
-
----
-
-## User Flow Example
-1. Homeless user adds **Temporary Shelter Service** (free) and **Doctor Consultation** ($20).  
-2. Cart shows both items → one free, one paid.  
-3. Stripe Connect processes payment for the paid service, while free service is confirmed.  
-4. User receives a single **Payment Receipt** listing both.  
+5. **Call to Action**
+   - **Checkout** → Payment Details screen.  
+   - **Continue Shopping** → back to Service Search.  
 
 ---
 
-## Data Model Links
-- `Cart` object → array of `ServiceRefs`.  
-- `ServiceRefs` must include policy references.  
-- Payment metadata → handled via **Stripe Connect** API integration.  
-- Free services must still generate **transaction logs** for auditing.  
+## User Flow
+1. User adds services (food, housing, healthcare, etc.) to cart.  
+2. Cart dynamically updates totals and fee breakdowns.  
+3. User chooses payment provider.  
+4. On checkout → system generates one or multiple **Payment Receipts**.  
 
 ---
 
-## Visual
-- **Left**: List of services in the cart.  
-- **Right**: Totals + Payment buttons.  
+## Backend Considerations
+- **Firestore Document Type:** `Cart`  
+- **Schema Reference:** `schema.md > Carts`  
+- Must store:  
+  - User ID.  
+  - List of ServiceRefs (with policy links).  
+  - Quantity, price, currency.  
+  - Payment provider preference.  
+- **Stripe Connect**:  
+  - Supports multi-merchant checkout (fees split automatically).  
+  - Eleutherios platform fee can be added transparently.  
 
 ---
 
-## Notes for Developers
-- Cart must support **multi-provider payments** (Stripe + PayPal).  
-- Free services = $0 line item but still go through “checkout” for logging.  
-- Stripe Connect onboarding required for merchants.  
-- Users should always receive a consolidated **receipt** even if no money was exchanged.
+## Future Extensions
+- Saved carts / recurring subscriptions.  
+- Subsidy auto-applied (e.g., MSD rent support).  
+- AI recommendations: “add related services.”  
+- Group carts (whānau or community bulk purchasing).  
 
 ---
 
-**Status:** MVP Priority for Service Monetisation
+**Status:** MVP critical.  
+The shopping cart is the **transaction nexus** of Eleutherios, where policies, services, and stakeholders connect economically.  
