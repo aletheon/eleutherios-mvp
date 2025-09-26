@@ -1,76 +1,78 @@
-# Create Service – Link Services to Policies
+# UX Design Brief: Create Service Screen
+
+**Screen:** Create Service  
+**Example:** Housing Support Service  
+
+---
 
 ## Purpose
-The **Create Service** screen lets users define a new service instance that consumes a policy.  
-Services can be human (e.g., social worker, housing provider) or non-human (IoT sensor, API, AI agent).  
-
-This is how stakeholders extend Eleutherios into the world.
+The **Create Service** screen allows a user (organisation or individual) to define a new service offering.  
+Services represent *practical actions* that can be delivered to meet needs expressed in **Policies** and **Forums**.  
 
 ---
 
-## Layout & Sections
+## Key Components
 
-### Header
-- Title: **Create a New Service**.  
-- Short explainer: *“A service is how you or your organisation bring a policy to life.”*  
+1. **Details Section**
+   - Service name: "Housing Support Service"
+   - Description: "Temporary housing for displaced whānau."
+   - Editable text fields for user-defined context.
 
-### Input Fields
-1. **Service Name** (text, required).  
-   - Example: “Temporary Housing Support Christchurch”.  
+2. **Service Provider**
+   - Organisation or individual responsible for service delivery.
+   - May integrate with existing government or NGO identifiers.
 
-2. **Description** (long text).  
-   - Purpose of the service and how it links to the policy.  
+3. **Inputs / Requirements**
+   - Fields that must be completed to access service.  
+     Example: proof of ID, eligibility form, or consent.  
 
-3. **Policy Reference** (search + select).  
-   - Attach to existing policy node (e.g., Housing → Tenancy).  
-   - If none exists, propose a new policy.  
+4. **Outputs / Outcomes**
+   - What the service provides when executed.  
+     Example: housing placement, financial support.
 
-4. **Type** (dropdown).  
-   - Human / Organisation.  
-   - IoT Device.  
-   - API.  
-   - AI Agent.  
+5. **Tags**
+   - Categorisation for discoverability.  
+   - Example tags: `Housing`, `Emergency`, `Whānau`.  
 
-5. **Location / Coverage** (geotag or text).  
-   - Single address, region, or nationwide.  
-
-6. **Contact or Endpoint**  
-   - For humans: email/phone.  
-   - For IoT/API/AI: endpoint URL or token.  
-
-7. **Status**  
-   - Active / Pending / Archived.  
+6. **Linked Entities**
+   - **Policies:** Policy rules this service fulfills.  
+   - **Forums:** Forums where this service is discussed or requested.  
+   - **Files:** Supporting documents or resources.  
 
 ---
 
-## Actions
-- **Save Service** → creates a new service instance linked to selected policy.  
-- **Cancel** → returns to previous screen.  
+## User Flow
+1. User names and describes the service.  
+2. Defines provider and service requirements.  
+3. Lists expected outputs.  
+4. Adds tags and linked entities (Policies, Forums, Files).  
+5. Publishes the service, making it discoverable and consumable by others.  
 
 ---
 
-## Flow Example
-1. KO staff logs in.  
-2. Clicks *“Create Service”*.  
-3. Names service: *“Ngāi Tahu Housing Advisory – South Island”*.  
-4. Chooses Policy Reference: *Housing → Tenancy*.  
-5. Marks type: *Organisation*.  
-6. Sets region: *South Island*.  
-7. Saves.  
-8. Service is visible in **Service Search** and **Policy Detail**.  
+## Backend Considerations
+- **Firestore Document Type:** `Service`
+- **Schema Reference:** See `schema.md > Services`
+- **Relationships:**
+  - `Service -> Policy` (one-to-many)  
+  - `Service -> Forum` (many-to-many)  
+  - `Service -> File` (many-to-many)  
+- Must store:
+  - Provider details
+  - Input requirements (structured schema)  
+  - Outputs/outcomes
+  - Linked entity IDs
+  - Tags for indexing/search  
 
 ---
 
-## Data Model Links
-- **Service Table**: `serviceId`, `name`, `description`, `policyRefId`, `type`, `location`, `contact`, `status`.  
-- **Policy Table**: Service must store a foreign key to the referenced policy.  
-- **Forum Link**: Optional forum auto-generated for stakeholder discussion.  
+## Future Extensions
+- Service rating and feedback.  
+- Payment integration (for commercial services).  
+- API endpoint linking external service providers.  
+- Service templates (housing, healthcare, food distribution).  
 
 ---
 
-## Notes for Developers
-- Validation: Require service name + policyRef.  
-- Auto-generate `serviceId` (UUID).  
-- Inherit breadcrumbs from policy tree for navigation.  
-- Support both **manual creation** and **API-based onboarding** (for partner systems like MSD/KO).  
-
+**Status:** MVP priority.  
+Services are the *execution layer* of Eleutherios, bridging **Policies** and **Forums** with real-world outcomes.  
