@@ -1,69 +1,78 @@
 # Eleutherios MVP
 
-**Tagline:** Governance through love in action  
+Eleutherios is the **policy substrate** that turns the principle of **Prior Unity** into a living, programmable system.  
+It provides a shared governance protocol where **Policies, Forums, Services, and Data** interconnect to enable humans, AIs, IoT, and institutions to co-create solutions.
 
-Eleutherios is the open-source GovTech platform that embodies the principle of **Prior Unity (Tino Rangatiratanga)**.  
-It provides a **policy substrate** where every policy rule can instantiate a forum, reference another policy, or call a service.  
-
-The MVP demonstrates how governance can be digitised as a living, recursive system:  
-
-- **Policy Layer** → rules define structure and intent  
-- **Forum Layer** → rules instantiate into collaborative spaces  
-- **Service Layer** → humans, AI, IoT, APIs act as services within forums  
-- **Data Layer** → live data feeds inform and update the above in real time  
+> **Tagline:** *Governance through love in action*
 
 ---
 
-## MVP Use Case
+## Repository Structure
 
-**Social Housing Access**
-
-1. A user (e.g. someone without stable housing) creates or subscribes to a **Housing Policy**.  
-2. A **Rule** inside that policy (e.g. “Retrieve local housing plans”) is instantiated.  
-3. That rule becomes a **Forum** (discussion space) or a **Service Call** (data retrieval).  
-4. Stakeholders interact to deliver an outcome (e.g. secure accommodation).
-
----
-
-## Tech Stack
-
-- **Backend:** Firebase + Firestore  
-- **Frontend:** React / Next.js  
-- **Cloud Functions:** For policy → forum instantiation  
-- **Hosting:** Firebase Hosting or Vercel  
+- **`README.md`** — Project overview (this file)  
+- **`schema.md`** — Data and entity schema for Firestore/Postgres  
+- **`roadmap.md`** — MVP → OS/IAAS → Hardware chip trajectory  
+- **`CONTRIBUTING.md`** — Contribution guidelines  
+- **`GOVERNANCE.md`** — Open source + foundation governance structure  
+- **`identity.md`** — Eleutherios identity, values, and purpose  
+- **`ux_designs/`** — UX briefs and mockups
 
 ---
 
-## Firebase Setup
+## Architecture Overview
 
-⚠️ **Note**: Firebase project setup is **not included in this repository yet**.  
-This will be completed by the development team. Expected tasks:  
+Eleutherios is defined by a four-layer stack:
 
-- Initialize Firebase project & Firestore database  
-- Configure Firestore collections: `users`, `policies`, `forums`, `services`, `data`  
-- Implement Firestore security rules (role-based access: Owner, Stakeholder, Participant, Service)  
-- Deploy Cloud Functions for recursive policy–forum creation  
+1. **Policy** — The root of governance; rules and references.  
+2. **Forum** — Instantiation of rules into conversation/action.  
+3. **Service** — Execution of rules as outcomes or functions.  
+4. **Data** — Underlying records, events, and metrics.
+
+Together, these layers form a **Policy–Forum–Service–Data (PFSD)** substrate.  
+They can be instantiated in software or hardware, scaling from **MVP prototypes** to **dedicated chips** that embody governance at the protocol level.
+
+---
+
+## UX Designs
+
+The MVP includes carefully considered UX designs to demonstrate how users (humans or non-humans) engage with PFSD.  
+
+All briefs and mockups are stored in the [`/ux_designs`](./ux_designs/index.md) folder.
+
+### Available UX Briefs
+- [Create Policy](./ux_designs/create_policy.md)  
+- [Create Forum](./ux_designs/create_forum.md)  
+- [Create Service](./ux_designs/create_service.md)  
+- [Create Data](./ux_designs/create_data.md)  
+
+Each brief contains:
+- **Purpose** — Why the screen exists.  
+- **Key Components** — Inputs, buttons, and linked entities.  
+- **User Flow** — Step-by-step interaction process.  
+- **Backend Considerations** — Firestore schema references, entity relationships.  
+- **Future Extensions** — Roadmap for growth beyond MVP.
+
+### Mockups
+Visual mockups are stored in `/ux_designs/images/`.  
+Each brief links to its screenshot for developer reference. Example:
+
+```markdown
+![Create Forum Mockup](./ux_designs/images/create_forum.png)
+```
 
 ---
 
 ## Roadmap
 
-1. ✅ Define architecture (Policy → Forum → Service → Data)  
-2. 🚧 Build MVP (Social Housing policy demo)  
-3. 🔜 Expand to additional domains: healthcare, food, identity  
-4. 🔭 Long-term: Standardize Eleutherios as a **global governance protocol**  
+- **Phase 1 (0–6 months):** Build MVP on Firebase/Firestore, prove PFSD works.  
+- **Phase 2 (6–24 months):** Scale to OS/IAAS layer, with policy editor/compiler.  
+- **Phase 3 (2–5 years):** Hardware integration (chips, protocols, low-level stack).  
+
+See [`roadmap.md`](./roadmap.md) for full details.
 
 ---
 
 ## License
 
-[MIT License](LICENSE) — Open source and free to use.
-
----
-
-## Contact
-
-- **Founder:** Robert Paul Kara  
-- **Email:** rob.kara@gmail.com  
-- **Mobile (NZ):** 021 120 5061  
-
+Open source under the **MIT License** (or alternative once finalised).  
+Maintained by the **Aletheon Foundation**.
