@@ -1,94 +1,63 @@
 # Eleutherios MVP – UX Design Index
 
-This folder contains UX design specifications and supporting images for the Eleutherios MVP.  
-Each screen is documented with purpose, layout, flows, and backend considerations.  
+This folder contains **UX design mockups and briefs** for the Eleutherios MVP.  
+Each screen corresponds to the Policy → Forum → Service → Data architecture.  
 
 ---
 
-## Screens
+## Screens & Briefs
 
-### 1. Authentication
-- [Login Screen](login.md)  
-  ![Login](images/login.jpg)
+### Authentication & Identity
+- `login.md` → Login screen (supports Google, email, RealMe, KO/MSD in future).  
+- `identity.md` → Identity model and UX flow (users, services, stakeholders).  
 
----
+### Policy Layer
+- `create_policy.md` → Create a new policy (define rules).  
+- `policy_detail.md` → View a policy, its rules, and linked forums/services.  
 
-### 2. Home & Navigation
-- [Homepage](homepage.md)  
-  ![Homepage](images/homepage.jpg)
+### Forum Layer
+- `create_forum.md` → Create forum linked to a policy rule.  
+- `forum_detail.md` → View forum discussion and linked services/files.  
+- `add_image_to_forum.md` → Upload images/files to a forum.  
+- `search_forums.md` → Search and discover forums.
 
-- [Homepage After Login](homepage_after_enduser_login.md)  
-  ![Homepage After Login](images/homepage_after_enduser_login.jpg)
+### Service Layer
+- `create_service.md` → Create a service linked to a policy.  
+- `service_detail.md` → Service overview + forums from rules.  
+- `search_service.md` → Search for services by category, location, policy.  
+- `add_service.md` → Add/link services into a policy or forum.  
+- `service_review.md` → Leave written reviews for a service.  
+- `rate_service.md` → Rate services with stars or metrics.  
+- `shopping_cart.md` → Enter payment details to buy/join a service.  
+- `payment_receipt.md` → Payment confirmation for service purchase.
 
-- [User Menu](user_menu.md)  
-  ![User Menu](images/user_menu.jpg)
-
-- [End User Settings](enduser_settings.md)  
-  ![Settings](images/enduser_settings.jpg)
-
----
-
-### 3. Services
-- [Create Service](create_service.md)  
-  ![Create Service](images/create_a_service.jpg)
-
-- [Add Service](add_service.md)  
-  ![Add Service](images/add_service.jpg)
-
-- [Search Services](service_search.md)  
-  ![Search Services](images/service_search.jpg)
-
-- [Service Detail](service_detail.md)  
-  ![Service Detail](images/service_detail.jpg)
-
-- [Write a Service Review](write_a_service_review.md)  
-  ![Write Service Review](images/write_a_service_review.jpg)
-
-- [Rate a Service](rate_service.md)  
-  ![Rate Service](images/rate_service.jpg)
-
-- [Shopping Cart Enter Payment Detail](shopping_cart_enter_payment_details.md)  
-  ![Shopping Cart Enter Payment Detail](images/shopping_cart_enter_payment_details.jpg)
-
-- [Payment Receipt](payment_receipt.md)  
-  ![Receipt](images/payment_receipt.jpg)
+### Data Layer
+- Data is implicit across all screens (logs, analytics, rule-materialization).  
 
 ---
 
-### 4. Forums
-- [Create Forum](create_forum.md)  
-  ![Create Forum](images/create_forum.jpg)
+## Payment Integration
+Services may be **monetized or subscribed** using payment providers (e.g. **Stripe**).  
+Examples:  
+- A doctor service charges consultation fees.  
+- A housing support service collects rent.  
+- A music service collects subscription donations.  
 
-- [Forum Details](forum_details.md)  
-  ![Forum Detail](images/forum_details.jpg)
-
-- [Search Forums](search_forums.md)  
-  ![Search Forums](images/search_forums.jpg)
-
-- [Add Image to Forum](add_image_to_forum.md)  
-  ![Add Image](images/add_image_to_forum.jpg)
-
----
-
-### 5. Policies
-- [Create Policy](create_policy.md)  
-  ![Create Policy](images/create_policy.jpg)
-
-- [Policy Detail](policy_detail.md)  
-  ![Policy Detail](images/policy_detail.jpg)
-
-- [Add Policy](add_policy.md)  
-  ![Add Policy](images/add_policy.jpg)
+All services should support:  
+- **One-time payments** (e.g. doctor fee).  
+- **Recurring subscriptions** (e.g. housing co-op, music SaaS).  
+- **Receipts & audit logs** (stored in Data layer).  
 
 ---
 
-## Notes
-- Services are always linked to **Policies** and instantiated via **Forums**.  
-- A **Stakeholder** (person, org, IoT, API, AI agent) can act as:  
-  - Policy Manager  
-  - Service Provider  
-  - Forum Participant  
-  - Policy Consumer  
-- Payments are enabled via **Stripe** integration for direct fees or subscriptions.  
+## Notes for Developers
+- **Each UX brief has schema references** back to `schema.md`.  
+- **Images are stored in `/ux-designs/images/`**.  
+- **Stripe/payment integration** → MVP placeholder, extensible later.  
+- **Services are stakeholders**: people, IoT, APIs, AI all treated as services.  
+- **Forums are rule-instantiations**: every rule creates a space for discussion.  
 
 ---
+
+✅ **Status:**  
+This index will grow as more UX screens are added. Developers should start with **Policy → Forum → Service flows**, then integrate payments.  
