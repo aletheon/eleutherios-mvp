@@ -1,71 +1,64 @@
 # Contributing to Eleutherios
 
-Kia ora and welcome — thank you for your interest in contributing to **Eleutherios**.  
-This project is an open-source prototype of a shared governance platform, built around the principle of **Prior Unity** and the Policy → Forum → Service → Data architecture.
-
-We welcome contributions from developers, designers, researchers, and community members.  
-Please read the following guidelines to help us keep collaboration clear and productive.
+Kia ora! Thank you for your interest in contributing to **Eleutherios**.  
+This project is open source and guided by the principle of **“Governance through Love in Action”**. Contributions are welcome from all who wish to help humankind (and non-humankind) recognise Prior Unity through this protocol.
 
 ---
 
-## Ways to Contribute
-
-- **Code**: Improve the backend (Firebase/Firestore, Cloud Functions) or frontend (React/Next.js).  
-- **Documentation**: Clarify architecture, expand schema, or add tutorials.  
-- **Design**: UX/UI metaphors for the Policy Editor and Policy-to-Service flow.  
-- **Research**: Insights into governance models, Māori frameworks, and sustainability practices.  
-- **Community**: Share ideas, test prototypes, and give feedback.
+## Ground Rules
+- Be respectful — this is a kaupapa grounded in **Tino Rangatiratanga** and **Prior Unity**.
+- Keep commits clean and descriptive.
+- Discuss big changes in an Issue before starting work.
+- Document all new code (inline comments + relevant docs).
 
 ---
 
 ## Development Workflow
-
-1. **Fork the repo** and create your branch from `main`.  
+1. **Fork** the repository (if external) or branch off `main` (if internal).
+2. Create a feature branch:
    ```bash
-   git checkout -b feature/your-feature-name
+   git checkout -b feature/policy-editor-ui
    ```
+   Branch naming convention:
+   - `feature/...` for new features  
+   - `fix/...` for bug fixes  
+   - `docs/...` for documentation-only changes  
+   - `infra/...` for infrastructure/deployment updates  
 
-2. **Code style**  
-   - Use clear, modular JavaScript/TypeScript for frontend and Firebase functions.  
-   - Follow functional naming conventions (e.g. `deleteUserPolicyBreadcrumbReference`).  
-   - Add comments where recursion, async, or schema rules are involved.
-
-3. **Commit messages**  
-   Use conventional commit style:  
-   - `feat:` new feature  
-   - `fix:` bug fix  
-   - `docs:` documentation only  
-   - `refactor:` code change without new features  
-   - `test:` adding or fixing tests  
-
-4. **Push and open a Pull Request**  
-   - Describe what you’ve done and reference related issues.  
-   - Pull Requests will be reviewed by maintainers before merging.
+3. Make your changes, commit with a clear message:
+   ```bash
+   git commit -m "Add housing policy rule instantiation to forum"
+   ```
+4. Push and open a **Pull Request (PR)** to `main`.
 
 ---
 
-## Issues
-
-- Use GitHub Issues for bugs, feature requests, or questions.  
-- Tag your issue with one of: `bug`, `feature`, `documentation`, `discussion`.  
-- Include screenshots or logs if relevant.
-
----
-
-## Community Guidelines
-
-- Respect the kaupapa of **Governance through Love in Action**.  
-- Contributions should align with the principle of **Prior Unity / Tino Rangatiratanga**.  
-- Be constructive, transparent, and inclusive.  
-- Remember: all entities (human and non-human) are treated as participants in Eleutherios.
+## Code Standards
+- **Frontend**: React/Next.js, with functional components and hooks.  
+- **Backend**: Firebase Cloud Functions, Firestore for data.  
+- **Infra**: Firebase config + IaC templates (expandable later).  
+- **Testing**: Write minimal tests where possible (e.g. for rule instantiation logic).  
 
 ---
 
-## License
-
-By contributing, you agree that your work will be licensed under the project’s open-source license (see `LICENSE`).
+## Documentation
+- Update `README.md` for top-level changes.  
+- Update `SCHEMA.md` if data models are altered.  
+- Update `ROADMAP.md` if work shifts priorities.  
 
 ---
 
-Ngā mihi nui,  
-The Aletheon Foundation — Guardians of Prior Unity
+## Community / Governance
+- Major architectural decisions are logged in `docs/GOVERNANCE.md`.  
+- Aletheon Foundation oversees stewardship and alignment with Prior Unity.  
+
+---
+
+### Example Contribution Flow
+- Homelessness demo service (MVP):  
+  - Add Firestore schema updates to `SCHEMA.md`  
+  - Implement Cloud Function in `backend/functions/`  
+  - Wire UI in `frontend/pages/demo.tsx`  
+  - Update `README.md` with usage example  
+
+---
