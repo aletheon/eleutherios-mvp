@@ -1,78 +1,71 @@
 # UX Design Brief: Shopping Cart
 
 **Screen:** Shopping Cart  
-**Example:** Mixed services purchase (Food, Housing, Healthcare).  
+**Example:** A user (homeless person, policymaker, or service provider) adding multiple services (housing, food, healthcare) into a single checkout experience.  
 
 ---
 
 ## Purpose
-The **Shopping Cart** screen allows a user (service, stakeholder, or policy participant) to review, manage, and pay for multiple services at once.  
-
-It is the bridge between **Service Discovery** (search/detail) and **Payment Receipts**, enabling Eleutherios to handle transactions at scale across diverse providers.  
+The **Shopping Cart** allows stakeholders to **bundle multiple services** into one transaction, whether free or paid.  
+It supports both **monetary payments** (via Stripe, PayPal, or other providers) and **zero-cost services** offered by stakeholders.  
 
 ---
 
 ## Key Components
 
 1. **Header**
-   - Title: **Shopping Cart**  
-   - Badge: Number of items.  
+   - Title: **Your Cart**  
+   - Cart summary (e.g., “3 Services”).  
 
-2. **Cart Items List**
-   Each entry shows:
-   - Service name + description.  
-   - Linked policy reference (e.g., Housing > Tenancy).  
-   - Quantity or unit (where applicable, e.g., food items).  
-   - Price (or “Free” if no charge).  
-   - Provider name.  
-   - Option: remove item from cart.  
+2. **Cart Items**
+   - Each item shows:  
+     - Service name (e.g., *Temporary Shelter*, *Braeburn Apples*).  
+     - Linked Policy (e.g., Housing Policy → Tenancy).  
+     - Price (e.g., $50 fee, or *Free*).  
+     - Quantity / Unit (if relevant, e.g., kg of food).  
+     - Remove / Edit option.  
 
-3. **Cart Summary**
-   - Subtotal.  
-   - Fees (transaction, Stripe, subsidies applied).  
-   - Taxes (if any).  
-   - Total.  
+3. **Totals Section**
+   - Subtotal (currency + free services noted).  
+   - Taxes / fees if applicable.  
+   - Final Total.  
 
-4. **Payment Options**
-   - Default: Stripe (Stripe Connect).  
-   - Alternatives: PayPal, RealMe Pay, MSD/KO subsidy integration.  
-   - Future: Crypto wallet, direct IoT/AI payment agents.  
-
-5. **Call to Action**
-   - **Checkout** → Payment Details screen.  
-   - **Continue Shopping** → back to Service Search.  
+4. **Checkout Options**
+   - **Proceed to Payment** → Payment screen.  
+   - **Continue Browsing** → Returns to Service Search.  
 
 ---
 
 ## User Flow
-1. User adds services (food, housing, healthcare, etc.) to cart.  
-2. Cart dynamically updates totals and fee breakdowns.  
-3. User chooses payment provider.  
-4. On checkout → system generates one or multiple **Payment Receipts**.  
+1. User searches and discovers services.  
+2. Adds one or more services into their **Cart**.  
+3. Cart shows a mixed list:  
+   - *Free* services (still require confirmation).  
+   - *Paid* services (integrated with Stripe/PayPal/etc).  
+4. User clicks **Checkout**, proceeds to `payment_receipt.md` workflow.  
 
 ---
 
 ## Backend Considerations
 - **Firestore Document Type:** `Cart`  
 - **Schema Reference:** `schema.md > Carts`  
-- Must store:  
-  - User ID.  
-  - List of ServiceRefs (with policy links).  
-  - Quantity, price, currency.  
-  - Payment provider preference.  
-- **Stripe Connect**:  
-  - Supports multi-merchant checkout (fees split automatically).  
-  - Eleutherios platform fee can be added transparently.  
+- Must support:  
+  - Multiple payment providers (Stripe Connect default, extendable).  
+  - Services with zero price.  
+  - Services from multiple merchants (multi-merchant checkout).  
+- **Stripe Connect Integration:**  
+  - Eleutherios can collect a platform fee.  
+  - Payments routed directly to merchant accounts.  
 
 ---
 
 ## Future Extensions
-- Saved carts / recurring subscriptions.  
-- Subsidy auto-applied (e.g., MSD rent support).  
-- AI recommendations: “add related services.”  
-- Group carts (whānau or community bulk purchasing).  
+- Subscription support (e.g., monthly housing stipend).  
+- In-app credit wallets.  
+- Microtransactions for digital services (e.g., AI rulesets).  
+- Policy-driven discounts or subsidies (e.g., MSD-funded services = free).  
 
 ---
 
-**Status:** MVP critical.  
-The shopping cart is the **transaction nexus** of Eleutherios, where policies, services, and stakeholders connect economically.  
+**Status:** MVP required.  
+The cart + checkout flow is essential to connect policies with real-world services and create accountability for both **paid** and **free** offerings.  
