@@ -9,24 +9,17 @@ Collections Overview
 Each human or non-human participant gets a user account.
 
 Fields:
-
-userId (string, auto UID)
-
-email (string)
-
-displayName (string)
-
-createdAt (timestamp)
-
-whakapapa (map, optional for Māori users)
-
-defaultPolicyId (string → ref to userRoot policy)
+* userId (string, auto UID)
+* email (string)
+* displayName (string)
+* createdAt (timestamp)
+* whakapapa (map, optional for Māori users)
+* defaultPolicyId (string → ref to userRoot policy)
 
 Subcollections:
 
-policies → policies authored/owned by the user
-
-services → services the user operates or consumes
+* policies → policies authored/owned by the user
+* services → services the user operates or consumes
 
 2. Policies (users/{userId}/policies/{policyId})
 
