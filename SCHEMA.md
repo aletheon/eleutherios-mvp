@@ -1,96 +1,142 @@
-# Eleutherios Firestore Schema
+# schema.md
 
-This document describes the initial Firestore schema for the **Eleutherios MVP**.  
-The architecture is based on the **Policy → Forum → Service → Data** model, where all entities are policies or derived from policies.
+## Overview
+This schema defines the **Policy–Forum–Service–Data (PFSD)** architecture, the core substrate of Eleutherios.  
+It functions as a digital governance protocol, instantiating rules into living processes across analogue (human) and digital (AI, IoT, API) stakeholders.  
 
----
-
-## Collections Overview
-
-- **Users**  
-  Each human or non-human actor with a root policy.  
-  `/users/{userId}`  
-
-- **Policies**  
-  Atomic governance unit. Can nest other policies, or instantiate rules into forums.  
-  `/users/{userId}/policies/{policyId}`  
-
-- **Forums**  
-  Instantiated discussions or rule containers. May point back to a policy.  
-  `/users/{userId}/policies/{policyId}/forums/{forumId}`  
-
-- **Services**  
-  APIs, IoT, AI, or business processes attached to policies.  
-  `/services/{serviceId}`  
-
-- **Data**  
-  Underlying information streams exposed by services.  
-  `/services/{serviceId}/data/{dataId}`  
+**Key principle:**  
+> *PRIOR UNITY → PROCESS → PRIOR UNITY*  
+Every input, process, and output resolves into the same unity.
 
 ---
 
-## Visual Diagrams
+## Core Entities
 
-### 1. Core Layers
-```mermaid
-flowchart TD
-    Policy["Policy Layer"]
-    Forum["Forum Layer"]
-    Service["Service Layer"]
-    Data["Data Layer"]
+### 1. Policy
+- **Definition:** The top-level governance artifact, representing unity codified into rules.  
+- **Fields:**
+  - `id` (string, UUID)
+  - `title` (string)
+  - `description` (markdown)
+  - `rules[]` (array of `Rule`)
+  - `owner` (ServiceRef)
+  - `createdAt` (timestamp)
+  - `updatedAt` (timestamp)
 
-    Policy --> Forum
-    Forum --> Service
-    Service --> Data
-    Data --> Policy
-```
-
----
-
-### 2. Nested Policy Example
-```mermaid
-flowchart TD
-    A["User Root Policy (Healthcare)"]
-    B["Allergies (Subdomain)"]
-    C["DNA (Attribute Rule)"]
-    D["Forum (instantiated from DNA rule)"]
-
-    A --> B --> C --> D
-```
+- **Rules:**
+  Each `Rule` can be of type:
+  - **Forum** → Instantiates a Forum (discussion & action space).
+    - Optional: `defaultStakeholders[]` (list of Services auto-added at instantiation).
+  - **Service** → Calls or triggers a Service (human, IoT, API, AI, etc.).
+  - **Policy** → Points to another Policy (existing or new at runtime).
 
 ---
 
-### 3. Service Consumption
-```mermaid
-flowchart TD
-    P["Housing Policy"]
-    R["Rule: No. of Bedrooms"]
-    F["Forum: Housing Stakeholders"]
-    S["Service: Local Housing API"]
-    D["Data: Housing Plans"]
+### 2. Forum
+- **Definition:** Instantiated space for dialogue, coordination, and enactment of a rule.  
+- **Fields:**
+  - `id` (string, UUID)
+  - `policyId` (string → Policy)
+  - `ruleId` (string → Rule)
+  - `title` (string)
+  - `description` (string)
+  - `members[]` (array of ServiceRefs)
+  - `messages[]` (array of Message)
+  - `createdAt` (timestamp)
+  - `updatedAt` (timestamp)
 
-    P --> R --> F
-    F --> S --> D
-```
+- **Message:**
+  - `sender` (ServiceRef)
+  - `content` (markdown / media ref)
+  - `timestamp` (timestamp)
 
----
-
-### 4. Overall Firestore Shape
-```mermaid
-erDiagram
-    USERS ||--o{ POLICIES : owns
-    POLICIES ||--o{ FORUMS : instantiates
-    POLICIES ||--o{ POLICIES : nests
-    FORUMS ||--o{ MESSAGES : contains
-    SERVICES ||--o{ DATA : streams
-    POLICIES }o--o{ SERVICES : "references"
-```
+- **Notes:**
+  - Forums are ephemeral or permanent depending on the policy rule.
+  - Can support multimedia, AI summaries, and linked services.
 
 ---
 
-## Notes
+### 3. Service
+- **Definition:** Any agent (human, organisation, AI, IoT, API, etc.) that can act in the system.  
+- **Fields:**
+  - `id` (string, UUID)
+  - `type` (enum: Human, Org, AI, IoT, API, Other)
+  - `name` (string)
+  - `description` (string)
+  - `owner` (optional, ServiceRef)
+  - `policies[]` (PolicyRefs consumed)
+  - `forums[]` (ForumRefs participated in)
+  - `capabilities[]` (array of Capability)
 
-- **Circular references** are prevented (policy cannot reference itself).  
-- **Breadcrumbs** are materialised for navigation and auditing.  
-- **Triggers** allow rules to instantiate dynamically from events (IoT, cron, AI).  
-- All entities resolve back to **Policy** as the atomic unit.
+- **Capabilities:**  
+  - Examples:
+    - `FetchData(API)`
+    - `IoTTrigger(deviceId)`
+    - `MakePayment(Stripe/PayPal/Other)`
+    - `HumanAction(description)`
+    - `AIProcess(model, prompt)`
+
+- **Notes:**
+  - A Service can charge fees (via Stripe, PayPal, etc.) or be free.
+  - By default, Stripe Connect integration is offered.
+
+---
+
+### 4. Data
+- **Definition:** The shared substrate for all persisted state and analytics.  
+- **Fields:**
+  - `id` (string, UUID)
+  - `type` (enum: File, Record, Transaction, Message, Media, Other)
+  - `location` (cloud storage ref / database ref)
+  - `owner` (ServiceRef)
+  - `linkedTo` (PolicyRef | ForumRef | ServiceRef)
+  - `createdAt`
+  - `updatedAt`
+
+- **Notes:**
+  - Data is always tagged with lineage (which policy/service/forum created it).
+  - Enables analytics for unmet needs, bottlenecks, and governance insights.
+
+---
+
+## Relationships
+
+- **Policy → Rule → Forum/Service/Policy**
+- **Forum ↔ Service (membership, discussion)**
+- **Service ↔ Policy (consumes, provides, maintains)**
+- **Service ↔ Service (transactions, payments, interactions)**
+- **All ↔ Data (audit trail, storage)**
+
+---
+
+## Runtime Examples
+
+1. **Homeless person seeks housing:**
+   - Creates a Policy → Rule = “Find Shelter” (Service type).  
+   - Service triggers KO/MSD API + creates Forum with caseworkers.  
+   - Data = audit trail of requests, approvals, shelter info.
+
+2. **Doctor offers free consultation:**
+   - Service = Doctor (Human).  
+   - Policy = “Healthcare Access” → Rule = Service link.  
+   - Patient joins via Forum.  
+   - Payment = free (capability `HumanAction` only).
+
+3. **Doctor offers paid subscription:**
+   - Service capability = `MakePayment(Stripe Subscription)`.  
+   - Policy enforces “Access Rules” for subscribers.  
+   - Forum = patient-doctor ongoing care.  
+   - Data = patient logs, prescriptions.
+
+---
+
+## Extensibility
+
+- **Federated Identity:** Supports RealMe, KO/MSD, Google, etc.  
+- **Federated Payments:** Stripe by default, PayPal optional, open to others.  
+- **Governance AI:** Rules can be AI-assisted (propose, summarise, enforce).  
+- **Hardware future:** PFSD protocol can extend down to chip-level standards.  
+
+---
+
+**Status:** Canonical v1 schema for Eleutherios MVP.  
