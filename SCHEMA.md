@@ -1,142 +1,137 @@
-# Eleutherios Schema Specification
+# Eleutherios Schema Specification (Updated)
 
-This schema describes the core entities of the Eleutherios PFSD (Policy–Forum–Service–Data) model, aligned with EleuScript and supporting economic, social, and technical interoperability.
-
----
-
-## Entities
-
-### 1. Policy
-- **Fields:**
-  - `policyId` (UUID)
-  - `title` (string)
-  - `description` (string)
-  - `rules` (array of Rule objects)
-  - `createdBy` (UserRef)
-  - `createdAt` (timestamp)
-- **Behavior:**
-  - A Policy defines rules.
-  - Rules can point to:
-    - Forum
-    - Service
-    - Policy (existing or runtime-generated)
-- **Consumption:** Rules are instantiated *only when a Policy is consumed by a Service*.
+This document defines the **core schema** for Eleutherios MVP, updated with **ServiceAttributes** and **CERT** integration.
 
 ---
 
-### 2. Rule
-- **Fields:**
-  - `ruleId` (UUID)
-  - `name` (string)
-  - `type` (enum: Forum | Service | Policy)
-  - `target` (ForumRef | ServiceRef | PolicyRef)
-  - `defaultStakeholders` (array of UserRefs, if type = Forum)
-- **Notes:**
-  - Policy rules describe behavior but remain inert until consumed.
+## 1. Policy
+- **id**: string (UUID)
+- **name**: string
+- **description**: text
+- **rules**: list of `Rule` objects
+- **createdBy**: UserRef
+- **createdAt**: timestamp
+- **updatedAt**: timestamp
+
+### Notes
+- Policies are the *root objects* in EleuScript.
+- Rules may point to **Forum**, **Service**, or another **Policy**.
 
 ---
 
-### 3. Forum
-- **Fields:**
-  - `forumId` (UUID)
-  - `name` (string)
-  - `description` (string)
-  - `linkedServices` (array of ServiceRefs)
-  - `linkedPolicies` (array of PolicyRefs)
-  - `messages` (array of Message objects)
-  - `permissions` (map of UserRef → PermissionSet)
-- **Permissions:** Default set for any stakeholder:
-  - Add stakeholder [Y/N]
-  - Remove stakeholder [Y/N]
-  - Create sub-forum [Y/N]
-  - Create message [Y/N]
-  - Remove own message [Y/N]
-  - Remove others’ messages [Y/N]
-  - Add file [Y/N]
-  - Remove own file [Y/N]
-  - Remove others’ files [Y/N]
+## 2. Rule
+- **id**: string
+- **name**: string
+- **type**: enum { Forum, Service, Policy }
+- **targetRef**: ID of Forum/Service/Policy
+- **parameters**: key-value map
+
+### Notes
+- Rules instantiate only when **consumed** by a Service.
 
 ---
 
-### 4. Service
-- **Fields:**
-  - `serviceId` (UUID)
-  - `name` (string)
-  - `description` (string)
-  - `owner` (UserRef)
-  - `policyRefs` (array of PolicyRefs consumed)
-  - `serviceAttributes` (see below)
-  - `status` (enum: Active | Pending | Archived)
-- **Behavior:**
-  - A Service expresses behavior by consuming Policies.
-  - Services may be:
-    - Analogue (human stakeholder)
-    - Digital (IoT, API, AI, SaaS, etc.)
-- **Attributes (ServiceAttributes):**
-  - `price` (currency value | null if free)
-  - `size` (string, e.g., “M”, “Large”)
-  - `color` (string, e.g., “Blue”)
-  - `quantity` (int, inventory count)
-- **Example:** T-shirt as Service with attributes (Price, Size, Color, Quantity).
+## 3. Forum
+- **id**: string
+- **name**: string
+- **description**: text
+- **linkedPolicy**: PolicyRef
+- **stakeholders**: [UserRef or ServiceRef]
+- **messages**: collection of Message
+- **permissions**: map<UserRef, PermissionSet>
+
+### Permissions (default when stakeholder joins)
+1. Add stakeholder [Yes|No]
+2. Remove stakeholder [Yes|No]
+3. Create sub-forum [Yes|No]
+4. Create message [Yes|No]
+5. Remove own message [Yes|No]
+6. Remove others’ messages [Yes|No]
+7. Upload file [Yes|No]
+8. Remove own file [Yes|No]
+9. Remove others’ files [Yes|No]
 
 ---
 
-### 5. Data
-- **Fields:**
-  - `dataId` (UUID)
-  - `type` (enum: File | Record | Event | Stream)
-  - `source` (ServiceRef | ForumRef)
-  - `payload` (structured data / file reference)
-  - `timestamp` (datetime)
-- **Notes:**
-  - Data persists the outcome of Services and Forums.
-  - Used for analytics, history, and reporting.
+## 4. Service
+- **id**: string
+- **name**: string
+- **description**: text
+- **owner**: UserRef
+- **linkedPolicies**: [PolicyRef]
+- **attributes**: ServiceAttributes
+- **forums**: [ForumRef]
+- **status**: enum { Active, Pending, Archived }
 
 ---
 
-### 6. User
-- **Fields:**
-  - `userId` (UUID)
-  - `name` (string)
-  - `email` (string)
-  - `certScore` (float 0–100)
-  - `activities` (array of ForumRefs, PolicyRefs, ServiceRefs)
-- **CERT Scoring:**
-  - **Cooperation:** Number of services (other than own) added to forums/policies + frequency.
-  - **Engagement:** Response time to notifications + positive ratings/reviews.
-  - **Retention:**  
-    - Free service → how many people use it + repeat usage.  
-    - Paid service → how many people buy it + repeat sales.  
-  - **Trust:** Number of followers or subscribers to updates.
-- **Notes:**
-  - User’s overall CERT = average of their Service CERTs.
+## 5. ServiceAttributes
+Every service can define attributes (free or paid):
+
+- **Price**:  
+  - type: float  
+  - currency: string (e.g., "NZD")  
+  - optional (null if free)
+
+- **Size**: string (e.g., S, M, L, XL)  
+
+- **Color**: string  
+
+- **Quantity**: integer (available stock or capacity)  
 
 ---
 
-### 7. Activity
-- **Fields:**
-  - `activityId` (UUID)
-  - `userRef` (User)
-  - `context` (Forum | Policy | Service)
-  - `role` (enum: Creator | Stakeholder | Consumer)
-  - `timestamp` (datetime)
-- **Notes:**
-  - Activities provide quick navigation to all active contexts for a user.
+## 6. User
+- **id**: string
+- **name**: string
+- **email**: string
+- **photo**: URL
+- **cert**: CERT object
+- **activities**: [ActivityRef] (forums, policies, services)
 
 ---
 
-## Relationships
-- **Policy → Rule → (Forum | Service | Policy)**  
-- **Forum ↔ Service** (many-to-many)  
-- **Service ↔ Policy** (consumption)  
-- **User ↔ Activity** (participation log)  
-- **User ↔ CERT** (reputation/legitimacy metric)
+## 7. CERT (User Reputation System)
+- **Cooperation**: count (services added to others’ forums/policies)  
+- **Engagement**: response speed + average ratings  
+- **Retention**:  
+  - For free services: number of unique repeat users  
+  - For paid services: number of repeat sales  
+- **Trust**: followers/subscribers count  
+
+### Calculation
+- Service CERT = weighted sum of its metrics  
+- User CERT = average of all owned services’ CERTs  
 
 ---
 
-## Extensions
-- Payments: Stripe Connect, PayPal, others.  
-- Shopping cart supports multi-provider checkout.  
-- Future: Hardware-level EleuChip to embed PFSD protocol.
+## 8. Data
+- **id**: string
+- **type**: enum { File, APIResponse, IoTSignal, StructuredData }
+- **location**: storage reference (URL, bucket path, etc.)
+- **owner**: UserRef
+- **timestamp**: created/updated time
 
 ---
+
+## 9. Activity
+- **id**: string
+- **userRef**: UserRef
+- **entityRef**: Forum/Policy/ServiceRef
+- **role**: enum { Participant, Stakeholder, Owner }
+- **joinedAt**: timestamp
+
+---
+
+## Relationships Summary
+- Policy → Rules → Forum/Service/Policy
+- Forum ↔ Stakeholders (Users/Services)
+- Service ↔ Policy (consumes)
+- Service ↔ Forums (auto-generated from rules)
+- User ↔ Activities (forums/policies/services)
+- CERT is derived from **User + Services** activity
+
+---
+
+**Status:** Stable draft v2  
+This schema aligns with EleuScript and latest UX (Activities, Service pricing, CERT reputation).  
