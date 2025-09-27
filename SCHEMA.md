@@ -1,146 +1,154 @@
-# Eleutherios Schema
+# Eleutherios Schema Specification
 
-This schema defines the core entities of the Eleutherios MVP system, their relationships, and attributes.  
-It aligns with the PFSD model (Policy, Forum, Service, Data) and EleuScript execution model.  
+This document defines the core schema for the Eleutherios MVP platform, aligned with PFSD (Policy, Forum, Service, Data) and EleuScript conventions.
 
 ---
 
-## Entities
+## Core Entities
 
 ### Policy
 - **id**: string (UUID)
 - **name**: string
 - **description**: string
-- **rules**: [RuleRef]
-- **createdBy**: UserRef
+- **rules**: array of `RuleRef`
+- **createdBy**: `UserRef`
 - **createdAt**: timestamp
 - **updatedAt**: timestamp
+
+**Notes**:  
+Policies contain *rules*. Each rule points to a Forum, Service, or Policy. Policies are only instantiated when *consumed* by a Service.
 
 ---
 
 ### Rule
 - **id**: string
+- **policyId**: `PolicyRef`
 - **name**: string
-- **type**: enum { Forum, Service, Policy }
-- **targetRef**: ForumRef | ServiceRef | PolicyRef
-- **defaultStakeholders**: [ServiceRef] (optional, pre-populates forum membership)
-- **conditions**: JSON (optional)
-- **createdAt**: timestamp
+- **type**: enum(`forum`, `service`, `policy`)
+- **targetRef**: ID (ForumRef | ServiceRef | PolicyRef)
+- **defaultStakeholders**: array of `UserRef` (applies if type = forum)
+- **metadata**: object (rule-specific parameters)
 
 ---
 
 ### Forum
 - **id**: string
+- **policyId**: `PolicyRef`
 - **name**: string
 - **description**: string
-- **tags**: [string]
-- **linkedServices**: [ServiceRef]
-- **linkedPolicies**: [PolicyRef]
-- **linkedFiles**: [FileRef]
-- **messages**: [MessageRef]
-- **permissions**: [PermissionRef]
-- **createdBy**: UserRef
+- **tags**: array of strings
+- **linkedServices**: array of `ServiceRef`
+- **linkedFiles**: array of `FileRef`
+- **messages**: array of `Message`
+- **permissions**: object (default + overrides per stakeholder)
 - **createdAt**: timestamp
 
----
-
-### Forum Permissions
-Each stakeholder in a forum has a set of permissions (default = true unless overridden).
-
-- **addStakeholder**: boolean
-- **removeStakeholder**: boolean
-- **createSubForum**: boolean
-- **createMessage**: boolean
-- **removeOwnMessage**: boolean
-- **removeOthersMessage**: boolean
-- **uploadFile**: boolean
-- **removeOwnFile**: boolean
-- **removeOthersFile**: boolean
+**Permissions** (default per stakeholder):  
+- Add stakeholder [Yes|No]  
+- Remove stakeholder [Yes|No]  
+- Create sub-forum [Yes|No]  
+- Post message [Yes|No]  
+- Remove own message [Yes|No]  
+- Remove others’ messages [Yes|No]  
+- Upload file [Yes|No]  
+- Remove own file [Yes|No]  
+- Remove others’ files [Yes|No]  
 
 ---
 
 ### Service
 - **id**: string
+- **owner**: `UserRef`
 - **name**: string
 - **description**: string
-- **owner**: UserRef
-- **tags**: [string]
-- **policies**: [PolicyRef]
-- **forums**: [ForumRef]
-- **serviceAttributes**: [ServiceAttribute]   ← NEW
-- **status**: enum { active, inactive, archived }
-- **createdAt**: timestamp
-
-#### ServiceAttributes (NEW)
-A flexible key-value structure that captures service-specific attributes.  
-This allows modeling arbitrary rules like “Price”, “Size”, “Color”, “Quantity”.  
-
-- **attributeName**: string (e.g., "Price", "Size", "Color", "Quantity")  
-- **attributeType**: enum { string, number, enum, boolean }  
-- **value**: string | number | boolean | enum  
-- **unit**: string (optional, e.g., "NZD", "kg")  
-- **required**: boolean  
-
-Example for T-shirt Service:
-```json
-[
-  { "attributeName": "Price", "attributeType": "number", "value": 29.99, "unit": "NZD", "required": true },
-  { "attributeName": "Size", "attributeType": "enum", "value": "L", "required": true },
-  { "attributeName": "Color", "attributeType": "string", "value": "Blue", "required": true },
-  { "attributeName": "Quantity", "attributeType": "number", "value": 100, "required": true }
-]
-```
-
----
-
-### Data
-- **id**: string
-- **owner**: ServiceRef
-- **schema**: JSON schema definition
-- **storageRef**: URI (Firestore, GCP bucket, etc.)
+- **serviceType**: enum(`free`, `paid`)
+- **attributes**: `ServiceAttributes`
+- **linkedPolicies**: array of `PolicyRef`
+- **linkedForums**: array of `ForumRef`
+- **status**: enum(`active`, `pending`, `archived`)
 - **createdAt**: timestamp
 
 ---
 
-### Message
-- **id**: string
-- **forumRef**: ForumRef
-- **sender**: ServiceRef (user or agent posting)
-- **content**: string | JSON | FileRef
-- **timestamp**: timestamp
+### ServiceAttributes
+- **price**: number (nullable if free)
+- **currency**: string (ISO-4217)
+- **size**: string (e.g., "S", "M", "L", or dimension string)
+- **color**: string
+- **quantity**: number
+- **customAttributes**: object (extensible)
+
+**Note**:  
+Attributes are defined via rules. For example:  
+- Rule → Price (points to `PaymentService`)  
+- Rule → Size (points to a selection service)  
+- Rule → Color (points to a selection service)  
+- Rule → Quantity (points to stock service)
 
 ---
 
 ### User
 - **id**: string
-- **displayName**: string
+- **name**: string
 - **email**: string
-- **services**: [ServiceRef]
-- **forums**: [ForumRef]
-- **policies**: [PolicyRef]
-- **activities**: [ActivityRef]
+- **certNumber**: number (aggregate CERT score)
+- **services**: array of `ServiceRef`
+- **activities**: array of `PolicyRef | ForumRef` (quick navigation)
+- **createdAt**: timestamp
 
 ---
 
-### Activity
+### CERT
+Attached to both Services and Users.
+
+- **cooperation**: number  
+- **engagement**: number  
+- **retention**: number  
+  - Contextual:  
+    - For `free` services → number of repeat users.  
+    - For `paid` services → number of repeat buyers.  
+- **trust**: number  
+- **score**: number (aggregate)
+
+---
+
+### Data
 - **id**: string
-- **userRef**: UserRef
-- **linkedForum**: ForumRef
-- **linkedPolicy**: PolicyRef
-- **lastActive**: timestamp
+- **owner**: `UserRef`
+- **serviceId**: `ServiceRef`
+- **policyId**: `PolicyRef`
+- **forumId**: `ForumRef`
+- **payload**: object (raw or structured data)
+- **timestamp**: timestamp
 
 ---
 
 ## Relationships
-
-- Policy → Rule → (Forum | Service | Policy)
-- Forum ↔ Service (many-to-many)
-- Forum ↔ Policy (many-to-many)
-- Service ↔ Policy (many-to-many)
-- User ↔ Service (many-to-many)
-- User ↔ Forum (many-to-many)
-- Activity ↔ (Policy | Forum)
+- **Policy → Rule → Forum/Service/Policy**  
+- **Forum → Stakeholders (Users/Services)**  
+- **Service → Policy** (consumption = instantiation of rules)  
+- **User → Activities** (their live participation)  
+- **User/Service → CERT**  
 
 ---
 
-**Status:** Updated with `ServiceAttributes` section.
+## Example (T-Shirt Service)
+
+```eleuscript
+policy TshirtPolicy {
+  rule Price -> Service("StripePriceCapture", amount=25, currency="USD")
+  rule Size -> Service("DropdownSelect", options=["S","M","L"])
+  rule Color -> Service("DropdownSelect", options=["Red","Blue","Green"])
+  rule Quantity -> Service("InventoryCheck", initial=100)
+}
+```
+
+When consumed, this instantiates:
+- A pricing service
+- Size selector
+- Color selector
+- Stock checker  
+
+All tied together under the TshirtPolicy.
+```
+
