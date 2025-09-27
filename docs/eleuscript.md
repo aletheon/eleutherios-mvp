@@ -1,12 +1,25 @@
-# EleuScript Overview
+# EleuScript Specification
 
-**EleuScript** is a domain-specific, governance-oriented programming language that enables the definition, linkage, and execution of policies, forums, services, and data flows within the Eleutherios OS.
+EleuScript is the domain-specific language (DSL) for defining **Policies**, their **Rules**, and how those rules instantiate Forums, Services, or other Policies when consumed.
 
-Inspired by object-oriented and event-driven paradigms, EleuScript uses `policy` as its root object and supports runtime rule instantiation upon service consumption.
+It provides a programmable way to express the **Policy–Forum–Service–Data (PFSD)** architecture of Eleutherios.
 
 ---
 
-## 🧱 Core Syntax Example
+## Core Concepts
+
+- **Policy**: Root object in EleuScript (like `class` in OOP).  
+- **Rule**: Directive inside a Policy. Each Rule can point to:
+  - A Forum (instantiated space for stakeholders).  
+  - A Service (API, IoT device, human, AI, payment provider).  
+  - Another Policy (nested governance).  
+- **Consumption**: Rules are not executed until a Service consumes the Policy.  
+- **Stakeholders**: Entities (human or non-human) participating in Forums or Services.  
+- **Permissions**: Default and customizable actions stakeholders can take (see `schema.md`).
+
+---
+
+## Example Syntax
 
 ```eleuscript
 policy HousingPolicy {
@@ -16,131 +29,50 @@ policy HousingPolicy {
 }
 ```
 
----
-
-## 📐 Key Concepts
-
-### 1. `policy`
-
-The root construct. Policies are containers for governance logic.
-
-* Can contain multiple `rule` definitions.
-* May be consumed by services (analogue or digital).
-
-### 2. `rule`
-
-Defines the behavior or flow when the policy is consumed.
-Each rule can:
-
-* Instantiate a **Forum** for stakeholder communication.
-* Trigger or register a **Service** (API, IoT, person, AI, etc).
-* Reference another **Policy**, recursively.
-
-### 3. `Forum(...)`
-
-Declares a forum to be instantiated with default stakeholders.
-
-* Parameters: forum name, default members (services or users).
-
-### 4. `Service(...)`
-
-Describes a service to be executed when the policy is consumed.
-
-* Parameters: name, config options (currency, location, etc).
-
-### 5. Rule Instantiation Model
-
-Rules are not executed immediately. They are *instantiated dynamically* only when:
-
-* A Service consumes the Policy.
-* A Forum member triggers a Rule.
+**Notes:**  
+- Rules are *declarative*. Nothing runs until a Service consumes the Policy.  
+- Forums auto-populate with default stakeholders.  
+- Services connect to external or internal systems.  
 
 ---
 
-## 🎯 Runtime Behavior
+## Execution Model
 
-### When a Policy is Consumed:
-
-* Rules are evaluated for instantiation.
-* Forums are created with specified stakeholders.
-* Services are executed or registered.
-* Policy references are linked recursively.
-
----
-
-## 🧑‍⚖️ Stakeholders
-
-Stakeholders (services or users) may:
-
-* Consume a policy.
-* Join or create forums.
-* Be assigned permissions.
-* Trigger services.
-
-A stakeholder can be:
-
-* A human user
-* An IoT device
-* An AI agent
-* An external API
+1. **Define Policy** in EleuScript.  
+2. **Rules declared** (Forum, Service, or nested Policy).  
+3. **Consumption** by a Service instantiates the rules.  
+   - If Forum → creates a live collaboration space.  
+   - If Service → executes API/IoT/Human process.  
+   - If Policy → points to existing or creates new Policy at runtime.  
 
 ---
 
-## 🔐 Default Forum Permissions
+## Diagram
 
-Each stakeholder added to a forum gets default permissions:
-
-* [x] Add other stakeholders to the forum
-* [x] Remove other stakeholders
-* [x] Create sub-forum (they become superuser)
-* [x] Post messages
-* [x] Remove own messages
-* [x] Remove others' messages
-* [x] Upload files
-* [x] Remove own files
-* [x] Remove others' files
-
-These are modifiable via a **permissions panel** in the UI.
+![EleuScript Execution](images/eleuscript_execution.png)
 
 ---
 
-## 🛒 Payment Integration
+## Permissions (Forum Stakeholders)
 
-* Services can be free or paid.
-* Supports Stripe, Stripe Connect, PayPal, etc.
-* Services may be subscriptions or one-off charges.
-* Shopping carts can include global services from multiple providers.
+When a stakeholder is added to a Forum, defaults apply:
 
----
+- Add stakeholder/service [Yes|No]  
+- Remove stakeholder/service [Yes|No]  
+- Create sub-forum [Yes|No]  
+- Post message [Yes|No]  
+- Remove own message [Yes|No]  
+- Remove others’ messages [Yes|No]  
+- Upload file [Yes|No]  
+- Remove own file [Yes|No]  
+- Remove others’ files [Yes|No]  
 
-## 🔄 Comparison to OOP
-
-| OOP           | EleuScript                 |
-| ------------- | -------------------------- |
-| `class`       | `policy`                   |
-| `method`      | `rule`                     |
-| `object`      | `forum`, `service`, `data` |
-| `constructor` | `consumption`              |
+These can be modified by the Policy superuser.
 
 ---
 
-## 🌍 Architectural Mapping
+## Next Steps
 
-| TCP/IP Layer | PFSD Equivalent         |
-| ------------ | ----------------------- |
-| Application  | **Policy** (governance) |
-| Transport    | **Forum** (networking)  |
-| Session      | **Service** (execution) |
-| Data Link    | **Data** (persistence)  |
-
----
-
-## 🧠 Summary
-
-EleuScript allows communities to encode their governance protocols as executable objects. These can:
-
-* Scale across analogue + digital domains.
-* Be instantiated only when relevant.
-* Remain adaptive, composable, and auditable.
-
-The Policy → Forum/Service → Data stack reflects the PFSD protocol for a post-Westminster, Prior Unity-governed society.
+- Extend syntax for **conditions** and **triggers** (if/then rules).  
+- Define **Data Layer contracts** (schema alignment).  
+- Build interpreter prototype in Node.js/Python.  
