@@ -68,7 +68,7 @@ Each brief links to its screenshot for developer reference. Example:
 - **Phase 2 (6–24 months):** Scale to OS/IAAS layer, with policy editor/compiler.  
 - **Phase 3 (2–5 years):** Hardware integration (chips, protocols, low-level stack).  
 
-See [`roadmap.md`](./roadmap.md) for full details.
+See [`roadmap.md`](./docs/roadmap.md) for full details.
 
 ---
 
