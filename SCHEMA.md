@@ -1,134 +1,146 @@
-# Eleutherios Schema Specification (Updated)
+# Eleutherios Schema
 
-This schema describes the data model for Eleutherios, including **Policies, Forums, Services, Data, and ServiceAttributes**.  
-It aligns with the EleuScript specification, Forum permissions, and the Policy–Forum–Service–Data (PFSD) model.
+This schema defines the core entities of the Eleutherios MVP system, their relationships, and attributes.  
+It aligns with the PFSD model (Policy, Forum, Service, Data) and EleuScript execution model.  
 
 ---
 
-## 1. Core Entities
+## Entities
 
 ### Policy
-- **Definition:** A governance object that contains rules.  
-- **Fields:**
-  - `policyId` (string, unique)  
-  - `name` (string)  
-  - `description` (text)  
-  - `rules[]` (array of Rule objects)  
-  - `createdBy` (user/service ID)  
-  - `createdAt` (timestamp)  
-  - `updatedAt` (timestamp)  
+- **id**: string (UUID)
+- **name**: string
+- **description**: string
+- **rules**: [RuleRef]
+- **createdBy**: UserRef
+- **createdAt**: timestamp
+- **updatedAt**: timestamp
+
+---
 
 ### Rule
-- **Definition:** A unit of behavior inside a Policy.  
-- **Fields:**
-  - `ruleId` (string, unique)  
-  - `name` (string)  
-  - `type` (enum: `Forum`, `Service`, `Policy`)  
-  - `targetId` (reference → Forum/Service/Policy)  
-  - `parameters` (map of key-value pairs for configuration)  
-  - `defaultStakeholders[]` (user/service IDs auto-added when instantiated)  
+- **id**: string
+- **name**: string
+- **type**: enum { Forum, Service, Policy }
+- **targetRef**: ForumRef | ServiceRef | PolicyRef
+- **defaultStakeholders**: [ServiceRef] (optional, pre-populates forum membership)
+- **conditions**: JSON (optional)
+- **createdAt**: timestamp
 
-Rules only instantiate **at runtime** when consumed by a Service.
+---
 
 ### Forum
-- **Definition:** A discussion/action space instantiated from a Rule.  
-- **Fields:**
-  - `forumId` (string, unique)  
-  - `name` (string)  
-  - `description` (text)  
-  - `policyRef` (Policy ID that generated it)  
-  - `stakeholders[]` (array of user/service IDs)  
-  - `messages[]` (array of message objects)  
-  - `files[]` (storage references)  
-  - `permissions` (map per stakeholder, see below)  
+- **id**: string
+- **name**: string
+- **description**: string
+- **tags**: [string]
+- **linkedServices**: [ServiceRef]
+- **linkedPolicies**: [PolicyRef]
+- **linkedFiles**: [FileRef]
+- **messages**: [MessageRef]
+- **permissions**: [PermissionRef]
+- **createdBy**: UserRef
+- **createdAt**: timestamp
 
-#### Forum Permissions
-Each stakeholder has a default permission set:  
-- Add stakeholder [Yes|No]  
-- Remove stakeholder [Yes|No]  
-- Create sub-forum [Yes|No]  
-- Post message [Yes|No]  
-- Remove own message [Yes|No]  
-- Remove others’ message [Yes|No]  
-- Upload file [Yes|No]  
-- Remove own file [Yes|No]  
-- Remove others’ files [Yes|No]  
+---
 
-Permissions can be updated by the forum superuser.
+### Forum Permissions
+Each stakeholder in a forum has a set of permissions (default = true unless overridden).
+
+- **addStakeholder**: boolean
+- **removeStakeholder**: boolean
+- **createSubForum**: boolean
+- **createMessage**: boolean
+- **removeOwnMessage**: boolean
+- **removeOthersMessage**: boolean
+- **uploadFile**: boolean
+- **removeOwnFile**: boolean
+- **removeOthersFile**: boolean
+
+---
 
 ### Service
-- **Definition:** An executable function (analogue or digital).  
-- **Types:** Human, IoT, API, AI, SaaS, etc.  
-- **Fields:**
-  - `serviceId` (string, unique)  
-  - `name` (string)  
-  - `description` (text)  
-  - `policyRefs[]` (policies this service consumes)  
-  - `attributes` (ServiceAttributes, see below)  
-  - `owner` (user/service ID)  
-  - `status` (enum: Active/Pending/Archived)  
-  - `location` (geo)  
-  - `createdAt`, `updatedAt`  
+- **id**: string
+- **name**: string
+- **description**: string
+- **owner**: UserRef
+- **tags**: [string]
+- **policies**: [PolicyRef]
+- **forums**: [ForumRef]
+- **serviceAttributes**: [ServiceAttribute]   ← NEW
+- **status**: enum { active, inactive, archived }
+- **createdAt**: timestamp
+
+#### ServiceAttributes (NEW)
+A flexible key-value structure that captures service-specific attributes.  
+This allows modeling arbitrary rules like “Price”, “Size”, “Color”, “Quantity”.  
+
+- **attributeName**: string (e.g., "Price", "Size", "Color", "Quantity")  
+- **attributeType**: enum { string, number, enum, boolean }  
+- **value**: string | number | boolean | enum  
+- **unit**: string (optional, e.g., "NZD", "kg")  
+- **required**: boolean  
+
+Example for T-shirt Service:
+```json
+[
+  { "attributeName": "Price", "attributeType": "number", "value": 29.99, "unit": "NZD", "required": true },
+  { "attributeName": "Size", "attributeType": "enum", "value": "L", "required": true },
+  { "attributeName": "Color", "attributeType": "string", "value": "Blue", "required": true },
+  { "attributeName": "Quantity", "attributeType": "number", "value": 100, "required": true }
+]
+```
 
 ---
 
-## 2. ServiceAttributes
-
-Services may expose structured attributes for commercial or operational use.
-
-### Example Attributes (T-shirt Service)
-1. **Price** → Service that captures/returns the price.  
-   - Can be free, fixed, subscription, or usage-based.  
-2. **Size** → Service capturing available sizes (S, M, L, XL).  
-3. **Color** → Service capturing available colors.  
-4. **Quantity** → Service capturing stock/availability.  
-
-**Note:** Any attribute = a Rule → which must point to a Service, Forum, or Policy.  
-This ensures all attributes remain policy-aware and dynamic.
+### Data
+- **id**: string
+- **owner**: ServiceRef
+- **schema**: JSON schema definition
+- **storageRef**: URI (Firestore, GCP bucket, etc.)
+- **createdAt**: timestamp
 
 ---
 
-## 3. Data
-
-- **Definition:** Persistent storage of interactions, logs, and state.  
-- **Fields:**
-  - `dataId` (string, unique)  
-  - `owner` (user/service ID)  
-  - `type` (enum: message, transaction, document, analytic)  
-  - `content` (JSON blob or storage reference)  
-  - `createdAt` (timestamp)  
-  - `linkedPolicy`, `linkedForum`, `linkedService`  
+### Message
+- **id**: string
+- **forumRef**: ForumRef
+- **sender**: ServiceRef (user or agent posting)
+- **content**: string | JSON | FileRef
+- **timestamp**: timestamp
 
 ---
 
-## 4. Activities
-
-Each end-user has an `activities` collection tracking:  
-- Policies they are serving in.  
-- Forums they are members of.  
-- Services they own or consume.  
-
-Activities enable **quick navigation** to a user’s current contributions.
-
----
-
-## 5. Relationships
-
-- **Policy → Rule → Forum/Service/Policy** (instantiated only at consumption).  
-- **Service → PolicyRefs[]** (services consume policies).  
-- **Forum → Stakeholders** (each is a Service).  
-- **Attributes → always mapped to Service/Policy/Forum.**  
+### User
+- **id**: string
+- **displayName**: string
+- **email**: string
+- **services**: [ServiceRef]
+- **forums**: [ForumRef]
+- **policies**: [PolicyRef]
+- **activities**: [ActivityRef]
 
 ---
 
-## 6. Extensibility
-
-- Future attributes: subscription tiers, legal contracts, environmental metrics.  
-- Future rule types: event triggers, AI inference services.  
-- Future data links: blockchain notarisation, external registries.
+### Activity
+- **id**: string
+- **userRef**: UserRef
+- **linkedForum**: ForumRef
+- **linkedPolicy**: PolicyRef
+- **lastActive**: timestamp
 
 ---
 
-**Status:** Living specification.  
-Updates tracked in Git under `/docs/schema.md`.  
+## Relationships
 
+- Policy → Rule → (Forum | Service | Policy)
+- Forum ↔ Service (many-to-many)
+- Forum ↔ Policy (many-to-many)
+- Service ↔ Policy (many-to-many)
+- User ↔ Service (many-to-many)
+- User ↔ Forum (many-to-many)
+- Activity ↔ (Policy | Forum)
+
+---
+
+**Status:** Updated with `ServiceAttributes` section.
