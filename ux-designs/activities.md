@@ -1,80 +1,74 @@
-# UX Design Brief: Activities Screen
+# Activities Collection
 
-**Screen:** Activities  
-**Example:** A logged-in user (homeless person, KO staff, policymaker) sees all active policies, forums, and services they are participating in.  
+Each user in Eleutherios has an **activities collection** that tracks all of their live participation across **Policies**, **Forums**, and **Services**.  
+This provides quick navigation, a holistic view of their governance involvement, and a clear record of where they are currently serving.
 
 ---
 
 ## Purpose
-The **Activities** screen gives end-users a **single navigation hub** for all their current engagements.  
-It lists:
-- Forums they are a member of.  
-- Policies they are consuming.  
-- Services they are connected to.  
-
-This ensures users don’t lose track of where they are serving, collaborating, or consuming resources.  
+- Give end-users (e.g., KO staff, MSD clients, or individuals) a **dashboard of engagement**.  
+- Ensure **no stakeholder is “lost”** across multiple policies or forums.  
+- Provide **auditable trails** of participation and service consumption.
 
 ---
 
-## Key Components
+## Model
+- **activities** (per user)
+  - **policyRefs** → Policies the user is consuming or serving under.
+  - **forumRefs** → Forums the user is a stakeholder/member of.
+  - **serviceRefs** → Services the user owns, consumes, or participates in.
 
-1. **Header**
-   - Title: **My Activities**  
-   - User profile summary (photo, name, role).  
-
-2. **Activities List**
-   - Each item = a **Forum**, **Policy**, or **Service**.  
-   - Shows:
-     - Icon (Forum = speech bubble, Policy = scroll, Service = cog/hand).  
-     - Title (e.g., “Tenancy Forum”).  
-     - Linked Policy/Service context.  
-     - Last activity timestamp.  
-
-3. **Quick Actions**
-   - **Enter Forum** → go directly to discussions.  
-   - **View Policy** → open policy details.  
-   - **Open Service** → show service detail screen.  
-
-4. **Filters**
-   - By type: Forum / Policy / Service.  
-   - By recency: Last 7 days, last 30 days, all.  
+Each activity entry includes:
+- `id`: reference ID of the policy/forum/service
+- `type`: one of `Policy`, `Forum`, `Service`
+- `role`: e.g., stakeholder, consumer, policymaker, admin
+- `joinedAt`: timestamp of when user entered
+- `permissions`: effective permissions for this user in the context (see `schema.md > ForumPermissions`)
 
 ---
 
-## User Flow
-1. User logs in.  
-2. System queries their `activities` collection (forums, policies, services linked to their identity).  
-3. Activities list is displayed with most recent at top.  
-4. User taps any activity to open its detail screen.  
+## Example (Firestore)
+```json
+{
+  "activities": [
+    {
+      "id": "policy_housing123",
+      "type": "Policy",
+      "role": "Consumer",
+      "joinedAt": "2025-09-27T01:22:00Z"
+    },
+    {
+      "id": "forum_tenancy456",
+      "type": "Forum",
+      "role": "Stakeholder",
+      "permissions": {
+        "addStakeholder": true,
+        "removeStakeholder": false,
+        "createSubForum": true,
+        "postMessage": true,
+        "deleteOwnMessage": true,
+        "deleteOthersMessage": false
+      },
+      "joinedAt": "2025-09-27T01:25:00Z"
+    },
+    {
+      "id": "service_stripe789",
+      "type": "Service",
+      "role": "Consumer",
+      "joinedAt": "2025-09-27T01:27:00Z"
+    }
+  ]
+}
+```
 
 ---
 
-## Backend Considerations
-- **Firestore Collection:** `Activities` (per user).  
-- **Schema Fields:**
-  - `userId` → reference to User.  
-  - `activityType` → Enum: `Forum | Policy | Service`.  
-  - `refId` → reference to Forum/Policy/Service document.  
-  - `lastUpdated` → timestamp of last activity.  
-- **Indexing:**  
-  - By `userId` for quick lookup.  
-  - By `lastUpdated` for sorting.  
-
----
-
-## Permissions
-- Each user sees only activities they are a stakeholder of.  
-- Forums inherit default permissions (add/remove stakeholder, post, file upload, etc).  
-- Policies and Services follow their own schema rules.  
+## Visual
+![Activities Diagram](images/activities_diagram.png)
 
 ---
 
 ## Future Extensions
-- Notifications when activity updates (new message, rule change, service trigger).  
-- AI summarisation of recent activity across all forums.  
-- Export activity history for reporting.  
-
----
-
-**Status:** MVP priority.  
-Activities screen ensures stakeholders can navigate efficiently between their ongoing governance roles.
+- AI summarisation of a user’s activity log (daily/weekly).  
+- Graph view of policy–forum–service connections.  
+- Export activities for reporting (e.g., KO/MSD dashboards).
