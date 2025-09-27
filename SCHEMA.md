@@ -1,77 +1,90 @@
 # Eleutherios Schema (PFSD)
 
-## Core Entities
-
-### Policy
-- **Definition:** Container of governance rules.  
-- **Fields:**
-  - `id`: Unique identifier  
-  - `name`: String  
-  - `description`: String  
-  - `rules[]`: Array of RuleRefs  
-  - `owner`: ServiceRef  
-  - `createdAt`, `updatedAt`
-
-### Rule
-- **Definition:** Binding between Policy and execution target.  
-- **Types:** Forum | Service | Policy  
-- **Fields:**
-  - `id`  
-  - `policyId`  
-  - `type`: enum("Forum","Service","Policy")  
-  - `parameters`: JSON (target args)  
-  - `defaultStakeholders[]`  
-
-### Forum
-- **Definition:** Instantiated discussion space.  
-- **Fields:**
-  - `id`  
-  - `name`  
-  - `description`  
-  - `tags[]`  
-  - `linkedServices[]`  
-  - `linkedPolicies[]`  
-  - `linkedFiles[]`  
-  - `messages[]`  
-
-### Service
-- **Definition:** Actor (human, org, IoT, API, AI).  
-- **Fields:**
-  - `id`  
-  - `name`  
-  - `description`  
-  - `type`: enum("Human","Org","IoT","API","AI")  
-  - `consumedPolicies[]`  
-  - `status`  
-  - `location`  
-  - `metadata`  
-
-### Data
-- **Definition:** Storage + state of interactions.  
-- **Fields:**
-  - `id`  
-  - `ownerId`  
-  - `policyRefs[]`  
-  - `serviceRefs[]`  
-  - `payload`: JSON  
-  - `timestamp`  
+This schema defines the **Policy–Forum–Service–Data (PFSD)** architecture and its relationships.
 
 ---
 
-## Relationships
+## 1. Policy
+- **Definition:** The governance layer. Defines rules that can instantiate forums, trigger services, or reference other policies.
+- **Rules:**  
+  - `ForumRule`: points to a forum definition.  
+  - `ServiceRule`: points to a service (human, IoT, AI, API, etc.).  
+  - `PolicyRule`: points to another policy (can create new at runtime).  
 
-- **Policy → Rule** (1-to-many)  
-- **Rule → Forum | Service | Policy** (1-to-1 by type)  
-- **Service → Policy** (many-to-many via consumption)  
-- **Forum → Service** (many-to-many stakeholders)  
-- **Data → Service / Policy** (state tracking)  
+### Example (EleuScript)
+```eleuscript
+policy HousingPolicy {
+  rule TenancyAgreement -> Forum("Tenancy Forum", defaultStakeholders = ["Tenant", "KO"])
+  rule RentPayment -> Service("StripePayment", currency="NZD")
+  rule IdentityVerification -> Service("RealMeAuth")
+}
+```
 
 ---
 
-## Notes
-- Services can consume multiple Policies simultaneously.  
-- Forums are always contextual to Policies.  
-- Rules are dormant until instantiated by a consuming Service.  
-- Data logs ensure traceability, analytics, and compliance.
+## 2. Forum
+- **Definition:** Instantiated when a policy rule is consumed. Acts as the *network layer*.  
+- **Default Permissions (per stakeholder):**
+  1. Add stakeholder/service [Yes|No]  
+  2. Remove stakeholder/service [Yes|No]  
+  3. Create sub-forum (becomes superuser) [Yes|No]  
+  4. Create own message [Yes|No]  
+  5. Remove own message [Yes|No]  
+  6. Remove another’s message [Yes|No]  
+  7. Upload file [Yes|No]  
+  8. Remove own file [Yes|No]  
+  9. Remove another’s file [Yes|No]  
 
-📌 **Status:** Draft schema for Eleutherios MVP.
+- **Stakeholders:**  
+  - Policymakers  
+  - Forum members  
+  - Service consumers  
+  - Any analogue/digital service (IoT, API, AI, human, etc.)  
+
+---
+
+## 3. Service
+- **Definition:** An action or information process. Can consume policies.  
+- **Types:** Analogue (human role) or Digital (IoT, API, AI).  
+- **Payment Models:**  
+  - Free (stakeholder chooses)  
+  - Paid via **Stripe Connect** (default)  
+  - External (PayPal, 3rd party API, custom gateway)  
+- **Shopping Cart:**  
+  - Aggregates services globally.  
+  - Supports multi-provider payments.  
+  - Stripe Connect enables cross-merchant operations.  
+
+---
+
+## 4. Data
+- **Definition:** Storage layer. Captures artefacts, logs, and outputs.  
+- **Types:**  
+  - Policy docs & rules.  
+  - Forum transcripts.  
+  - Service outputs (transactions, API calls, IoT readings).  
+  - Files & attachments.  
+
+---
+
+## 5. Relationships
+- **Policy → Rule → (Forum | Service | Policy)**  
+- **Forum → Stakeholders | Files | Sub-forums**  
+- **Service → Policy (consumption)**  
+- **Data ↔ All (storage + retrieval)**  
+
+---
+
+## 6. Execution Flow
+1. A **Service** consumes a **Policy**.  
+2. Rules are instantiated → Forums, Services, or Policies.  
+3. Stakeholders interact in Forums.  
+4. Services trigger processes (analogue/digital).  
+5. Data is stored/retrieved.  
+
+---
+
+## 7. Future Extensions
+- AI summarisation of forums.  
+- Distributed ledger integration for policies.  
+- EleuScript OS + hardware chip embedding PFSD.  
