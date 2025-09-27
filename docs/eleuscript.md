@@ -1,109 +1,71 @@
-# EleuScript Specification (Prototype)
+# EleuScript Specification
 
-## Base Principle
-EleuScript is a **policy-oriented language**.  
-Whereas Object-Oriented Programming (OOP) begins with `class`, EleuScript begins with `policy`.
+EleuScript is the domain-specific language (DSL) for defining governance structures in **Eleutherios OS**.
 
-- **Root Type:** `policy`  
-- **Child Types:** `Forum`, `Service`, `Data`  
-- **Activation:** Rules do not instantiate until a `Service` consumes the `Policy`.
+Unlike traditional Object-Oriented Programming (OOP) where the root type is `class`, EleuScript’s root object is **`Policy`**.  
+Everything (Forum, Service, Data) derives from and is orchestrated by a Policy.
 
 ---
 
-## Policy
-A `policy` defines a **set of rules**.  
+## Core Concepts
 
-```eleuscript
-policy PolicyName {
-  rule RuleName -> TargetType(parameters)
-}
-```
+### Policy
+- A Policy defines the rules of governance.
+- Rules are pointers that can resolve to:
+  - **Forum** → instantiated discussion spaces.
+  - **Service** → processes, human or machine.
+  - **Policy** → nested governance (policies within policies).
 
-- **RuleName** → the label of the governance behaviour.  
-- **TargetType** → one of:  
-  - `Forum()` → Creates a discussion/coordination forum.  
-  - `Service()` → Executes or integrates a service (IoT, API, AI, human, payment, etc).  
-  - `Policy()` → Points to another Policy (nested governance).  
+### Rules
+- Dormant until consumed by a Service.
+- Once consumed, they instantiate their linked Forum, Service, or Policy.
+
+### Service
+- Any analogue or digital actor: human, API, IoT, AI, organisation.
+- Can consume multiple policies simultaneously.
+
+### Forum
+- Instantiated from a rule of type Forum.
+- Auto-populated with default stakeholders.
+- Stakeholders have permissions (add/remove, post, upload, etc).
+
+### Data
+- Underpins all entities.
+- Always referenced live (never static copy).
 
 ---
 
-## Rule Instantiation
-- Rules remain **dormant** until a Service **consumes** the Policy.  
-- When consumed, rules instantiate as their defined type.  
-- **Consumption is dynamic**: Services can consume multiple Policies simultaneously, merging behaviours.
+## Example
 
-### Example
 ```eleuscript
 policy HousingPolicy {
-  rule TenancyAgreement -> Forum("Tenancy Forum", defaultStakeholders=["Tenant", "KO"])
+  rule TenancyAgreement -> Forum("Tenancy Forum", defaultStakeholders = ["Tenant", "KO"])
   rule RentPayment -> Service("StripePayment", currency="NZD")
   rule IdentityVerification -> Service("RealMeAuth")
 }
 ```
 
-No rules run until:  
-```eleuscript
-Service("HomelessClientPortal").consume(HousingPolicy)
-```
-
-This creates:
-- `Tenancy Forum` with default stakeholders.  
-- Stripe rent payment link.  
-- RealMe authentication check.  
+- **TenancyAgreement** → Instantiates a Forum with Tenant + KO as default members.
+- **RentPayment** → Points to a Stripe-based payment service.
+- **IdentityVerification** → Delegates to RealMe authentication.
 
 ---
 
-## Forums
-- Forums are **instantiated conversations** around rules.  
-- Default stakeholders can be defined in the Policy or added later.  
-- Forums inherit governance context from the parent Policy.
+## Permissions (Forum Example)
+Each stakeholder in a Forum has default permissions:
+
+- Add another stakeholder/service [Yes|No]
+- Remove another stakeholder/service [Yes|No]
+- Create sub-forum [Yes|No]
+- Post/remove messages [Yes|No]
+- Upload/remove files [Yes|No]
+
+Superusers can adjust permissions.
 
 ---
 
-## Services
-- Services = analogue or digital actors.  
-- Services **consume Policies** to enact rules.  
-- A Service can consume **multiple Policies simultaneously** (composability).  
-- Runtime behaviour = aggregate of all rules from consumed Policies.
+## Execution Model
 
----
-
-## Data
-- Data = **state and storage**.  
-- Rules that output data push into the Data layer.  
-- Services can consume and emit Data.  
-
----
-
-## Example: Multi-Policy Consumption
-```eleuscript
-policy HealthcarePolicy {
-  rule Appointment -> Forum("GP Forum")
-  rule Payment -> Service("StripePayment", currency="NZD")
-}
-
-policy HousingPolicy {
-  rule RentAgreement -> Forum("Tenancy Forum", defaultStakeholders=["Tenant", "KO"])
-  rule RentPayment -> Service("StripePayment", currency="NZD")
-}
-
-Service("CitizenPortal").consume(HousingPolicy, HealthcarePolicy)
-```
-
-The `CitizenPortal` Service now consumes **both Housing + Healthcare**:  
-- Forums for tenancy + appointments.  
-- Payment services for rent + doctor’s fees.
-
----
-
-## Key Insights
-- **Policies define governance.**  
-- **Forums are the network layer.**  
-- **Services enact information processes.**  
-- **Data records and stores outcomes.**  
-- Together, this makes EleuScript the **executable form of PFSD**.
-
----
-
-📌 **Status:** Draft Spec.  
-This is the first prototype of EleuScript, defining PFSD as a programmable governance protocol.
+- Policies are declarative.
+- Rules instantiate **only at consumption** by a Service.
+- Services then dynamically apply the latest rules of all policies they consume.
