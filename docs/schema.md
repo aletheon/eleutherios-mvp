@@ -1,84 +1,79 @@
-# Eleutherios Schema (Updated)
+# Eleutherios Schema
 
-This schema defines the backend model for Policies, Forums, Services, and Data in Eleutherios.  
-It aligns with **EleuScript** execution.
-
----
-
-## Core Entities
-
-### Policy
-- `id`: string (UUID)
-- `name`: string
-- `description`: string
-- `rules`: array of Rule objects
-- `owner`: reference (Service/Stakeholder)
-
-### Rule
-- `id`: string
-- `type`: enum {Forum, Service, Policy}
-- `target`: reference (Forum, Service, Policy)
-- `parameters`: JSON object (config e.g., Stripe currency, default stakeholders)
-- `status`: {declared, instantiated}
-
-### Forum
-- `id`: string
-- `name`: string
-- `description`: string
-- `stakeholders`: array of references (Services)
-- `permissions`: JSON object per stakeholder
-- `linkedServices`: array of Service IDs
-- `linkedPolicies`: array of Policy IDs
-- `messages`: collection (threaded)
-
-### Service
-- `id`: string
-- `name`: string
-- `type`: enum {Human, API, IoT, AI, PaaS, IaaS}
-- `description`: string
-- `policiesConsumed`: array of Policy IDs
-- `owner`: stakeholder reference
-- `status`: {active, inactive}
-- `integration`: JSON (Stripe, PayPal, API keys, etc.)
-
-### Data
-- `id`: string
-- `name`: string
-- `type`: enum {file, record, transaction}
-- `location`: string (URL or storage ref)
-- `owner`: stakeholder reference
-- `created`: timestamp
+This file defines the core Firestore schema for the Eleutherios MVP, aligned with the Policy–Forum–Service–Data (PFSD) model.
 
 ---
 
-## Forum Permissions (Default)
-
-- Add stakeholder/service → default = No  
-- Remove stakeholder/service → default = No  
-- Create sub-forum → default = No  
-- Post message → default = Yes  
-- Remove own message → default = Yes  
-- Remove others’ messages → default = No  
-- Upload file → default = Yes  
-- Remove own file → default = Yes  
-- Remove others’ files → default = No  
-
-Superusers can override. Policies can enforce stricter/more open defaults.
+## Users
+`/users/{userId}`
+- name
+- email
+- identityProvider (Google, RealMe, MSD, KO, etc.)
+- metadata (contact info, profile photo, etc.)
 
 ---
 
-## Relationships
-
-- Policy → has many Rules.  
-- Rule → instantiates Forum/Service/Policy when consumed.  
-- Forum → links to Policies + Services + Data.  
-- Service → consumes Policies, interacts in Forums.  
-- Data → belongs to Forums/Services, referenced by Policies.
+## Policies
+`/policies/{policyId}`
+- title
+- description
+- rules: [ { type: Forum|Service|Policy, targetRef } ]
+- tags
+- createdBy
+- createdAt
 
 ---
 
-## Notes for Developers
+## Forums
+`/forums/{forumId}`
+- title
+- description
+- tags
+- photo
+- linkedServices: [serviceRefs]
+- linkedPolicies: [policyRefs]
+- createdBy
+- createdAt
 
-- Store in Firestore as hierarchical collections (Policy > Rule, Forum > Stakeholders).  
-- Consider Postgres for relational queries (many-to-many mapping).  
-- Permissions should be enforced at query layer (Firestore Security Rules).  
+**Permissions**
+- addStakeholder
+- removeStakeholder
+- createSubForum
+- postMessage
+- removeOwnMessage
+- removeOthersMessage
+- uploadFile
+- removeOwnFile
+- removeOthersFile
+
+---
+
+## Services
+`/services/{serviceId}`
+- title
+- description
+- type (digital|analogue)
+- provider (Stripe, PayPal, IoT, Human, API, AI)
+- metadata (capacity, price, location)
+- linkedPolicies: [policyRefs]
+- linkedForums: [forumRefs]
+
+---
+
+## Data
+`/data/{dataId}`
+- type (file, record, transaction)
+- storageProvider (Firestore, Google Drive, Dropbox)
+- metadata
+
+---
+
+## Activities
+`/users/{userId}/activities/{activityId}`
+- entityType: Forum | Policy | Service
+- entityRef: reference ID
+- status: Active | Archived | Pending
+- notifications: integer
+- lastUpdated: timestamp
+
+---
