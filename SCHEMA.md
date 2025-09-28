@@ -1,154 +1,164 @@
-# Eleutherios Schema (v2)
+# Eleutherios Schema (Updated)
 
-This schema defines the core data model for Eleutherios, aligned with the PFSD (Policy–Forum–Service–Data) architecture and EleuScript specification.
-
----
-
-## Core Entities
-
-### Policy
-- **id**: string (UUID)
-- **name**: string
-- **description**: text
-- **rules**: array of Rule objects
-- **createdBy**: UserRef
-- **createdAt**: timestamp
-- **updatedAt**: timestamp
-
-**Notes:**
-- Policies are the top-level objects in EleuScript (`policy { ... }`).
-- A Policy contains **rules**, each of which can reference a Forum, Service, or another Policy.
+This schema defines the core objects and relationships in Eleutherios, including governance (Policy), collaboration (Forum), service execution (Service), storage (Data), and new social/notification features.
 
 ---
 
-### Rule
-- **id**: string (UUID)
-- **name**: string (e.g., `RentPayment`)
-- **type**: enum [Forum, Service, Policy]
-- **targetRef**: ForumRef | ServiceRef | PolicyRef
-- **parameters**: key/value map (optional)
-- **defaultStakeholders**: array of UserRef (only if type = Forum)
+## Policy
+```yaml
+Policy {
+  id: string
+  name: string
+  description: string
+  visibility: enum("public", "private")   # determines discoverability
+  rules: [RuleRef]
+  owner: UserRef
+  createdAt: timestamp
+}
+```
 
-**Instantiation:**  
-Rules are **not executed** until the Policy is *consumed* by a Service.
-
----
-
-### Forum
-- **id**: string (UUID)
-- **name**: string
-- **description**: text
-- **policyRef**: PolicyRef (from rule instantiation)
-- **members**: array of StakeholderRef
-- **messages**: array of Message objects
-- **permissions**: map<UserRef, PermissionSet>
-- **createdAt**: timestamp
-
-#### Forum Permissions
-Each stakeholder has a **PermissionSet** with defaults:  
-- Add stakeholder/service: Yes/No  
-- Remove stakeholder/service: Yes/No  
-- Create sub-forum (superuser of it): Yes/No  
-- Create message: Yes/No  
-- Remove own message: Yes/No  
-- Remove others' messages: Yes/No  
-- Upload file: Yes/No  
-- Remove own file: Yes/No  
-- Remove others’ files: Yes/No  
+- **Public Policy**: visible to every stakeholder, anyone can consume.
+- **Private Policy**: only visible to the creator or designated consumers.
 
 ---
 
-### Service
-- **id**: string (UUID)
-- **name**: string
-- **description**: text
-- **owner**: UserRef
-- **policyRefs**: array of PolicyRef (services consume policies)
-- **attributes**: ServiceAttributes
-- **status**: enum [Active, Pending, Archived]
-- **location**: geo/string
-- **createdAt**: timestamp
+## Rule
+```yaml
+Rule {
+  id: string
+  name: string
+  type: enum("forum","service","policy")
+  target: ForumRef | ServiceRef | PolicyRef
+  defaultStakeholders: [UserRef]
+}
+```
 
-#### ServiceAttributes
-- **price**: number (nullable, if free)
-- **currency**: string (e.g., "NZD", "USD")
-- **size**: string (e.g., "S", "M", "L", or arbitrary)
-- **color**: string
-- **quantity**: integer (remaining stock/capacity)
-
-**Examples:**  
-- A doctor’s consultation service (`price=120, currency=NZD`).  
-- A free food distribution service (`price=null`).  
-- A T-shirt sale service (`price=25, size=M, color=red, quantity=10`).  
+Rules map to Forums, Services, or nested Policies.
 
 ---
 
-### User
-- **id**: string (UUID)
-- **name**: string
-- **email**: string
-- **services**: array of ServiceRef
-- **activities**: array of ActivityRef
-- **certScore**: CERT object
-- **createdAt**: timestamp
+## Forum
+```yaml
+Forum {
+  id: string
+  name: string
+  description: string
+  linkedServices: [ServiceRef]
+  linkedPolicies: [PolicyRef]
+  linkedFiles: [FileRef]
+  stakeholders: [UserRef]
+  permissions: [Permission]
+}
+```
 
-#### CERT (Ranking System)
-- **cooperation**: int  
-  (How many other services you add into policies/forums + frequency)  
-- **engagement**: int  
-  (Response speed to notifications, + good ratings/reviews)  
-- **retention**: int  
-  - If free service: number of follow-up *uses*  
-  - If paid service: number of follow-up *sales*  
-- **trust**: int  
-  (Number of followers/subscribers to your service)  
-
-User’s **CERT Number** = average of all service-level CERTs.
-
----
-
-### Activity
-Tracks what each user is actively serving in.  
-- **id**: string
-- **userRef**: UserRef
-- **entityType**: enum [Policy, Forum, Service]
-- **entityRef**: PolicyRef | ForumRef | ServiceRef
-- **joinedAt**: timestamp
-
-Appears in user’s *Activities collection* for quick navigation.
+### Permissions
+```yaml
+Permission {
+  stakeholder: UserRef
+  canAddStakeholder: boolean
+  canRemoveStakeholder: boolean
+  canCreateSubforum: boolean
+  canCreateMessage: boolean
+  canRemoveOwnMessage: boolean
+  canRemoveOthersMessage: boolean
+  canAddFile: boolean
+  canRemoveOwnFile: boolean
+  canRemoveOthersFile: boolean
+}
+```
 
 ---
 
-### Data
-- **id**: string (UUID)
-- **owner**: UserRef
-- **type**: enum [File, Record, Stream]
-- **storageRef**: URI (cloud, IPFS, etc.)
-- **linkedTo**: PolicyRef | ServiceRef | ForumRef
-- **createdAt**: timestamp
+## Service
+```yaml
+Service {
+  id: string
+  name: string
+  description: string
+  owner: UserRef
+  policies: [PolicyRef]
+  subscribers: [UserRef]       # users who favourited or subscribed
+  CERT: number                 # Cooperation, Engagement, Retention, Trust
+  attributes: ServiceAttributes
+}
+```
+
+### ServiceAttributes
+```yaml
+ServiceAttributes {
+  price: number | null          # free if null
+  currency: string | null
+  size: string | null           # e.g., S, M, L, XL
+  color: string | null
+  quantity: number | null
+}
+```
 
 ---
 
-## Relationships
-
-- Policy → Rule(s)
-- Rule → Forum | Service | Policy
-- Forum → Members (Stakeholders = Users or Services)
-- Service → Consumes Policies
-- User → Provides Services
-- User → Has Activities
-- User/Service → CERT Ranking
-- Data → Linked to Policy/Service/Forum
-
----
-
-## Notes for Developers
-- All entities should be Firestore collections (NoSQL) or mapped relationally (Postgres).  
-- Ensure **referential integrity** (refs must resolve to existing entities).  
-- CERT scores should be recalculated asynchronously (e.g., Cloud Functions).  
-- ServiceAttributes must be flexible — new attributes may be added by schema extension.  
-- Forum permissions should be configurable per-member, but always with sensible defaults.
+## Data
+```yaml
+Data {
+  id: string
+  type: enum("file","record","stream")
+  storageRef: string
+  linkedTo: PolicyRef | ForumRef | ServiceRef
+}
+```
 
 ---
 
-**Status:** Stable v2 (aligned with EleuScript + UX designs)
+## User
+```yaml
+User {
+  id: string
+  name: string
+  email: string
+  following: [UserRef]         # who this user follows
+  followers: [UserRef]
+  favourites: [ServiceRef]     # subscribed services
+  notifications: [FeedItem]    # inbox of feed events
+  activities: [ActivityRef]    # forums/policies they are active in
+  CERT: number                 # aggregated CERT score
+}
+```
+
+---
+
+## CERT Metrics
+- **Cooperation**: number of external services added to policies/forums, frequency.  
+- **Engagement**: response speed to notifications, ratings/reviews.  
+- **Retention**:  
+  - Non-profit/free services: repeat *uses*.  
+  - Paid/for-profit services: repeat *sales*.  
+- **Trust**: followers, subscribers, overall reliability.
+
+---
+
+## FeedItem (Newsfeed & Notifications)
+```yaml
+FeedItem {
+  id: string
+  sourceType: enum("service","policy","forum","user")
+  sourceId: string
+  message: string
+  timestamp: timestamp
+  read: boolean
+}
+```
+
+Displayed in a **newsfeed/dashboard**, similar to social media.
+
+---
+
+## Activity
+```yaml
+Activity {
+  id: string
+  user: UserRef
+  forum: ForumRef | null
+  policy: PolicyRef | null
+  role: string        # "stakeholder", "superuser", "consumer"
+  joinedAt: timestamp
+}
+```
