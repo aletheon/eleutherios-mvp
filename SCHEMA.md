@@ -1,108 +1,140 @@
-# Eleutherios Schema Specification
+# Schema v2 – Eleutherios Data & Execution Model
+
+This version codifies **Policies, Forums, Services, Data**, plus extended rules for **public/private policies, CERT scoring, service attributes, following/favouriting, and newsfeed**.
+
+---
 
 ## Core Entities
 
 ### Policy
-- **Attributes:**
-  - `id`: unique identifier
-  - `name`: string
-  - `description`: string
-  - `visibility`: enum (`public` | `private`)
-  - `owner`: userRef
-  - `rules`: list of Rule objects
-  - `followers`: list of userRefs (users who follow this policy)
-  - `createdAt` / `updatedAt`: timestamps
+- **Fields**
+  - `id` (UUID)
+  - `name`
+  - `description`
+  - `ownerId` (User / Service)
+  - `visibility` → `public | private`
+  - `rules[]` (Rule objects)
+  - `createdAt`, `updatedAt`
+- **Notes**
+  - Public policies can be consumed by anyone.
+  - Private policies only visible to creator or designated consumers.
 
-- **Behavior:**
-  - Public policies are visible and consumable by all stakeholders.
-  - Private policies are visible only to their creator and designated consumers.
+---
 
 ### Rule
-- **Attributes:**
-  - `id`: unique identifier
-  - `type`: enum (`Forum` | `Service` | `Policy`)
-  - `targetRef`: reference to forum/service/policy
-  - `parameters`: optional config (e.g., default stakeholders for forum)
+- **Fields**
+  - `id` (UUID)
+  - `name`
+  - `type` → `forum | service | policy`
+  - `targetRef` → points to Forum, Service, or Policy
+  - `defaultStakeholders[]` (auto-added to Forums at instantiation)
+  - `params` (key–value metadata)
+- **Notes**
+  - Rules **instantiate** only when a Policy is consumed.
 
-- **Instantiation:**
-  - Rules are not instantiated until a Policy is consumed by a Service.
+---
 
 ### Forum
-- **Attributes:**
-  - `id`, `name`, `description`
-  - `policyRef`: policy that spawned this forum
-  - `members`: list of stakeholders/services
-  - `messages`: collection of message objects
-  - `permissions`: map of stakeholder → permission set
+- **Fields**
+  - `id` (UUID)
+  - `policyId`
+  - `name`
+  - `stakeholders[]` (users/services with permissions)
+  - `permissions[]` (matrix of stakeholder rights)
+  - `messages[]`
+  - `files[]`
+  - `createdAt`, `updatedAt`
+- **Permissions Matrix (default)**
+  - Add/remove stakeholders
+  - Create sub-forum
+  - Add/remove messages
+  - Add/remove files
+- **Notes**
+  - Forums = **network layer**, discussion + coordination.
 
-- **Permissions (defaults):**
-  - Add stakeholder/service [Yes|No]
-  - Remove stakeholder/service [Yes|No]
-  - Create sub-forum (becoming superuser) [Yes|No]
-  - Create message [Yes|No]
-  - Remove own message [Yes|No]
-  - Remove others' messages [Yes|No]
-  - Upload file [Yes|No]
-  - Remove own file [Yes|No]
-  - Remove others' files [Yes|No]
+---
 
 ### Service
-- **Attributes:**
-  - `id`, `name`, `description`
-  - `owner`: userRef
-  - `policyRefs`: list of policies consumed
-  - `type`: enum (`digital`, `analogue`)
-  - `attributes`: ServiceAttributes (see below)
-  - `forums`: list of forums linked to this service
-  - `status`: Active / Pending / Archived
+- **Fields**
+  - `id` (UUID)
+  - `name`
+  - `description`
+  - `ownerId`
+  - `attributes`
+    - `price` (numeric, 0 = free)
+    - `size` (string, e.g. “L”, “XL” or dimensions)
+    - `color`
+    - `quantity` (available units)
+  - `status` → active | inactive | archived
+  - `policyRefs[]`
+  - `forumRefs[]`
+  - `transactions[]`
+- **Notes**
+  - A Service can be analogue (human, org) or digital (IoT, API, AI).
+  - May be free or priced (Stripe/PayPal/etc integration).
+  - Services are the **information layer**.
 
-- **ServiceAttributes (examples):**
-  - `price`: numeric, currency, free flag
-  - `size`: string or enum (S, M, L, etc.)
-  - `color`: string
-  - `quantity`: integer (remaining stock/capacity)
-  - Flexible: services may define arbitrary attributes, but all must point to a Service/Forum/Policy to do useful work.
+---
 
 ### Data
-- **Attributes:**
-  - `id`, `owner`, `policyRef`
-  - `type`: file, record, API result, etc.
-  - `storageRef`: pointer to storage layer
-  - Used by services and forums for persistence and exchange.
+- **Fields**
+  - `id` (UUID)
+  - `serviceId | forumId | policyId`
+  - `type` → transaction | log | file | cert
+  - `payload` (JSON)
+  - `createdAt`
+- **Notes**
+  - Data = **storage layer** (state of interactions).
+  - Used for CERT metrics, logs, analytics.
+
+---
 
 ### User
-- **Attributes:**
-  - `id`, `name`, `email`, `photo`
-  - `followers`: list of userRefs
-  - `following`: list of userRefs
-  - `favourites`: list of serviceRefs
-  - `activities`: list of active policies/forums/services
-  - `CERT`: aggregated score across services
-  - `newsfeed`: dynamic list of updates from followed/favourited services/users
+- **Fields**
+  - `id` (UUID)
+  - `name`
+  - `profile`
+  - `certScore`
+  - `followers[]`
+  - `following[]`
+  - `favourites[]` (services, policies, forums)
+- **CERT Calculation**
+  - **C**ooperation: adding others’ services to policies/forums
+  - **E**ngagement: response time + ratings/reviews
+  - **R**etention: (profit) # follow-up sales; (free) # repeat uses
+  - **T**rust: followers + subscribers
+  - User.certScore = aggregate of their Services’ CERT
 
-- **CERT Dimensions:**
-  - Cooperation: frequency of adding others’ services to policies/forums
-  - Engagement: responsiveness + positive ratings
-  - Retention: 
-    - For paid services: how many people buy and return
-    - For free/non-profit services: how many people use and return
-  - Trust: followers + subscribers
+---
+
+### Newsfeed
+- **Fields**
+  - `id` (UUID)
+  - `userId`
+  - `items[]`
+    - `sourceType` → service | forum | policy | user
+    - `eventType` → update | newMessage | newFile | statusChange
+    - `createdAt`
+- **Notes**
+  - Feeds aggregate updates from favourites, follows, subscriptions.
+  - Default landing dashboard for active users.
 
 ---
 
 ## Relationships
-
-- Policy → Rule → (Forum | Service | Policy)
-- Forum ↔ Members (services/stakeholders)
-- Service ↔ Policies (consumed)
-- User ↔ Services (owned, favourited)
-- User ↔ Policies/Forums (activities, participation)
-- Newsfeed aggregates events across services, forums, and policies.
+- `Policy -> Rule -> Forum/Service/Policy`
+- `Forum -> Stakeholders (Users/Services)`
+- `Service -> PolicyRefs (consumed policies)`
+- `Data -> Any entity`
+- `User -> CERT (derived from Service performance)`
+- `Newsfeed -> User follows/favourites`
 
 ---
 
-## Extensions
-
-- Notifications for service updates, new posts, status changes.
-- Newsfeed is central hub for engagement.
-- Following/favouriting system ties into CERT (Trust & Engagement).
+## Execution Flow
+1. **Policy defined** (with rules).  
+2. **Service consumes Policy** → rules instantiated.  
+3. Forums, Services, or linked Policies activated.  
+4. Stakeholders engage in Forums or use Services.  
+5. Data captured (transactions, logs, CERT).  
+6. Users notified via Newsfeed.
