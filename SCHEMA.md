@@ -1,164 +1,108 @@
-# Eleutherios Schema (Updated)
+# Eleutherios Schema Specification
 
-This schema defines the core objects and relationships in Eleutherios, including governance (Policy), collaboration (Forum), service execution (Service), storage (Data), and new social/notification features.
+## Core Entities
 
----
+### Policy
+- **Attributes:**
+  - `id`: unique identifier
+  - `name`: string
+  - `description`: string
+  - `visibility`: enum (`public` | `private`)
+  - `owner`: userRef
+  - `rules`: list of Rule objects
+  - `followers`: list of userRefs (users who follow this policy)
+  - `createdAt` / `updatedAt`: timestamps
 
-## Policy
-```yaml
-Policy {
-  id: string
-  name: string
-  description: string
-  visibility: enum("public", "private")   # determines discoverability
-  rules: [RuleRef]
-  owner: UserRef
-  createdAt: timestamp
-}
-```
+- **Behavior:**
+  - Public policies are visible and consumable by all stakeholders.
+  - Private policies are visible only to their creator and designated consumers.
 
-- **Public Policy**: visible to every stakeholder, anyone can consume.
-- **Private Policy**: only visible to the creator or designated consumers.
+### Rule
+- **Attributes:**
+  - `id`: unique identifier
+  - `type`: enum (`Forum` | `Service` | `Policy`)
+  - `targetRef`: reference to forum/service/policy
+  - `parameters`: optional config (e.g., default stakeholders for forum)
 
----
+- **Instantiation:**
+  - Rules are not instantiated until a Policy is consumed by a Service.
 
-## Rule
-```yaml
-Rule {
-  id: string
-  name: string
-  type: enum("forum","service","policy")
-  target: ForumRef | ServiceRef | PolicyRef
-  defaultStakeholders: [UserRef]
-}
-```
+### Forum
+- **Attributes:**
+  - `id`, `name`, `description`
+  - `policyRef`: policy that spawned this forum
+  - `members`: list of stakeholders/services
+  - `messages`: collection of message objects
+  - `permissions`: map of stakeholder → permission set
 
-Rules map to Forums, Services, or nested Policies.
+- **Permissions (defaults):**
+  - Add stakeholder/service [Yes|No]
+  - Remove stakeholder/service [Yes|No]
+  - Create sub-forum (becoming superuser) [Yes|No]
+  - Create message [Yes|No]
+  - Remove own message [Yes|No]
+  - Remove others' messages [Yes|No]
+  - Upload file [Yes|No]
+  - Remove own file [Yes|No]
+  - Remove others' files [Yes|No]
 
----
+### Service
+- **Attributes:**
+  - `id`, `name`, `description`
+  - `owner`: userRef
+  - `policyRefs`: list of policies consumed
+  - `type`: enum (`digital`, `analogue`)
+  - `attributes`: ServiceAttributes (see below)
+  - `forums`: list of forums linked to this service
+  - `status`: Active / Pending / Archived
 
-## Forum
-```yaml
-Forum {
-  id: string
-  name: string
-  description: string
-  linkedServices: [ServiceRef]
-  linkedPolicies: [PolicyRef]
-  linkedFiles: [FileRef]
-  stakeholders: [UserRef]
-  permissions: [Permission]
-}
-```
+- **ServiceAttributes (examples):**
+  - `price`: numeric, currency, free flag
+  - `size`: string or enum (S, M, L, etc.)
+  - `color`: string
+  - `quantity`: integer (remaining stock/capacity)
+  - Flexible: services may define arbitrary attributes, but all must point to a Service/Forum/Policy to do useful work.
 
-### Permissions
-```yaml
-Permission {
-  stakeholder: UserRef
-  canAddStakeholder: boolean
-  canRemoveStakeholder: boolean
-  canCreateSubforum: boolean
-  canCreateMessage: boolean
-  canRemoveOwnMessage: boolean
-  canRemoveOthersMessage: boolean
-  canAddFile: boolean
-  canRemoveOwnFile: boolean
-  canRemoveOthersFile: boolean
-}
-```
+### Data
+- **Attributes:**
+  - `id`, `owner`, `policyRef`
+  - `type`: file, record, API result, etc.
+  - `storageRef`: pointer to storage layer
+  - Used by services and forums for persistence and exchange.
 
----
+### User
+- **Attributes:**
+  - `id`, `name`, `email`, `photo`
+  - `followers`: list of userRefs
+  - `following`: list of userRefs
+  - `favourites`: list of serviceRefs
+  - `activities`: list of active policies/forums/services
+  - `CERT`: aggregated score across services
+  - `newsfeed`: dynamic list of updates from followed/favourited services/users
 
-## Service
-```yaml
-Service {
-  id: string
-  name: string
-  description: string
-  owner: UserRef
-  policies: [PolicyRef]
-  subscribers: [UserRef]       # users who favourited or subscribed
-  CERT: number                 # Cooperation, Engagement, Retention, Trust
-  attributes: ServiceAttributes
-}
-```
-
-### ServiceAttributes
-```yaml
-ServiceAttributes {
-  price: number | null          # free if null
-  currency: string | null
-  size: string | null           # e.g., S, M, L, XL
-  color: string | null
-  quantity: number | null
-}
-```
+- **CERT Dimensions:**
+  - Cooperation: frequency of adding others’ services to policies/forums
+  - Engagement: responsiveness + positive ratings
+  - Retention: 
+    - For paid services: how many people buy and return
+    - For free/non-profit services: how many people use and return
+  - Trust: followers + subscribers
 
 ---
 
-## Data
-```yaml
-Data {
-  id: string
-  type: enum("file","record","stream")
-  storageRef: string
-  linkedTo: PolicyRef | ForumRef | ServiceRef
-}
-```
+## Relationships
+
+- Policy → Rule → (Forum | Service | Policy)
+- Forum ↔ Members (services/stakeholders)
+- Service ↔ Policies (consumed)
+- User ↔ Services (owned, favourited)
+- User ↔ Policies/Forums (activities, participation)
+- Newsfeed aggregates events across services, forums, and policies.
 
 ---
 
-## User
-```yaml
-User {
-  id: string
-  name: string
-  email: string
-  following: [UserRef]         # who this user follows
-  followers: [UserRef]
-  favourites: [ServiceRef]     # subscribed services
-  notifications: [FeedItem]    # inbox of feed events
-  activities: [ActivityRef]    # forums/policies they are active in
-  CERT: number                 # aggregated CERT score
-}
-```
+## Extensions
 
----
-
-## CERT Metrics
-- **Cooperation**: number of external services added to policies/forums, frequency.  
-- **Engagement**: response speed to notifications, ratings/reviews.  
-- **Retention**:  
-  - Non-profit/free services: repeat *uses*.  
-  - Paid/for-profit services: repeat *sales*.  
-- **Trust**: followers, subscribers, overall reliability.
-
----
-
-## FeedItem (Newsfeed & Notifications)
-```yaml
-FeedItem {
-  id: string
-  sourceType: enum("service","policy","forum","user")
-  sourceId: string
-  message: string
-  timestamp: timestamp
-  read: boolean
-}
-```
-
-Displayed in a **newsfeed/dashboard**, similar to social media.
-
----
-
-## Activity
-```yaml
-Activity {
-  id: string
-  user: UserRef
-  forum: ForumRef | null
-  policy: PolicyRef | null
-  role: string        # "stakeholder", "superuser", "consumer"
-  joinedAt: timestamp
-}
-```
+- Notifications for service updates, new posts, status changes.
+- Newsfeed is central hub for engagement.
+- Following/favouriting system ties into CERT (Trust & Engagement).
