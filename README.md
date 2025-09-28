@@ -62,7 +62,7 @@ policy HousingPolicy {
 A Service may consume multiple Policies simultaneously.  
 Policies = templates; Services = runtime consumers.
 
-See [`eleuscript.md`](eleuscript.md) for full spec and [`examples.md`](examples.md) for copy-paste snippets.
+See [`eleuscript.md`](docs/eleuscript.md) for full spec and [`examples.md`](docs/examples.md) for copy-paste snippets.
 
 ---
 
