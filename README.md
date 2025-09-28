@@ -139,7 +139,7 @@ eleutherios-mvp/
 We welcome contributors — developers, designers, researchers, and community builders.  
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for guidelines.  
 
-Governance of the repo is transparent — see [`GOVERNANCE.md`](GOVERNANCE.md).
+Governance of the repo is transparent — see [`GOVERNANCE.md`](governance.md).
 
 ---
 
