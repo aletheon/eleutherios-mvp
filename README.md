@@ -72,7 +72,7 @@ See [`eleuscript.md`](eleuscript.md) for full spec and [`examples.md`](examples.
 Shows how **Policies** define **Rules** that instantiate into **Forums, Services, or PolicyRefs**, which ultimately operate on **Data**.  
 This is the low-level execution path programmers need to implement.
 
-![Developer View](eleuscript_execution_dev.png)
+![Developer View](docs/diagrams/eleuscript_execution_dev.png)
 
 ---
 
@@ -85,7 +85,7 @@ Maps PFSD into accessible terms:
 
 Also includes **ServiceAttributes** (Price, Size, Color, Quantity) and the **CERT** trust model (Cooperation, Engagement, Retention, Trust).
 
-![Stakeholder View](eleuscript_execution_stakeholder.png)
+![Stakeholder View](docs/diagrams/eleuscript_execution_stakeholder.png)
 
 ---
 
