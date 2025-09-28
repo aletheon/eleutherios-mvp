@@ -1,140 +1,163 @@
-# Schema v2 – Eleutherios Data & Execution Model
+# Eleutherios Schema v2
 
-This version codifies **Policies, Forums, Services, Data**, plus extended rules for **public/private policies, CERT scoring, service attributes, following/favouriting, and newsfeed**.
-
----
-
-## Core Entities
-
-### Policy
-- **Fields**
-  - `id` (UUID)
-  - `name`
-  - `description`
-  - `ownerId` (User / Service)
-  - `visibility` → `public | private`
-  - `rules[]` (Rule objects)
-  - `createdAt`, `updatedAt`
-- **Notes**
-  - Public policies can be consumed by anyone.
-  - Private policies only visible to creator or designated consumers.
+## Overview
+This schema defines the core data models of the **Policy–Forum–Service–Data (PFSD)** protocol as implemented in Eleutherios. It integrates governance concepts with technical system requirements and supports both analogue and digital stakeholders.
 
 ---
 
-### Rule
-- **Fields**
-  - `id` (UUID)
-  - `name`
-  - `type` → `forum | service | policy`
-  - `targetRef` → points to Forum, Service, or Policy
-  - `defaultStakeholders[]` (auto-added to Forums at instantiation)
-  - `params` (key–value metadata)
-- **Notes**
-  - Rules **instantiate** only when a Policy is consumed.
+## 1. Policy
+
+**Description:**  
+Policies are the root governance objects. They contain rules that define how services, forums, or other policies are instantiated and interact.
+
+**Fields:**
+- `id` (string, UUID)  
+- `title` (string)  
+- `description` (string, markdown supported)  
+- `visibility`: `public | private`  
+- `ownerId` (ref → User)  
+- `rules[]` (array of Rule objects)  
+- `createdAt` (timestamp)  
+- `updatedAt` (timestamp)  
 
 ---
 
-### Forum
-- **Fields**
-  - `id` (UUID)
-  - `policyId`
-  - `name`
-  - `stakeholders[]` (users/services with permissions)
-  - `permissions[]` (matrix of stakeholder rights)
-  - `messages[]`
-  - `files[]`
-  - `createdAt`, `updatedAt`
-- **Permissions Matrix (default)**
-  - Add/remove stakeholders
-  - Create sub-forum
-  - Add/remove messages
-  - Add/remove files
-- **Notes**
-  - Forums = **network layer**, discussion + coordination.
+## 2. Rule
+
+**Description:**  
+Rules define the active behaviors inside a policy. They are **pointers** to other entities and only instantiate at runtime when consumed by a Service.
+
+**Fields:**
+- `id` (string, UUID)  
+- `name` (string)  
+- `type`: `Forum | Service | PolicyRef`  
+- `targetRef`: (ref → Forum, Service, Policy)  
+- `defaultStakeholders[]` (array of User/Service IDs, only for Forum rules)  
+- `parameters` (JSON, e.g., currency, size options, API endpoint)  
 
 ---
 
-### Service
-- **Fields**
-  - `id` (UUID)
-  - `name`
-  - `description`
-  - `ownerId`
-  - `attributes`
-    - `price` (numeric, 0 = free)
-    - `size` (string, e.g. “L”, “XL” or dimensions)
-    - `color`
-    - `quantity` (available units)
-  - `status` → active | inactive | archived
-  - `policyRefs[]`
-  - `forumRefs[]`
-  - `transactions[]`
-- **Notes**
-  - A Service can be analogue (human, org) or digital (IoT, API, AI).
-  - May be free or priced (Stripe/PayPal/etc integration).
-  - Services are the **information layer**.
+## 3. Forum
+
+**Description:**  
+Forums are instantiated expressions of rules for discussion, collaboration, and coordination.
+
+**Fields:**
+- `id` (string, UUID)  
+- `policyId` (ref → Policy)  
+- `title` (string)  
+- `description` (string)  
+- `stakeholders[]` (array of User/Service IDs)  
+- `permissions[]` (Permission matrix for each stakeholder)  
+- `messages[]` (array of Message objects)  
+- `files[]` (array of FileRefs)  
+- `createdAt` (timestamp)  
+
+**Permissions (defaults per stakeholder):**
+- Add stakeholder: Yes/No  
+- Remove stakeholder: Yes/No  
+- Create sub-forum: Yes/No  
+- Post message: Yes/No  
+- Remove own message: Yes/No  
+- Remove others’ messages: Yes/No  
+- Add file: Yes/No  
+- Remove own file: Yes/No  
+- Remove others’ files: Yes/No  
 
 ---
 
-### Data
-- **Fields**
-  - `id` (UUID)
-  - `serviceId | forumId | policyId`
-  - `type` → transaction | log | file | cert
-  - `payload` (JSON)
-  - `createdAt`
-- **Notes**
-  - Data = **storage layer** (state of interactions).
-  - Used for CERT metrics, logs, analytics.
+## 4. Service
+
+**Description:**  
+Services are analogue or digital entities that perform actions, consume policies, or provide outputs.
+
+**Fields:**
+- `id` (string, UUID)  
+- `title` (string)  
+- `description` (string)  
+- `ownerId` (ref → User)  
+- `policyRefs[]` (array of Policy IDs consumed)  
+- `attributes` (ServiceAttributes object)  
+- `status`: Active / Inactive  
+- `createdAt` (timestamp)  
+
+**ServiceAttributes:**  
+- `price` (number, optional if paid)  
+- `currency` (string, e.g., NZD, USD)  
+- `size` (string or enum, optional)  
+- `color` (string, optional)  
+- `quantity` (integer, stock available)  
+- `free` (boolean, true if service is free)  
 
 ---
 
-### User
-- **Fields**
-  - `id` (UUID)
-  - `name`
-  - `profile`
-  - `certScore`
-  - `followers[]`
-  - `following[]`
-  - `favourites[]` (services, policies, forums)
-- **CERT Calculation**
-  - **C**ooperation: adding others’ services to policies/forums
-  - **E**ngagement: response time + ratings/reviews
-  - **R**etention: (profit) # follow-up sales; (free) # repeat uses
-  - **T**rust: followers + subscribers
-  - User.certScore = aggregate of their Services’ CERT
+## 5. Data
+
+**Description:**  
+Raw records generated by services, forums, or policies. Stored for analytics, governance, and auditing.
+
+**Fields:**
+- `id` (string, UUID)  
+- `sourceId` (ref → Service/Forum/Policy)  
+- `payload` (JSON blob)  
+- `timestamp` (timestamp)  
 
 ---
 
-### Newsfeed
-- **Fields**
-  - `id` (UUID)
-  - `userId`
-  - `items[]`
-    - `sourceType` → service | forum | policy | user
-    - `eventType` → update | newMessage | newFile | statusChange
-    - `createdAt`
-- **Notes**
-  - Feeds aggregate updates from favourites, follows, subscriptions.
-  - Default landing dashboard for active users.
+## 6. User
+
+**Description:**  
+Users are stakeholders in the system, representing individuals or organisations.
+
+**Fields:**
+- `id` (string, UUID)  
+- `name` (string)  
+- `email` (string)  
+- `certScore` (CERT aggregate)  
+- `services[]` (array of Service IDs owned)  
+- `activities[]` (array of Activity IDs)  
+- `followers[]` (User IDs)  
+- `following[]` (User IDs)  
+- `favourites[]` (Service IDs)  
+- `createdAt` (timestamp)  
+
+**CERT Breakdown:**  
+- Cooperation = services from others added to policies/forums.  
+- Engagement = response speed + good ratings/reviews.  
+- Retention:  
+  - For-profit → follow-up sales.  
+  - Non-profit/free → follow-up uses.  
+- Trust = number of followers/subscribers.  
 
 ---
 
-## Relationships
-- `Policy -> Rule -> Forum/Service/Policy`
-- `Forum -> Stakeholders (Users/Services)`
-- `Service -> PolicyRefs (consumed policies)`
-- `Data -> Any entity`
-- `User -> CERT (derived from Service performance)`
-- `Newsfeed -> User follows/favourites`
+## 7. Activity
+
+**Description:**  
+Tracks what a user is actively engaged in.
+
+**Fields:**
+- `id` (string, UUID)  
+- `userId` (ref → User)  
+- `forumRefs[]` (array of Forum IDs)  
+- `policyRefs[]` (array of Policy IDs)  
+- `timestamp` (last accessed)  
 
 ---
 
-## Execution Flow
-1. **Policy defined** (with rules).  
-2. **Service consumes Policy** → rules instantiated.  
-3. Forums, Services, or linked Policies activated.  
-4. Stakeholders engage in Forums or use Services.  
-5. Data captured (transactions, logs, CERT).  
-6. Users notified via Newsfeed.
+## 8. Newsfeed
+
+**Description:**  
+Aggregates updates for a user based on their follows, favourites, and notifications.
+
+**Fields:**
+- `id` (string, UUID)  
+- `userId` (ref → User)  
+- `entries[]` (array of FeedEntry objects)  
+
+**FeedEntry:**  
+- `id` (string, UUID)  
+- `sourceType`: Service | Policy | Forum | User  
+- `sourceId` (ref)  
+- `message` (string, e.g., “Doctor updated status to Away”)  
+- `timestamp` (timestamp)  
