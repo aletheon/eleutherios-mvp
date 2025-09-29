@@ -1,64 +1,37 @@
-const PROJECT_ID = "eleutherios-mvp-3c717"
-const API_KEY = "AIzaSyA3brwHpI2dGR2KPAsZyJcIIaONDc0UDkQ"
+// src/lib/firebase-rest.ts
 
 export class FirebaseREST {
+  private baseUrl: string;
+  
+  constructor() {
+    // Get the project ID from environment variable
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    
+    if (!projectId) {
+      throw new Error('Firebase Project ID is not configured. Please set NEXT_PUBLIC_FIREBASE_PROJECT_ID in your environment variables.');
+    }
+    
+    this.baseUrl = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
+  }
+
   static async listDocuments(collection: string) {
-    const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${collection}?key=${API_KEY}`
+    const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+    const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
     
-    const response = await fetch(url)
+    if (!projectId || !apiKey) {
+      throw new Error('Firebase configuration missing. Please check your environment variables.');
+    }
+    
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/${collection}?key=${apiKey}`;
+    
+    const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`)
+      throw new Error(`HTTP ${response.status}`);
     }
     
-    const data = await response.json()
-    return (data.documents || []).map((doc: any) => ({
-      id: doc.name.split('/').pop(),
-      ...this.convertFields(doc.fields || {})
-    }))
+    const data = await response.json();
+    return data.documents || [];
   }
   
-  static async setDocument(collection: string, documentId: string, data: any) {
-    const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/${collection}/${documentId}?key=${API_KEY}`
-    
-    const firestoreData = {
-      fields: Object.entries(data).reduce((acc, [key, value]) => {
-        acc[key] = this.convertValue(value)
-        return acc
-      }, {} as any)
-    }
-    
-    const response = await fetch(url, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(firestoreData)
-    })
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`)
-    }
-    return response.json()
-  }
-  
-  static convertFields(fields: any) {
-    const result: any = {}
-    for (const [key, value] of Object.entries(fields)) {
-      result[key] = this.extractValue(value as any)
-    }
-    return result
-  }
-  
-  static extractValue(value: any) {
-    if (value.stringValue !== undefined) return value.stringValue
-    if (value.doubleValue !== undefined) return value.doubleValue
-    if (value.booleanValue !== undefined) return value.booleanValue
-    if (value.timestampValue !== undefined) return value.timestampValue
-    return null
-  }
-  
-  static convertValue(value: any): any {
-    if (typeof value === 'string') return { stringValue: value }
-    if (typeof value === 'number') return { doubleValue: value }
-    if (typeof value === 'boolean') return { booleanValue: value }
-    return { stringValue: String(value) }
-  }
+  // ... rest of your methods
 }
