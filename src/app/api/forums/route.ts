@@ -1,28 +1,37 @@
 // src/app/api/forums/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { database } from '@/app/firebase-admin';
-import { Forum, ForumStakeholder } from '@/app/types/forum';
 
-// GET all forums or forums for a specific user
+const FIREBASE_PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+const FIREBASE_API_KEY = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+const DATABASE_URL = `https://${FIREBASE_PROJECT_ID}.firebaseio.com`;
+
+// GET all forums
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     
-    const forumsRef = database.ref('forums');
-    const snapshot = await forumsRef.once('value');
-    const forums = snapshot.val() || {};
+    const response = await fetch(
+      `${DATABASE_URL}/forums.json`,
+      { method: 'GET' }
+    );
     
-    let forumsArray = Object.entries(forums).map(([id, data]) => ({
+    if (!response.ok) {
+      throw new Error('Failed to fetch forums');
+    }
+    
+    const forums = await response.json() || {};
+    
+    let forumsArray = Object.entries(forums).map(([id, data]: [string, any]) => ({
       id,
-      ...(data as Omit<Forum, 'id'>)
+      ...data
     }));
     
     // Filter by user if userId provided
     if (userId) {
       forumsArray = forumsArray.filter(forum => 
-        forum.stakeholders?.some(s => s.userId === userId)
+        forum.stakeholders?.some((s: any) => s.userId === userId)
       );
     }
     
@@ -53,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Create the owner stakeholder
-    const ownerStakeholder: ForumStakeholder = {
+    const ownerStakeholder = {
       userId: createdBy,
       role: 'owner',
       permissions: {
@@ -65,11 +74,11 @@ export async function POST(request: NextRequest) {
         canUploadFiles: true,
         canRemoveFiles: true
       },
-      joinedAt: new Date()
+      joinedAt: new Date().toISOString()
     };
     
     // Create the forum
-    const forum: Omit<Forum, 'id'> = {
+    const forum = {
       name,
       description,
       policyId,
@@ -79,34 +88,37 @@ export async function POST(request: NextRequest) {
         isPublic,
         requiresApproval: !isPublic,
         allowFileUploads: true,
-        maxFileSize: 10, // 10MB default
+        maxFileSize: 10,
         allowedFileTypes: ['pdf', 'doc', 'docx', 'txt', 'jpg', 'png']
       },
       metadata: {
         createdBy,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
         messageCount: 0,
         fileCount: 0
       },
       status: 'active'
     };
     
-    // Save to database
-    const forumsRef = database.ref('forums');
-    const newForumRef = forumsRef.push();
-    await newForumRef.set(forum);
+    // Save to database using REST API
+    const response = await fetch(
+      `${DATABASE_URL}/forums.json`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(forum)
+      }
+    );
     
-    // Also add this forum to the user's activities
-    const userActivitiesRef = database.ref(`users/${createdBy}/activities/forums`);
-    await userActivitiesRef.push({
-      forumId: newForumRef.key,
-      role: 'owner',
-      joinedAt: new Date().toISOString()
-    });
+    if (!response.ok) {
+      throw new Error('Failed to create forum');
+    }
+    
+    const result = await response.json();
     
     return NextResponse.json({ 
-      id: newForumRef.key,
+      id: result.name,  // Firebase returns the ID as "name"
       ...forum 
     });
     

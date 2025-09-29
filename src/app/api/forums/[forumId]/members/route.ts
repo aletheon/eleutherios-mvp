@@ -1,8 +1,9 @@
 // src/app/api/forums/[forumId]/members/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { database } from '@/app/firebase-admin';
-import { ForumStakeholder } from '@/app/types/forum';
+
+const FIREBASE_PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'eleutherios-mvp-3c717';
+const DATABASE_URL = `https://${FIREBASE_PROJECT_ID}.firebaseio.com`;
 
 // POST add a member to the forum
 export async function POST(
@@ -20,10 +21,20 @@ export async function POST(
       );
     }
     
-    // Check if requester has permission to add members
-    const forumRef = database.ref(`forums/${params.forumId}`);
-    const snapshot = await forumRef.once('value');
-    const forum = snapshot.val();
+    // Fetch the forum first
+    const forumResponse = await fetch(
+      `${DATABASE_URL}/forums/${params.forumId}.json`,
+      { method: 'GET' }
+    );
+    
+    if (!forumResponse.ok) {
+      return NextResponse.json(
+        { error: 'Forum not found' },
+        { status: 404 }
+      );
+    }
+    
+    const forum = await forumResponse.json();
     
     if (!forum) {
       return NextResponse.json(
@@ -50,7 +61,7 @@ export async function POST(
     }
     
     // Create new stakeholder
-    const newStakeholder: ForumStakeholder = {
+    const newStakeholder = {
       userId,
       role,
       permissions: {
@@ -62,23 +73,42 @@ export async function POST(
         canUploadFiles: true,
         canRemoveFiles: false
       },
-      joinedAt: new Date()
+      joinedAt: new Date().toISOString()
     };
     
     // Add stakeholder to forum
     const stakeholders = [...(forum.stakeholders || []), newStakeholder];
-    await forumRef.update({ 
-      stakeholders,
-      'metadata/updatedAt': new Date().toISOString()
-    });
+    
+    // Update forum with new stakeholder
+    const updateResponse = await fetch(
+      `${DATABASE_URL}/forums/${params.forumId}.json`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          stakeholders,
+          'metadata/updatedAt': new Date().toISOString()
+        })
+      }
+    );
+    
+    if (!updateResponse.ok) {
+      throw new Error('Failed to update forum');
+    }
     
     // Add forum to user's activities
-    const userActivitiesRef = database.ref(`users/${userId}/activities/forums`);
-    await userActivitiesRef.push({
-      forumId: params.forumId,
-      role,
-      joinedAt: new Date().toISOString()
-    });
+    await fetch(
+      `${DATABASE_URL}/users/${userId}/activities/forums.json`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          forumId: params.forumId,
+          role,
+          joinedAt: new Date().toISOString()
+        })
+      }
+    );
     
     return NextResponse.json({ 
       success: true,
