@@ -1,19 +1,28 @@
-import type { Metadata } from 'next'
-import './globals.css'
+// src/app/layout.tsx
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { AuthProvider } from "@/contexts/AuthContext";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Eleutherios PFSD Protocol',
-  description: 'Governance through Love in Action',
-}
+  title: "Eleutherios - Governance through Love in Action",
+  description: "Dynamic shared governance system",
+};
 
 export default function RootLayout({
   children,
-}: {
-  children: React.ReactNode
-}) {
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={inter.className}>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
-  )
+  );
 }

@@ -1,7 +1,9 @@
 // src/app/api/policies/instantiate/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import { database } from '@/app/firebase-admin';
+
+const FIREBASE_PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'eleutherios-mvp-3c717';
+const DATABASE_URL = `https://${FIREBASE_PROJECT_ID}.firebaseio.com`;
 
 // POST - Instantiate a policy rule into a forum
 export async function POST(request: NextRequest) {
@@ -17,9 +19,19 @@ export async function POST(request: NextRequest) {
     }
     
     // Fetch the policy
-    const policyRef = database.ref(`policies/${policyId}`);
-    const policySnapshot = await policyRef.once('value');
-    const policy = policySnapshot.val();
+    const policyResponse = await fetch(
+      `${DATABASE_URL}/policies/${policyId}.json`,
+      { method: 'GET' }
+    );
+    
+    if (!policyResponse.ok) {
+      return NextResponse.json(
+        { error: 'Policy not found' },
+        { status: 404 }
+      );
+    }
+    
+    const policy = await policyResponse.json();
     
     if (!policy) {
       return NextResponse.json(
@@ -84,30 +96,56 @@ export async function POST(request: NextRequest) {
     };
     
     // Save the forum
-    const forumsRef = database.ref('forums');
-    const newForumRef = forumsRef.push();
-    await newForumRef.set(forumData);
+    const forumResponse = await fetch(
+      `${DATABASE_URL}/forums.json`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(forumData)
+      }
+    );
     
-    // Add forum reference to the policy rule
-    await database.ref(`policies/${policyId}/rules/${policy.rules.indexOf(rule)}`).update({
-      instantiatedForumId: newForumRef.key,
-      instantiatedAt: new Date().toISOString()
-    });
+    if (!forumResponse.ok) {
+      throw new Error('Failed to create forum');
+    }
+    
+    const forumResult = await forumResponse.json();
+    const newForumId = forumResult.name;
+    
+    // Update the policy rule with the instantiated forum ID
+    const ruleIndex = policy.rules.indexOf(rule);
+    await fetch(
+      `${DATABASE_URL}/policies/${policyId}/rules/${ruleIndex}.json`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          instantiatedForumId: newForumId,
+          instantiatedAt: new Date().toISOString()
+        })
+      }
+    );
     
     // Add to user's activities
-    const userActivitiesRef = database.ref(`users/${userId}/activities/forums`);
-    await userActivitiesRef.push({
-      forumId: newForumRef.key,
-      role: 'owner',
-      joinedAt: new Date().toISOString(),
-      fromPolicy: policyId
-    });
+    await fetch(
+      `${DATABASE_URL}/users/${userId}/activities/forums.json`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          forumId: newForumId,
+          role: 'owner',
+          joinedAt: new Date().toISOString(),
+          fromPolicy: policyId
+        })
+      }
+    );
     
     return NextResponse.json({
       success: true,
-      forumId: newForumRef.key,
+      forumId: newForumId,
       forum: {
-        id: newForumRef.key,
+        id: newForumId,
         ...forumData
       }
     });
