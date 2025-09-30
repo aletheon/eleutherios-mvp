@@ -62,38 +62,66 @@ export default function PolicyDetailPage({ params }: { params: { policyId: strin
     }
   };
 
-  const addRule = async () => {
-    if (!newRule.title.trim()) return;
+  // src/app/policies/[policyId]/page.tsx
+// Update the addRule function:
 
-    try {
-      const token = await user?.getIdToken();
-      const ruleId = Date.now().toString();
-      const rule = {
-        id: ruleId,
-        ...newRule,
+const addRule = async () => {
+  if (!newRule.title.trim()) return;
+
+  try {
+    const token = await user?.getIdToken();
+    const ruleId = Date.now().toString();
+    const rule = {
+      id: ruleId,
+      ...newRule,
+      createdAt: new Date().toISOString(),
+    };
+
+    const updatedRules = [...(policy?.rules || []), rule];
+
+    // Save the rule
+    const ruleResponse = await fetch(
+      `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/policies/${params.policyId}/rules.json?auth=${token}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedRules),
+      }
+    );
+
+    if (ruleResponse.ok) {
+      // Automatically create a forum for this rule
+      const forumId = `forum-${ruleId}`;
+      const forum = {
+        id: forumId,
+        policyId: params.policyId,
+        ruleId: ruleId,
+        title: newRule.title,
+        description: newRule.description,
+        status: 'active',
+        participantCount: 0,
+        postCount: 0,
         createdAt: new Date().toISOString(),
       };
 
-      const updatedRules = [...(policy?.rules || []), rule];
-
-      const response = await fetch(
-        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/policies/${params.policyId}/rules.json?auth=${token}`,
+      await fetch(
+        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/forums/${forumId}.json?auth=${token}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedRules),
+          body: JSON.stringify(forum),
         }
       );
 
-      if (response.ok) {
-        setNewRule({ title: '', description: '' });
-        setShowAddRule(false);
-        fetchPolicy();
-      }
-    } catch (error) {
-      console.error('Error adding rule:', error);
+      setNewRule({ title: '', description: '' });
+      setShowAddRule(false);
+      alert(`Rule and forum created for "${newRule.title}"`);
+      fetchPolicy();
     }
-  };
+  } catch (error) {
+    console.error('Error adding rule:', error);
+  }
+};
 
   const invitePolicymaker = async () => {
     if (!inviteEmail.trim()) return;
