@@ -1,31 +1,34 @@
 // src/app/forums/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { DashboardLayout } from '@/components/DashboardLayout';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Navigation } from '@/components/Navigation';
+import { useEffect, useState } from 'react';
 
 interface Forum {
   id: string;
-  policyId: string;
-  ruleId: string;
   title: string;
-  description: string;
+  description?: string;
   status: string;
-  participantCount: number;
-  postCount: number;
+  participants: number;
+  posts: number;
   createdAt: string;
+  createdBy?: string;
 }
 
-type ViewMode = 'list' | 'grid';
-
 export default function ForumsPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const router = useRouter();
   const [forums, setForums] = useState<Forum[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [loadingForums, setLoadingForums] = useState(true);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/auth');
+    }
+  }, [user, loading, router]);
 
   useEffect(() => {
     if (user) {
@@ -39,13 +42,19 @@ export default function ForumsPage() {
       const response = await fetch(
         `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/forums.json?auth=${token}`
       );
-
+      
       if (response.ok) {
         const data = await response.json();
         if (data) {
-          const forumsList = Object.entries(data).map(([id, forum]: [string, any]) => ({
+          const forumsList: Forum[] = Object.entries(data).map(([id, forum]: [string, any]) => ({
             id,
-            ...forum,
+            title: String(forum.title || 'Untitled Forum'),
+            description: forum.description ? String(forum.description) : undefined,
+            status: String(forum.status || 'active'),
+            participants: Number(forum.participants) || 1,
+            posts: Number(forum.posts) || 0,
+            createdAt: forum.createdAt || new Date().toISOString(),
+            createdBy: forum.createdBy ? String(forum.createdBy) : undefined,
           }));
           setForums(forumsList);
         }
@@ -53,85 +62,79 @@ export default function ForumsPage() {
     } catch (error) {
       console.error('Error fetching forums:', error);
     } finally {
-      setLoading(false);
+      setLoadingForums(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
+      <DashboardLayout>
+        <div className="flex items-center justify-center py-12">
+          <div className="text-lg">Loading...</div>
+        </div>
+      </DashboardLayout>
     );
   }
 
+  if (!user) return null;
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation onMenuClick={() => {}} onActivitiesClick={() => {}} />
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Forums</h2>
-          
-          {/* View Toggle */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded-md ${
-                viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'
-              }`}
-              title="List view"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-md ${
-                viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'
-              }`}
-              title="Grid view"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {forums.length === 0 ? (
-          <div className="bg-white p-6 rounded-lg shadow text-center">
-            <p className="text-gray-600">No forums yet. Create a policy and add rules to generate forums.</p>
-          </div>
-        ) : (
-          <div className={viewMode === 'list' ? 'space-y-4' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'}>
-            {forums.map((forum) => (
-              <div
-                key={forum.id}
-                onClick={() => router.push(`/forums/${forum.id}`)}
-                className={`bg-white p-6 rounded-lg shadow hover:shadow-md transition cursor-pointer ${
-                  viewMode === 'list' ? 'w-full' : ''
-                }`}
-              >
-                <h3 className="font-semibold text-lg mb-2">{forum.title}</h3>
-                <p className="text-sm text-gray-600 mb-3 line-clamp-2">{forum.description}</p>
-                <div className="flex gap-2 mb-3">
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-                    {forum.participantCount} participants
-                  </span>
-                  <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded">
-                    {forum.postCount} posts
-                  </span>
+    <DashboardLayout title="Forums" subtitle="Participate in policy discussions and community forums">
+      <div className="space-y-6">
+        {loadingForums ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-white rounded-lg shadow p-6">
+                <div className="animate-pulse">
+                  <div className="h-6 bg-gray-200 rounded w-1/3 mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-2/3 mb-4"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/4"></div>
                 </div>
-                <p className="text-xs text-gray-500">
-                  Created {new Date(forum.createdAt).toLocaleDateString()}
-                </p>
               </div>
             ))}
           </div>
+        ) : forums.length === 0 ? (
+          <div className="bg-white rounded-lg shadow p-8 text-center">
+            <p className="text-gray-500">No forums available yet.</p>
+            <button className="mt-4 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+              Create First Forum
+            </button>
+          </div>
+        ) : (
+          <div className="grid gap-6">
+            {forums.map((forum) => (
+              <Link
+                key={forum.id}
+                href={`/forums/${forum.id}`}
+                className="block bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6"
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    {forum.title}
+                  </h3>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                    {forum.status}
+                  </span>
+                </div>
+                
+                {forum.description && (
+                  <p className="text-gray-600 mb-4">{forum.description}</p>
+                )}
+                
+                <div className="flex items-center text-sm text-gray-500">
+                  <span>{forum.participants} participants</span>
+                  <span className="mx-2">•</span>
+                  <span>{forum.posts} posts</span>
+                  <span className="mx-2">•</span>
+                  <span>
+                    Created {new Date(forum.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
         )}
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

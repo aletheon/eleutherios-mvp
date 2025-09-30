@@ -1,4 +1,4 @@
-// src/app/policies/page.tsx
+// src/app/services/page.tsx
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,22 +8,24 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-interface Policy {
+interface Service {
   id: string;
-  title: string;
+  name: string;
   description?: string;
-  category: string;
+  type: string;
+  category?: string;
+  price?: number;
   status: string;
   createdAt: string;
-  authorId?: string;
+  ownerId?: string;
 }
 
-export default function PoliciesPage() {
+export default function ServicesPage() {
   const { user, loading } = useAuth();
   const { addActivity } = useDashboard();
   const router = useRouter();
-  const [policies, setPolicies] = useState<Policy[]>([]);
-  const [loadingPolicies, setLoadingPolicies] = useState(true);
+  const [services, setServices] = useState<Service[]>([]);
+  const [loadingServices, setLoadingServices] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -33,50 +35,52 @@ export default function PoliciesPage() {
 
   useEffect(() => {
     if (user) {
-      fetchPolicies();
+      fetchServices();
     }
   }, [user]);
 
-  const fetchPolicies = async () => {
+  const fetchServices = async () => {
     try {
       const token = await user?.getIdToken();
       const response = await fetch(
-        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/policies.json?auth=${token}`
+        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/services.json?auth=${token}`
       );
       
       if (response.ok) {
         const data = await response.json();
         if (data) {
-          const policiesList: Policy[] = Object.entries(data).map(([id, policy]: [string, any]) => ({
+          const servicesList: Service[] = Object.entries(data).map(([id, service]: [string, any]) => ({
             id,
-            title: String(policy.title || 'Untitled Policy'),
-            description: policy.description ? String(policy.description) : undefined,
-            category: String(policy.category || 'General'),
-            status: String(policy.status || 'draft'),
-            createdAt: policy.createdAt || new Date().toISOString(),
-            authorId: policy.authorId ? String(policy.authorId) : undefined,
+            name: String(service.name || 'Untitled Service'),
+            description: service.description ? String(service.description) : undefined,
+            type: String(service.type || 'service'),
+            category: service.category ? String(service.category) : undefined,
+            price: service.price ? Number(service.price) : undefined,
+            status: String(service.status || 'active'),
+            createdAt: service.createdAt || new Date().toISOString(),
+            ownerId: service.ownerId ? String(service.ownerId) : undefined,
           }));
-          setPolicies(policiesList);
+          setServices(servicesList);
         }
       }
     } catch (error) {
-      console.error('Error fetching policies:', error);
+      console.error('Error fetching services:', error);
     } finally {
-      setLoadingPolicies(false);
+      setLoadingServices(false);
     }
   };
 
-  const handleCreatePolicy = () => {
-    // Add activity for creating policy
+  const handleCreateService = () => {
+    // Add activity for creating service
     addActivity({
-      type: 'notification',
-      title: 'Started creating new policy',
-      description: 'Began policy creation process',
+      type: 'service_update',
+      title: 'Started creating new service',
+      description: 'Began service creation process',
       priority: 'medium',
     });
     
-    // Navigate to policy creation (you'll need to create this route)
-    router.push('/policies/create');
+    // Navigate to service creation (you'll need to create this route)
+    router.push('/services/create');
   };
 
   if (loading) {
@@ -93,20 +97,20 @@ export default function PoliciesPage() {
 
   const headerActions = (
     <button
-      onClick={handleCreatePolicy}
+      onClick={handleCreateService}
       className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2"
     >
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M12 5v14m-7-7h14"/>
       </svg>
-      Add Policy
+      Add Service
     </button>
   );
 
   return (
     <DashboardLayout 
-      title="Policies" 
-      subtitle="Policies define rules that can be instantiated into Forums, connected to Services, or reference other Policies. This creates the governance layer of the PFSD model."
+      title="Services" 
+      subtitle="Services represent the functional components that deliver value within the PFSD model. They can be connected to policies and integrated into forums."
       headerActions={headerActions}
     >
       <div className="space-y-6">
@@ -114,15 +118,15 @@ export default function PoliciesPage() {
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
             <button className="border-b-2 border-purple-500 text-purple-600 whitespace-nowrap py-2 px-1 text-sm font-medium">
-              All Policies ({policies.length})
+              All Services ({services.length})
             </button>
             <button className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 text-sm font-medium">
-              Create Policy
+              Create Service
             </button>
           </nav>
         </div>
 
-        {loadingPolicies ? (
+        {loadingServices ? (
           <div className="space-y-4">
             {[1, 2, 3].map(i => (
               <div key={i} className="bg-white rounded-lg shadow p-6">
@@ -134,53 +138,61 @@ export default function PoliciesPage() {
               </div>
             ))}
           </div>
-        ) : policies.length === 0 ? (
+        ) : services.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-8 text-center">
             <div className="w-12 h-12 mx-auto mb-4 bg-purple-100 rounded-full flex items-center justify-center">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-purple-600">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14,2 14,8 20,8"/>
-                <line x1="16" x2="8" y1="13" y2="13"/>
-                <line x1="16" x2="8" y1="17" y2="17"/>
-                <polyline points="10,9 9,9 8,9"/>
+                <circle cx="12" cy="12" r="3"/>
+                <path d="m12 1 4 4-4 4-4-4 4-4"/>
+                <path d="m12 23-4-4 4-4 4 4-4 4"/>
+                <path d="m1 12 4-4 4 4-4 4-4-4"/>
+                <path d="m23 12-4 4-4-4 4-4 4 4"/>
               </svg>
             </div>
-            <p className="text-gray-500 mb-4">No policies created yet</p>
+            <p className="text-gray-500 mb-4">No services created yet</p>
             <button 
-              onClick={handleCreatePolicy}
+              onClick={handleCreateService}
               className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
             >
-              Create First Policy
+              Create First Service
             </button>
           </div>
         ) : (
           <div className="grid gap-6">
-            {policies.map((policy) => (
+            {services.map((service) => (
               <Link
-                key={policy.id}
-                href={`/policies/${policy.id}`}
+                key={service.id}
+                href={`/services/${service.id}`}
                 className="block bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6"
               >
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="text-xl font-semibold text-gray-900">
-                    {policy.title}
+                    {service.name}
                   </h3>
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {policy.category}
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      {service.type}
                     </span>
+                    {service.category && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        {service.category}
+                      </span>
+                    )}
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      {policy.status}
+                      {service.status}
                     </span>
                   </div>
                 </div>
                 
-                {policy.description && (
-                  <p className="text-gray-600 mb-4">{policy.description}</p>
+                {service.description && (
+                  <p className="text-gray-600 mb-4">{service.description}</p>
                 )}
                 
-                <div className="flex items-center text-sm text-gray-500">
-                  <span>Created {new Date(policy.createdAt).toLocaleDateString()}</span>
+                <div className="flex items-center justify-between text-sm text-gray-500">
+                  <span>Created {new Date(service.createdAt).toLocaleDateString()}</span>
+                  {service.price && (
+                    <span className="font-semibold text-green-600">${service.price}</span>
+                  )}
                 </div>
               </Link>
             ))}

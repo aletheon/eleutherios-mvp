@@ -2,9 +2,10 @@
 'use client';
 
 import { useAuth } from '@/contexts/AuthContext';
+import { useDashboard } from '@/contexts/DashboardContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, use } from 'react';
-import { Navigation } from '@/components/Navigation';
+import { DashboardLayout } from '@/components/DashboardLayout';
 
 interface Forum {
   id: string;
@@ -21,9 +22,9 @@ interface Post {
   authorId: string;
   authorName: string;
   createdAt: string;
-  serviceId?: string;  // New: Link to a service
-  price?: number;      // New: Price if it's a product
-  quantity?: number;   // New: Available quantity
+  serviceId?: string;
+  price?: number;
+  quantity?: number;
 }
 
 interface Service {
@@ -35,21 +36,22 @@ interface Service {
   category?: string;
 }
 
-interface Props {
+interface PageProps {
   params: Promise<{ forumId: string }>;
 }
 
-export default function ForumDetailPage({ params }: Props) {
+export default function ForumDetailPage({ params }: PageProps) {
   const { user, loading } = useAuth();
+  const { addActivity, notifyForumPost } = useDashboard();
   const router = useRouter();
   
-  // Unwrap the params Promise using React.use()
   const { forumId } = use(params);
   
   // All state declarations
   const [forum, setForum] = useState<Forum | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
   const [myServices, setMyServices] = useState<Service[]>([]);
+  const [allServices, setAllServices] = useState<Service[]>([]);
   const [loadingForum, setLoadingForum] = useState(true);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [newPostContent, setNewPostContent] = useState('');
@@ -66,93 +68,120 @@ export default function ForumDetailPage({ params }: Props) {
 
   useEffect(() => {
     if (user && forumId) {
+      console.log('User and forumId available, fetching data...');
       fetchForum();
       fetchPosts();
       fetchAllServices();
     }
   }, [user, forumId]);
 
-  useEffect(() => {
-    if (forum && myServices.length > 0) {
-      // Additional logic if needed
-    }
-  }, [forum, myServices]);
-
   const fetchForum = async () => {
+    console.log('Fetching forum:', forumId);
     try {
       const token = await user?.getIdToken();
+      console.log('Token:', token ? 'exists' : 'missing');
+      
       const response = await fetch(
         `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/forums/${forumId}.json?auth=${token}`
       );
       
+      console.log('Response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Forum data:', data);
         if (data) {
           setForum({ id: forumId, ...data });
+        } else {
+          console.log('No forum data found');
         }
+      } else {
+        console.error('Response not ok:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error fetching forum:', error);
     } finally {
+      console.log('Setting loadingForum to false');
       setLoadingForum(false);
     }
   };
 
   const fetchPosts = async () => {
+    console.log('Fetching posts for forum:', forumId);
     try {
       const token = await user?.getIdToken();
       const response = await fetch(
         `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/forums/${forumId}/posts.json?auth=${token}`
       );
 
+      console.log('Posts response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('Posts data:', data);
         if (data) {
           const postsList = Object.entries(data).map(([id, post]: [string, any]) => ({
             id,
             ...post,
           }));
+          console.log('Processed posts:', postsList);
           setPosts(postsList);
+        } else {
+          console.log('No posts data found');
         }
+      } else {
+        console.error('Posts response not ok:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error fetching posts:', error);
     } finally {
+      console.log('Setting loadingPosts to false');
       setLoadingPosts(false);
     }
   };
 
   const fetchAllServices = async () => {
+    console.log('Fetching all services...');
     try {
       const token = await user?.getIdToken();
       const response = await fetch(
         `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/services.json?auth=${token}`
       );
       
+      console.log('Services response status:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('Services data:', data);
         if (data) {
           const servicesList = Object.entries(data)
             .map(([id, service]: [string, any]) => ({
               id,
               ...service,
-            }))
-            .filter((service: any) => service.ownerId === user?.uid);
-          setMyServices(servicesList);
+            }));
+          
+          console.log('All services:', servicesList);
+          setAllServices(servicesList);
+          
+          const myServicesList = servicesList.filter((service: any) => service.ownerId === user?.uid);
+          console.log('My services:', myServicesList);
+          setMyServices(myServicesList);
+        } else {
+          console.log('No services data found');
         }
+      } else {
+        console.error('Services response not ok:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error fetching services:', error);
     }
   };
 
-  // Handle adding items to cart
   const handleAddToCart = async (post: Post) => {
     try {
       const service = myServices.find(s => s.id === post.serviceId);
       if (!service) return;
 
-      // Here you would integrate with your cart/payment system
       alert(`Added ${service.name} to cart for $${post.price}`);
       
     } catch (error) {
@@ -161,12 +190,13 @@ export default function ForumDetailPage({ params }: Props) {
     }
   };
 
-  // Handle creating posts with services
   const handlePostSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPostContent.trim() || submittingPost) return;
 
     setSubmittingPost(true);
+    console.log('Submitting post...');
+    
     try {
       const token = await user?.getIdToken();
       const postData: any = {
@@ -176,13 +206,14 @@ export default function ForumDetailPage({ params }: Props) {
         createdAt: new Date().toISOString(),
       };
 
-      // Add service data if a service is selected
       if (selectedService) {
         postData.serviceId = selectedService.id;
         if (selectedService.type === 'product' && productPrice) {
           postData.price = parseFloat(productPrice);
         }
       }
+
+      console.log('Post data:', postData);
 
       const response = await fetch(
         `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/forums/${forumId}/posts.json?auth=${token}`,
@@ -195,12 +226,26 @@ export default function ForumDetailPage({ params }: Props) {
         }
       );
 
+      console.log('Post submission response:', response.status);
+
       if (response.ok) {
+        console.log('Post submitted successfully');
+        
+        // Notify forum members about the new post
+        if (notifyForumPost) {
+          await notifyForumPost(forumId, {
+            ...postData,
+            forumTitle: forum?.title
+          });
+        }
+
         setNewPostContent('');
         setSelectedService(null);
         setProductPrice('');
         setShowServiceSelector(false);
         fetchPosts(); // Refresh posts
+      } else {
+        console.error('Post submission failed:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Error posting message:', error);
@@ -211,151 +256,173 @@ export default function ForumDetailPage({ params }: Props) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
+      <DashboardLayout title="Loading..." subtitle="Please wait...">
+        <div className="flex items-center justify-center py-12">
+          <div className="text-lg">Loading...</div>
+        </div>
+      </DashboardLayout>
     );
   }
 
   if (!user) return null;
 
+  const headerActions = (
+    <button
+      type="button"
+      onClick={() => setShowServiceSelector(!showServiceSelector)}
+      className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+        <path d="m2 17 10 5 10-5"/>
+        <path d="m2 12 10 5 10-5"/>
+      </svg>
+      Add Service
+    </button>
+  );
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Forum Header */}
-        {loadingForum ? (
-          <div className="mb-8">
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-2 animate-pulse"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
-          </div>
-        ) : forum ? (
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-gray-900">{forum.title}</h1>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                {forum.status}
-              </span>
+    <DashboardLayout
+      title={forum?.title || 'Forum'}
+      subtitle={forum?.description || 'Forum for policy and rule discussions'}
+      headerActions={headerActions}
+    >
+      <div className="space-y-6">
+        {/* Service Avatars Row */}
+        {myServices.length > 0 && (
+          <div className="flex items-center gap-4 pb-4 border-b border-gray-200">
+            <div className="flex -space-x-2">
+              {myServices.slice(0, 5).map((service, index) => (
+                <div 
+                  key={service.id}
+                  className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm border-2 border-white shadow-sm"
+                  title={service.name}
+                  style={{ zIndex: myServices.length - index }}
+                >
+                  {service.name[0]?.toUpperCase()}
+                </div>
+              ))}
+              {myServices.length > 5 && (
+                <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white font-semibold text-xs border-2 border-white">
+                  +{myServices.length - 5}
+                </div>
+              )}
             </div>
-            <p className="text-gray-600">{forum.description || 'Forum for policy and rule discussions'}</p>
-          </div>
-        ) : (
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Forum not found</h1>
           </div>
         )}
-
-        {/* Service Avatars and Posts */}
-        <div className="space-y-6 mb-8">
-          {/* Service Avatars Row */}
-          {myServices.length > 0 && (
-            <div className="flex items-center gap-4 pb-4 border-b border-gray-200">
-              <span className="text-sm font-medium text-gray-600">Services in this forum:</span>
-              <div className="flex -space-x-2">
-                {myServices.slice(0, 5).map((service, index) => (
-                  <div 
-                    key={service.id}
-                    className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-sm border-2 border-white shadow-sm"
-                    title={service.name}
-                    style={{ zIndex: myServices.length - index }}
-                  >
-                    {service.name[0]?.toUpperCase()}
-                  </div>
-                ))}
-                {myServices.length > 5 && (
-                  <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white font-semibold text-xs border-2 border-white">
-                    +{myServices.length - 5}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-          
-          {loadingPosts ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="bg-white rounded-lg shadow p-6">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
-                    <div className="h-3 bg-gray-200 rounded w-16 animate-pulse"></div>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-                    <div className="h-4 bg-gray-200 rounded w-4/5 animate-pulse"></div>
-                  </div>
+        
+        {loadingPosts ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-24 animate-pulse"></div>
+                  <div className="h-3 bg-gray-200 rounded w-16 animate-pulse"></div>
                 </div>
-              ))}
-            </div>
-          ) : posts.length === 0 ? (
-            <div className="bg-white rounded-lg shadow p-8 text-center">
-              <p className="text-gray-500">No posts yet. Be the first to start the discussion!</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {posts.map(post => (
-                <div key={post.id} className="bg-white rounded-lg shadow p-6">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                      <span className="text-purple-600 font-semibold text-sm">
-                        {post.authorName?.[0]?.toUpperCase() || '?'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900">{post.authorName}</span>
-                      <span className="text-gray-500 text-sm">
-                        {new Date(post.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                  <p className="text-gray-700 whitespace-pre-wrap mb-4">{post.content}</p>
-                  
-                  {/* Smart Commerce Interface */}
+                <div className="space-y-2">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded w-4/5 animate-pulse"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : posts.length === 0 ? (
+          <div className="bg-white rounded-lg shadow p-8 text-center">
+            <p className="text-gray-500">No posts yet. Be the first to start the discussion!</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {posts.map(post => (
+              <div key={post.id} className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center gap-3 mb-3">
                   {post.serviceId && (() => {
-                    const service = myServices.find(s => s.id === post.serviceId);
-                    if (service && service.type === 'product') {
+                    const service = allServices.find(s => s.id === post.serviceId);
+                    if (service) {
                       return (
-                        <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 mt-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                                <span className="text-green-600 font-semibold">
-                                  {service.name[0]?.toUpperCase()}
-                                </span>
-                              </div>
-                              <div>
-                                <h4 className="font-medium text-gray-900">{service.name}</h4>
-                                <p className="text-sm text-gray-600">Available for purchase</p>
-                                {post.price && (
-                                  <p className="text-lg font-semibold text-green-600">
-                                    ${post.price}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                            <button 
-                              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
-                              onClick={() => handleAddToCart(post)}
-                            >
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <circle cx="9" cy="21" r="1"/>
-                                <circle cx="20" cy="21" r="1"/>
-                                <path d="m1 1 4 4 13 2 2 13H6"/>
-                              </svg>
-                              Add to Cart
-                            </button>
+                        <>
+                          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-md">
+                            <span className="text-white font-bold text-lg">
+                              {service.name[0]?.toUpperCase()}
+                            </span>
                           </div>
-                        </div>
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-gray-900">{service.name}</span>
+                              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-medium">
+                                {service.type}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                        </>
                       );
                     }
-                    return null;
                   })()}
+                  
+                  {!post.serviceId && (
+                    <>
+                      <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                        <span className="text-purple-600 font-semibold text-sm">
+                          {post.authorName?.[0]?.toUpperCase() || '?'}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900">{post.authorName}</span>
+                        <span className="text-gray-500 text-sm">
+                          {new Date(post.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+                <p className="text-gray-700 whitespace-pre-wrap mb-4">{post.content}</p>
+                
+                {post.serviceId && (() => {
+                  const service = allServices.find(s => s.id === post.serviceId);
+                  if (service && service.type === 'product') {
+                    return (
+                      <div className="border border-gray-200 rounded-lg p-4 bg-gray-50 mt-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                              <span className="text-green-600 font-semibold">
+                                {service.name[0]?.toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <h4 className="font-medium text-gray-900">{service.name}</h4>
+                              <p className="text-sm text-gray-600">Available for purchase</p>
+                              {post.price && (
+                                <p className="text-lg font-semibold text-green-600">
+                                  ${post.price}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <button 
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                            onClick={() => handleAddToCart(post)}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <circle cx="9" cy="21" r="1"/>
+                              <circle cx="20" cy="21" r="1"/>
+                              <path d="m1 1 4 4 13 2 2 13H6"/>
+                            </svg>
+                            Add to Cart
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Enhanced Post Form with Service Integration */}
         {forum && (
@@ -372,22 +439,8 @@ export default function ForumDetailPage({ params }: Props) {
               
               {/* Service Integration Options */}
               <div className="mt-4 space-y-3">
-                {/* Service Selector */}
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowServiceSelector(!showServiceSelector)}
-                    className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                      <path d="m2 17 10 5 10-5"/>
-                      <path d="m2 12 10 5 10-5"/>
-                    </svg>
-                    {selectedService ? `Service: ${selectedService.name}` : 'Attach Service'}
-                  </button>
-                  
-                  {selectedService && (
+                {selectedService && (
+                  <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={() => {
@@ -401,14 +454,29 @@ export default function ForumDetailPage({ params }: Props) {
                         <path d="m6 6 12 12"/>
                       </svg>
                     </button>
-                  )}
-                </div>
+                    <span className="text-sm text-gray-600">Posting as: {selectedService.name}</span>
+                  </div>
+                )}
 
-                {/* Service Selection Dropdown */}
                 {showServiceSelector && (
                   <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Choose a service to attach:</p>
+                    <p className="text-sm font-medium text-gray-700 mb-2">Choose which service identity to post as:</p>
                     <div className="space-y-2 max-h-40 overflow-y-auto">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedService(null);
+                          setShowServiceSelector(false);
+                        }}
+                        className="w-full text-left p-2 hover:bg-white rounded flex items-center justify-between"
+                      >
+                        <div>
+                          <span className="font-medium">Post as yourself</span>
+                          <span className="ml-2 text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded">
+                            Personal
+                          </span>
+                        </div>
+                      </button>
                       {myServices.map(service => (
                         <button
                           key={service.id}
@@ -431,7 +499,6 @@ export default function ForumDetailPage({ params }: Props) {
                   </div>
                 )}
 
-                {/* Product Price Input */}
                 {selectedService && selectedService.type === 'product' && (
                   <div className="border border-green-200 rounded-lg p-3 bg-green-50">
                     <label className="block text-sm font-medium text-green-800 mb-2">
@@ -455,7 +522,6 @@ export default function ForumDetailPage({ params }: Props) {
                   </div>
                 )}
 
-                {/* Selected Service Preview */}
                 {selectedService && (
                   <div className="border border-blue-200 rounded-lg p-3 bg-blue-50">
                     <div className="flex items-center gap-3">
@@ -489,6 +555,6 @@ export default function ForumDetailPage({ params }: Props) {
           </div>
         )}
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

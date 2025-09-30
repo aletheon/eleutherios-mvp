@@ -1,108 +1,283 @@
 // src/components/Navigation.tsx
 'use client';
 
+import { useAuth } from '@/contexts/AuthContext';
+import { useDashboard } from '@/contexts/DashboardContext';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
-interface NavigationProps {
-  onMenuClick?: () => void;
-  onActivitiesClick?: () => void;
-  showCart?: boolean;
-}
-
-export function Navigation({ onMenuClick, onActivitiesClick, showCart = true }: NavigationProps) {
+export function Navigation() {
+  const { user, logout } = useAuth();
+  const { activitiesPanelOpen, setActivitiesPanelOpen, unreadCount } = useDashboard();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [userPolicies, setUserPolicies] = useState([]);
+  const [userServices, setUserServices] = useState([]);
+  const [userForums, setUserForums] = useState([]);
   const router = useRouter();
 
+  useEffect(() => {
+    if (user) {
+      fetchUserContent();
+    }
+  }, [user]);
+
+  const fetchUserContent = async () => {
+    try {
+      const token = await user?.getIdToken();
+      
+      const policiesResponse = await fetch(
+        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/policies.json?auth=${token}`
+      );
+      if (policiesResponse.ok) {
+        const policiesData = await policiesResponse.json();
+        if (policiesData) {
+          const userPoliciesList = Object.entries(policiesData)
+            .filter(([id, policy]: [string, any]) => policy.authorId === user?.uid)
+            .map(([id, policy]: [string, any]) => ({ id, ...policy }));
+          setUserPolicies(userPoliciesList);
+        }
+      }
+
+      const servicesResponse = await fetch(
+        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/services.json?auth=${token}`
+      );
+      if (servicesResponse.ok) {
+        const servicesData = await servicesResponse.json();
+        if (servicesData) {
+          const userServicesList = Object.entries(servicesData)
+            .filter(([id, service]: [string, any]) => service.ownerId === user?.uid)
+            .map(([id, service]: [string, any]) => ({ id, ...service }));
+          setUserServices(userServicesList);
+        }
+      }
+
+      const forumsResponse = await fetch(
+        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/forums.json?auth=${token}`
+      );
+      if (forumsResponse.ok) {
+        const forumsData = await forumsResponse.json();
+        if (forumsData) {
+          const userForumsList = Object.entries(forumsData)
+            .filter(([id, forum]: [string, any]) => forum.createdBy === user?.uid)
+            .map(([id, forum]: [string, any]) => ({ id, ...forum }));
+          setUserForums(userForumsList);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching user content:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      if (logout) {
+        await logout();
+      }
+      router.push('/auth');
+    } catch (error) {
+      console.error('Logout error:', error);
+      router.push('/auth');
+    }
+  };
+
+  const handleActivitiesClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setActivitiesPanelOpen(!activitiesPanelOpen);
+  };
+
   return (
-    <nav className="bg-white shadow-sm">
+    <nav className="bg-white shadow-sm border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Left: Home and Activities */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="p-2 hover:bg-gray-100 rounded-md"
-              title="Home"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+          <div className="flex items-center gap-4">
+            <Link href="/newsfeed" className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
               </svg>
-            </button>
+            </Link>
+            
             <button
-              onClick={onActivitiesClick}
-              className="p-2 hover:bg-gray-100 rounded-md"
-              title="Activities"
+              type="button"
+              onClick={handleActivitiesClick}
+              className="relative p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
               </svg>
-            </button>
-          </div>
-
-          {/* Center: Forums, Services, Policies, Users */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => router.push('/forums')}
-              className="p-2 hover:bg-gray-100 rounded-md"
-              title="Forums"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => router.push('/services')}
-              className="p-2 hover:bg-gray-100 rounded-md"
-              title="Services"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => router.push('/policies')}
-              className="p-2 hover:bg-gray-100 rounded-md"
-              title="Policies"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => router.push('/users')}
-              className="p-2 hover:bg-gray-100 rounded-md"
-              title="Users"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-2 py-1">
+                  {unreadCount}
+                </span>
+              )}
             </button>
           </div>
 
-          {/* Right: Cart and Menu */}
-          <div className="flex items-center gap-2">
-            {showCart && (
+          <div className="flex items-center gap-4">
+            <Link href="/forums" className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/>
+              </svg>
+            </Link>
+
+            <Link href="/services" className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+              </svg>
+            </Link>
+
+            <Link href="/policies" className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100">
+              <span className="material-icons" style={{ fontSize: '24px' }}>account_balance</span>
+            </Link>
+
+            <Link href="/users" className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100">
+              <span className="material-icons" style={{ fontSize: '24px' }}>people_alt</span>
+            </Link>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <Link href="/cart" className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12L8.1 13h7.45c.75 0 1.41-.41 1.75-1.03L21.7 4H5.21l-.94-2H1zm16 16c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+              </svg>
+            </Link>
+
+            <div className="relative">
               <button
-                className="p-2 hover:bg-gray-100 rounded-md"
-                title="Shopping Cart"
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
                 </svg>
               </button>
-            )}
-            <button
-              onClick={onMenuClick}
-              className="p-2 hover:bg-gray-100 rounded-md"
-              title="Menu"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
+
+              {userMenuOpen && (
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 py-4 z-50">
+                  <div className="px-4 pb-4 border-b border-gray-100">
+                    <p className="text-sm text-gray-600">Signed in as</p>
+                    <p className="font-medium text-gray-900">{user?.email}</p>
+                  </div>
+
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <h3 className="text-sm font-medium text-gray-900 mb-2">Activities</h3>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Policies</span>
+                        <span className="text-gray-900">({userPolicies.length})</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Forums</span>
+                        <span className="text-gray-900">({userForums.length})</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Services</span>
+                        <span className="text-gray-900">({userServices.length})</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {userPolicies.length > 0 && (
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <h3 className="text-sm font-medium text-gray-900 mb-2">My Policies</h3>
+                      <div className="space-y-2">
+                        {userPolicies.slice(0, 3).map((policy: any) => (
+                          <Link
+                            key={policy.id}
+                            href={`/policies/${policy.id}`}
+                            className="block p-2 rounded hover:bg-gray-50"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            <div className="text-sm font-medium text-gray-900">{policy.title}</div>
+                            <div className="text-xs text-gray-500">{policy.category}</div>
+                          </Link>
+                        ))}
+                        {userPolicies.length > 3 && (
+                          <Link
+                            href="/policies"
+                            className="block text-xs text-blue-600 hover:text-blue-800"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            View all {userPolicies.length} policies
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {userForums.length > 0 && (
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <h3 className="text-sm font-medium text-gray-900 mb-2">My Forums</h3>
+                      <div className="space-y-2">
+                        {userForums.slice(0, 3).map((forum: any) => (
+                          <Link
+                            key={forum.id}
+                            href={`/forums/${forum.id}`}
+                            className="block p-2 rounded hover:bg-gray-50"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            <div className="text-sm font-medium text-gray-900">{forum.title}</div>
+                            <div className="text-xs text-gray-500">{forum.status}</div>
+                          </Link>
+                        ))}
+                        {userForums.length > 3 && (
+                          <Link
+                            href="/forums"
+                            className="block text-xs text-blue-600 hover:text-blue-800"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            View all {userForums.length} forums
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Favorites</span>
+                        <span className="text-gray-900">(0)</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Following</span>
+                        <span className="text-gray-900">(0)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <div className="space-y-1 text-sm">
+                      <div className="text-gray-600">Payments</div>
+                      <div className="text-gray-600">Receipts</div>
+                    </div>
+                  </div>
+
+                  <div className="px-4 py-3">
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        handleLogout();
+                      }}
+                      className="text-red-600 hover:text-red-800 text-sm font-medium"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {userMenuOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setUserMenuOpen(false)}
+        />
+      )}
     </nav>
   );
 }
