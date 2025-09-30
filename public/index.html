@@ -19,7 +19,6 @@
             color: #333;
         }
 
-        /* Main Navigation */
         .main-nav {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
@@ -120,7 +119,6 @@
             cursor: pointer;
         }
 
-        /* User Menu Flyout */
         .user-menu-flyout {
             position: absolute;
             top: 50px;
@@ -241,223 +239,6 @@
             background: #fef2f2;
         }
 
-        /* Dashboard Styles */
-        .dashboard-header {
-            margin-bottom: 2rem;
-        }
-
-        .dashboard-header h1 {
-            color: #1f2937;
-            font-size: 2rem;
-            font-weight: 700;
-        }
-
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .dashboard-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        }
-
-        .dashboard-card h3 {
-            color: #6b7280;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 0.5rem;
-        }
-
-        .balance-amount {
-            color: #10b981;
-            font-size: 2rem;
-            font-weight: 700;
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
-        }
-
-        .stat-number.blue {
-            color: #3b82f6;
-        }
-
-        .stat-number.purple {
-            color: #8b5cf6;
-        }
-
-        .income-stats {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .income-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 14px;
-        }
-
-        .income-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-
-        .income-dot.green {
-            background: #10b981;
-        }
-
-        .income-dot.red {
-            background: #ef4444;
-        }
-
-        .my-content-section {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-        }
-
-        .content-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .content-header h2 {
-            color: #1f2937;
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
-
-        .view-toggle {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
-        .toggle-btn {
-            padding: 0.5rem 1rem;
-            border: 1px solid #d1d5db;
-            background: white;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .toggle-btn.active {
-            background: #4c51bf;
-            color: white;
-            border-color: #4c51bf;
-        }
-
-        .add-btn {
-            width: 32px;
-            height: 32px;
-            background: #4c51bf;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .policy-item, .service-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1rem;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-        }
-
-        .policy-content, .service-content {
-            flex: 1;
-        }
-
-        .policy-title, .service-title {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .policy-name, .service-name {
-            font-weight: 600;
-            color: #1f2937;
-        }
-
-        .policy-tag, .service-tag {
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        .policy-tag.housing, .service-tag.personal {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .policy-tag.draft {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .policy-description, .service-description {
-            color: #6b7280;
-            font-size: 14px;
-            margin-bottom: 0.5rem;
-        }
-
-        .policy-date {
-            color: #6b7280;
-            font-size: 12px;
-        }
-
-        .service-avatar {
-            width: 32px;
-            height: 32px;
-            background: #6b7280;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-            margin-right: 1rem;
-        }
-
-        .edit-btn {
-            padding: 0.5rem 1rem;
-            background: #f3f4f6;
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .edit-btn:hover {
-            background: #e5e7eb;
-        }
-
-        /* Page Container */
         .page-container {
             max-width: 100%;
             margin: 0 auto;
@@ -478,7 +259,6 @@
             margin-left: 40%;
         }
 
-        /* Page sections */
         .page-section {
             display: none;
         }
@@ -487,7 +267,6 @@
             display: block;
         }
 
-        /* Activities sliding panel */
         .activities-panel {
             position: fixed;
             top: 0;
@@ -547,7 +326,6 @@
             color: white;
         }
 
-        /* Section headers and create buttons */
         .section-header {
             display: flex;
             justify-content: space-between;
@@ -567,14 +345,6 @@
             margin: 0;
         }
 
-        .filter-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
         .create-btn {
             padding: 10px 20px;
             background: #10b981;
@@ -591,56 +361,6 @@
             background: #059669;
         }
 
-        /* Item grids and cards for services, forums, policies */
-        .items-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .item-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .item-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-        }
-
-        .item-icon {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-        }
-
-        .item-card h3 {
-            color: #1f2937;
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .item-card p {
-            color: #6b7280;
-            font-size: 14px;
-            line-height: 1.4;
-            margin-bottom: 1rem;
-        }
-
-        .item-meta {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: #4c51bf;
-            font-weight: 500;
-        }
-
-        /* Home Page */
         .placeholder-page {
             background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
@@ -663,224 +383,120 @@
             margin: 0 auto 2rem;
         }
 
-        .filters {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin-bottom: 2rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        .feed-container {
+            max-width: 800px;
+            margin: 0 auto;
         }
 
-        .search-container {
-            position: relative;
-            margin-bottom: 1rem;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 12px 16px 12px 44px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s ease;
-        }
-
-        .search-input:focus {
-            outline: none;
-            border-color: #4c51bf;
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #9ca3af;
-        }
-
-        .filter-buttons {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .filter-btn {
-            padding: 8px 16px;
-            border: 2px solid #e5e7eb;
+        .feed-item {
             background: white;
-            border-radius: 20px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 14px;
-        }
-
-        .filter-btn:hover,
-        .filter-btn.active {
-            background: #4c51bf;
-            color: white;
-            border-color: #4c51bf;
-        }
-
-        .users-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .user-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
             border-radius: 12px;
             padding: 1.5rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e5e7eb;
         }
 
-        .user-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-        }
-
-        .card-avatar {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #4c51bf, #667eea);
+        .feed-header {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
+            justify-content: space-between;
+            align-items: flex-start;
             margin-bottom: 1rem;
         }
 
-        .cert-score {
-            display: inline-flex;
+        .feed-user {
+            display: flex;
             align-items: center;
-            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .feed-avatar {
             width: 40px;
             height: 40px;
             border-radius: 50%;
             background: linear-gradient(135deg, #4c51bf, #667eea);
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: white;
             font-weight: bold;
             font-size: 16px;
-            margin-bottom: 1rem;
         }
 
-        .user-name {
-            font-size: 1.25rem;
+        .feed-user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .feed-user-name {
             font-weight: 600;
             color: #1f2937;
-            margin-bottom: 0.5rem;
-        }
-
-        .user-bio {
-            color: #6b7280;
             font-size: 14px;
-            margin-bottom: 1rem;
-            line-height: 1.4;
         }
 
-        .user-meta {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-            font-size: 12px;
+        .feed-action {
+            font-size: 14px;
+            color: #6b7280;
         }
 
-        .meta-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 4px 8px;
-            background: #f3f4f6;
-            border-radius: 6px;
-        }
-
-        .meta-label {
+        .feed-subject {
             font-weight: 500;
-            color: #374151;
+            color: #4c51bf;
+            font-size: 14px;
         }
 
-        .meta-value {
-            font-weight: 600;
+        .feed-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .feed-icon {
+            font-size: 16px;
+        }
+
+        .feed-content {
+            color: #374151;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            font-size: 15px;
+        }
+
+        .feed-interactions {
+            display: flex;
+            gap: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .interaction-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: none;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+            font-size: 13px;
+        }
+
+        .interaction-btn:hover {
+            background: #f3f4f6;
             color: #4c51bf;
         }
 
-        .user-stats {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-            font-size: 12px;
-            color: #6b7280;
+        .interaction-icon {
+            font-size: 14px;
         }
 
-        .follow-btn {
-            width: 100%;
-            padding: 10px;
-            background: #4c51bf;
-            color: white;
-            border: none;
-            border-radius: 8px;
+        .interaction-count {
             font-weight: 500;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-
-        .follow-btn:hover {
-            background: #3730a3;
-        }
-
-        .follow-btn.following {
-            background: #10b981;
-        }
-
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 200px;
-            font-size: 18px;
-            color: #6b7280;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 3rem;
-            color: #6b7280;
-        }
-
-        .empty-state h3 {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .nav-container {
-                padding: 1rem;
-                flex-direction: column;
-                gap: 1rem;
-            }
-
-            .nav-links {
-                gap: 1rem;
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-
-            .page-content {
-                padding: 1rem;
-            }
-
-            .users-grid {
-                grid-template-columns: 1fr;
-            }
         }
     </style>
 </head>
@@ -894,21 +510,7 @@
             </div>
             <div class="placeholder-page">
                 <div class="placeholder-icon">📋</div>
-                <p>Monitor and manage user activities across all forums and policies they participate in. Activities are automatically generated when users interact with policies, forums, or services.</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Activities Sliding Panel -->
-    <div id="activitiesPanel" class="activities-panel">
-        <button class="close-activities" onclick="app.closeActivities()">×</button>
-        <div class="activities-panel-content">
-            <div class="section-header">
-                <h2>Track user activities across forums, policies, and services</h2>
-            </div>
-            <div class="placeholder-page">
-                <div class="placeholder-icon">📋</div>
-                <p>Monitor and manage user activities across all forums and policies they participate in. Activities are automatically generated when users interact with policies, forums, or services.</p>
+                <p>Monitor and manage user activities across all forums and policies they participate in.</p>
             </div>
         </div>
     </div>
@@ -958,13 +560,6 @@
             </ul>
             
             <div class="user-menu">
-                <div class="cart-icon" onclick="app.showSection('shopping')" title="Shopping Cart">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="9" cy="21" r="1"/>
-                        <circle cx="20" cy="21" r="1"/>
-                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-                    </svg>
-                </div>
                 <div class="user-avatar" onclick="app.toggleUserMenu()">U</div>
                 
                 <!-- User Menu Flyout -->
@@ -992,14 +587,6 @@
                             <span class="stat-label">Services</span>
                             <span class="stat-count">(1)</span>
                         </div>
-                        <div class="menu-stat-item">
-                            <span class="stat-label">Favorites</span>
-                            <span class="stat-count">(0)</span>
-                        </div>
-                        <div class="menu-stat-item">
-                            <span class="stat-label">Following</span>
-                            <span class="stat-count">(0)</span>
-                        </div>
                     </div>
                     
                     <div class="user-menu-actions">
@@ -1015,95 +602,15 @@
     <!-- Page Container -->
     <div class="page-container">
         <div class="page-content">
-            
-            <!-- Dashboard Section -->
+
             <section id="dashboard" class="page-section">
-                <div class="dashboard-header">
-                    <h1>Dashboard</h1>
+                <div class="section-header">
+                    <h2>Dashboard Overview</h2>
                 </div>
-                
-                <div class="dashboard-grid">
-                    <div class="dashboard-card">
-                        <h3>Stripe Balance</h3>
-                        <div class="balance-amount">$1250.75</div>
-                    </div>
-                    
-                    <div class="dashboard-card">
-                        <h3>Favorites</h3>
-                        <div class="stat-number blue">0</div>
-                    </div>
-                    
-                    <div class="dashboard-card">
-                        <h3>Following</h3>
-                        <div class="stat-number purple">0</div>
-                    </div>
-                    
-                    <div class="dashboard-card">
-                        <h3>Income vs Expense</h3>
-                        <div class="income-stats">
-                            <div class="income-item">
-                                <span class="income-dot green"></span>
-                                <span>Income: $400</span>
-                            </div>
-                            <div class="income-item">
-                                <span class="income-dot red"></span>
-                                <span>Expense: $200</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="my-content-section">
-                    <div class="content-header">
-                        <h2>My Policies (1)</h2>
-                        <div class="view-toggle">
-                            <button class="toggle-btn active">List</button>
-                            <button class="toggle-btn">Grid</button>
-                        </div>
-                    </div>
-                    
-                    <div class="policy-item">
-                        <div class="policy-content">
-                            <div class="policy-title">
-                                <span class="policy-name">Social Housing</span>
-                                <span class="policy-tag housing">housing</span>
-                                <span class="policy-tag draft">draft</span>
-                            </div>
-                            <div class="policy-description">help get people into housing</div>
-                            <div class="policy-date">📅 Created 29/09/2025</div>
-                        </div>
-                        <button class="edit-btn">Edit</button>
-                    </div>
-                </div>
-                
-                <div class="my-content-section">
-                    <div class="content-header">
-                        <h2>My Services (1)</h2>
-                        <div class="view-toggle">
-                            <button class="toggle-btn active">List</button>
-                            <button class="toggle-btn">Grid</button>
-                            <button class="add-btn">+</button>
-                        </div>
-                    </div>
-                    
-                    <div class="service-item">
-                        <div class="service-avatar">N</div>
-                        <div class="service-content">
-                            <div class="service-title">
-                                <span class="service-name">Homeless Person</span>
-                                <span class="service-tag personal">personal</span>
-                            </div>
-                            <div class="service-description">No description</div>
-                        </div>
-                        <button class="edit-btn">Edit</button>
-                    </div>
-                </div>
-            </section>
-            <section id="home" class="page-section">
                 <div class="placeholder-page">
-                    <div class="placeholder-icon">🏠</div>
-                    <h2>Welcome to Eleutherios</h2>
-                    <p>A shared operating system for humankind — enabling policies to be instantiated into live forums, connected with services, and grounded in data.</p>
+                    <div class="placeholder-icon">📊</div>
+                    <h2>Welcome back, Rob!</h2>
+                    <p>Your personal dashboard for managing policies, services, and community activities. Track your contributions, view analytics, and manage your account settings.</p>
                 </div>
             </section>
 
@@ -1117,7 +624,6 @@
                 </div>
             </section>
 
-            <!-- Forums Section -->
             <section id="forums" class="page-section">
                 <div class="section-header">
                     <h2>Spaces for dialogue, collaboration, and coordination</h2>
@@ -1129,7 +635,6 @@
                 </div>
             </section>
 
-            <!-- Services Section -->
             <section id="services" class="page-section">
                 <div class="section-header">
                     <h2>Analogue and digital agents that perform actions and consume policies</h2>
@@ -1141,7 +646,6 @@
                 </div>
             </section>
 
-            <!-- Policies Section -->
             <section id="policies" class="page-section">
                 <div class="section-header">
                     <h2>Root governance objects containing rules that define system behavior</h2>
@@ -1149,464 +653,128 @@
                 </div>
                 <div class="placeholder-page">
                     <div class="placeholder-icon">📋</div>
-                    <p>Create, manage, and explore governance policies. Policies contain rules that instantiate into forums, services, or other policies.</p>
+                    <p>Create, manage, and explore governance policies.</p>
                 </div>
             </section>
 
-            <!-- Users Section -->
             <section id="users" class="page-section">
-                <div class="filters">
-                    <div class="search-container">
-                        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <path d="M21 21l-4.35-4.35"></path>
-                        </svg>
-                        <input type="text" class="search-input" placeholder="Search users by name or expertise..." id="searchInput">
-                    </div>
-                    <div class="filter-row">
-                        <div class="filter-buttons">
-                            <button class="filter-btn active" data-filter="all">All Users</button>
-                            <button class="filter-btn" data-filter="high-cert">High CERT Score</button>
-                            <button class="filter-btn" data-filter="active">Recently Active</button>
-                            <button class="filter-btn" data-filter="service-providers">Service Providers</button>
-                            <button class="filter-btn" data-filter="highly-followed">Highly Followed</button>
-                        </div>
-                        <button class="create-btn" onclick="app.createUser()">Create Profile</button>
-                    </div>
-                </div>
-
-                <div id="usersContainer">
-                    <div class="loading">Loading users...</div>
-                </div>
-            </section>
-
-            <!-- Shopping Section -->
-            <section id="shopping" class="page-section">
                 <div class="section-header">
-                    <h2>Browse and purchase services and policy implementations</h2>
+                    <h2>Community members and stakeholders</h2>
+                    <button class="create-btn" onclick="app.createUser()">Create Profile</button>
                 </div>
                 <div class="placeholder-page">
-                    <div class="placeholder-icon">🛒</div>
-                    <p>Discover and purchase services that implement governance policies and community solutions.</p>
+                    <div class="placeholder-icon">👥</div>
+                    <p>Browse and connect with community members, service providers, and governance participants.</p>
                 </div>
             </section>
 
-        </div> <!-- End page-content -->
-    </div> <!-- End page-container -->
+        </div>
+    </div>
 
     <script>
-        class UsersManager {
+        class NewsfeedManager {
             constructor() {
-                this.users = [];
-                this.filteredUsers = [];
-                this.currentFilter = 'all';
-                this.searchTerm = '';
+                this.feedItems = [];
                 this.loaded = false;
-                this.setupEventListeners();
             }
 
             async loadIfNeeded() {
-                console.log('loadIfNeeded called, loaded:', this.loaded);
                 if (!this.loaded) {
-                    await this.loadUsers();
-                    this.renderUsers();
+                    await this.loadFeedItems();
+                    this.renderFeed();
                     this.loaded = true;
                 } else {
-                    this.renderUsers();
+                    this.renderFeed();
                 }
             }
 
-            async loadUsers() {
-                try {
-                    const response = await fetch('/api/users/public');
-                    if (response.ok) {
-                        const data = await response.json();
-                        this.users = data.users || data;
-                    } else {
-                        this.users = this.generateMockUsers();
-                    }
-                } catch (error) {
-                    console.log('API not available, using mock data');
-                    this.users = this.generateMockUsers();
-                }
-                this.filteredUsers = [...this.users];
+            async loadFeedItems() {
+                this.feedItems = this.generateMockFeedItems();
             }
 
-            generateMockUsers() {
-                const names = [
-                    'Alice Johnson', 'Bob Smith', 'Carol Davis', 'David Wilson',
-                    'Eva Brown', 'Frank Miller', 'Grace Lee', 'Henry Taylor',
-                    'Iris Chen', 'Jack Anderson', 'Kate Rodriguez', 'Leo Thompson'
+            generateMockFeedItems() {
+                const feedTypes = [
+                    { type: 'policy_update', icon: '📋', action: 'updated' },
+                    { type: 'forum_post', icon: '💬', action: 'posted in' },
+                    { type: 'service_launch', icon: '⚙️', action: 'launched' }
                 ];
 
-                const bios = [
-                    'Policy researcher focused on sustainable governance models',
-                    'Community organizer with expertise in participatory democracy',
-                    'Tech entrepreneur building governance solutions',
-                    'Social scientist studying collective decision-making',
-                    'Legal expert in constitutional frameworks',
-                    'Data analyst for policy impact measurement',
-                    'Forum moderator and conflict resolution specialist',
-                    'Service provider for digital identity verification',
-                    'Governance consultant for DAOs and cooperatives',
-                    'Academic researcher in political science',
-                    'Community builder and stakeholder engagement expert',
-                    'Software developer contributing to open governance'
-                ];
+                const users = ['Alice Johnson', 'Bob Smith', 'Carol Davis'];
+                const subjects = ['Housing Policy Reform', 'Community Guidelines Update', 'Identity Verification Service'];
 
-                return names.map((name, index) => ({
-                    id: 'user-' + (index + 1),
-                    name: name,
-                    email: name.toLowerCase().replace(' ', '.') + '@eleutherios.org',
-                    bio: bios[index],
-                    avatar: name.split(' ').map(n => n[0]).join(''),
-                    certScore: Math.floor(Math.random() * 100),
-                    stats: {
-                        followers: Math.floor(Math.random() * 100),
-                        following: Math.floor(Math.random() * 80),
-                        services: Math.floor(Math.random() * 10),
-                        activities: Math.floor(Math.random() * 20),
-                        favourites: Math.floor(Math.random() * 15)
-                    },
-                    lastActive: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-                    isFollowing: false,
-                    location: ['Christchurch, NZ', 'Auckland, NZ', 'Wellington, NZ'][Math.floor(Math.random() * 3)]
-                }));
-            }
-
-            setupEventListeners() {
-                document.addEventListener('input', (e) => {
-                    if (e.target.id === 'searchInput') {
-                        this.searchTerm = e.target.value.toLowerCase();
-                        this.applyFilters();
-                    }
-                });
-
-                document.addEventListener('click', (e) => {
-                    if (e.target.classList.contains('filter-btn')) {
-                        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                        e.target.classList.add('active');
-                        this.currentFilter = e.target.dataset.filter;
-                        this.applyFilters();
-                    }
+                return Array.from({ length: 5 }, (_, index) => {
+                    const feedType = feedTypes[Math.floor(Math.random() * feedTypes.length)];
+                    const user = users[Math.floor(Math.random() * users.length)];
+                    const subject = subjects[Math.floor(Math.random() * subjects.length)];
+                    
+                    return {
+                        id: 'feed-' + (index + 1),
+                        type: feedType.type,
+                        icon: feedType.icon,
+                        user: user,
+                        userAvatar: user.split(' ').map(n => n[0]).join(''),
+                        action: feedType.action,
+                        subject: subject,
+                        timestamp: new Date(Date.now() - (index * 60 * 60 * 1000)),
+                        content: 'Sample content for ' + subject + ' activity.',
+                        interactions: {
+                            likes: Math.floor(Math.random() * 20),
+                            comments: Math.floor(Math.random() * 8),
+                            shares: Math.floor(Math.random() * 5)
+                        }
+                    };
                 });
             }
 
-            applyFilters() {
-                if (!this.loaded) return;
+            formatTimeAgo(timestamp) {
+                const now = new Date();
+                const diffMs = now - timestamp;
+                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
 
-                let filtered = [...this.users];
-
-                if (this.searchTerm) {
-                    filtered = filtered.filter(user => 
-                        user.name.toLowerCase().includes(this.searchTerm) ||
-                        user.bio.toLowerCase().includes(this.searchTerm) ||
-                        user.email.toLowerCase().includes(this.searchTerm)
-                    );
-                }
-
-                switch (this.currentFilter) {
-                    case 'high-cert':
-                        filtered = filtered.filter(user => user.certScore >= 70);
-                        break;
-                    case 'active':
-                        filtered = filtered.filter(user => {
-                            const daysSinceActive = (Date.now() - new Date(user.lastActive)) / (1000 * 60 * 60 * 24);
-                            return daysSinceActive <= 7;
-                        });
-                        break;
-                    case 'service-providers':
-                        filtered = filtered.filter(user => user.stats.services >= 3);
-                        break;
-                    case 'highly-followed':
-                        filtered = filtered.filter(user => user.stats.followers >= 30);
-                        break;
-                }
-
-                this.filteredUsers = filtered;
-                this.renderUsers();
+                if (diffHours < 1) return 'Just now';
+                if (diffHours < 24) return diffHours + 'h ago';
+                return timestamp.toLocaleDateString();
             }
 
-            renderUsers() {
-                const container = document.getElementById('usersContainer');
-                if (!container) return;
-                
-                if (this.filteredUsers.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <h3>No users found</h3>
-                            <p>Try adjusting your search criteria or filters.</p>
-                        </div>
-                    `;
-                    return;
-                }
-
-                const usersHTML = this.filteredUsers.map(user => `
-                    <div class="user-card">
-                        <div class="card-avatar">${user.avatar}</div>
-                        <div class="cert-score">${user.certScore}</div>
-                        <div class="user-name">${user.name}</div>
-                        <div class="user-bio">${user.bio}</div>
-                        
-                        <div class="user-meta">
-                            <div class="meta-item">
-                                <span class="meta-label">Followers</span>
-                                <span class="meta-value">${user.stats.followers}</span>
-                            </div>
-                            <div class="meta-item">
-                                <span class="meta-label">Following</span>
-                                <span class="meta-value">${user.stats.following}</span>
-                            </div>
-                            <div class="meta-item">
-                                <span class="meta-label">Services</span>
-                                <span class="meta-value">${user.stats.services}</span>
-                            </div>
-                            <div class="meta-item">
-                                <span class="meta-label">Activities</span>
-                                <span class="meta-value">${user.stats.activities}</span>
-                            </div>
-                        </div>
-
-                        <div class="user-stats">
-                            <span>${user.location || 'Location not set'}</span>
-                            <span>CERT: ${user.certScore}</span>
-                        </div>
-
-                        <button class="follow-btn ${user.isFollowing ? 'following' : ''}" 
-                                onclick="app.usersManager.toggleFollow('${user.id}')">
-                            ${user.isFollowing ? 'Following' : 'Follow'}
-                        </button>
-                    </div>
-                `).join('');
-
-                container.innerHTML = `<div class="users-grid">${usersHTML}</div>`;
-            }
-
-            async toggleFollow(userId) {
-                const user = this.users.find(u => u.id === userId);
-                if (user) {
-                    user.isFollowing = !user.isFollowing;
-                    
-                    try {
-                        await fetch(`/api/users/${userId}/follow`, {
-                            method: user.isFollowing ? 'POST' : 'DELETE',
-                            headers: { 'Content-Type': 'application/json' }
-                        });
-                    } catch (error) {
-                        console.log('Follow API not available');
-                    }
-                    
-                    this.renderUsers();
-                }
-            }
-        }
-
-        class ServicesManager {
-            constructor() {
-                this.services = [];
-                this.loaded = false;
-            }
-
-            async loadIfNeeded() {
-                if (!this.loaded) {
-                    await this.loadServices();
-                    this.renderServices();
-                    this.loaded = true;
-                } else {
-                    this.renderServices();
-                }
-            }
-
-            async loadServices() {
-                try {
-                    const response = await fetch('/api/services/public');
-                    if (response.ok) {
-                        const data = await response.json();
-                        this.services = data.services || data;
-                    } else {
-                        this.services = this.generateMockServices();
-                    }
-                } catch (error) {
-                    console.log('Services API not available, using mock data');
-                    this.services = this.generateMockServices();
-                }
-            }
-
-            generateMockServices() {
-                const serviceTypes = [
-                    'Identity Verification', 'Payment Processing', 'Document Storage',
-                    'Conflict Resolution', 'Community Moderation', 'Policy Template',
-                    'Forum Management', 'Data Analytics', 'Voting System',
-                    'Notification Service', 'File Sharing', 'Translation Service'
-                ];
-
-                return serviceTypes.map((type, index) => ({
-                    id: 'service-' + (index + 1),
-                    title: type + ' Service',
-                    description: `Provides ${type.toLowerCase()} functionality for the community`,
-                    ownerId: 'user-' + Math.floor(Math.random() * 12 + 1),
-                    price: Math.random() > 0.5 ? Math.floor(Math.random() * 100) + 10 : 0,
-                    currency: 'NZD',
-                    status: 'Active',
-                    createdAt: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString()
-                }));
-            }
-
-            renderServices() {
-                const container = document.querySelector('#services .placeholder-page');
+            renderFeed() {
+                const container = document.querySelector('#newsfeed .placeholder-page');
                 if (!container) return;
 
-                const servicesHTML = this.services.map(service => `
-                    <div class="item-card">
-                        <div class="item-icon">⚙️</div>
-                        <h3>${service.title}</h3>
-                        <p>${service.description}</p>
-                        <div class="item-meta">
-                            <span>Price: ${service.price === 0 ? 'Free' : '$' + service.price + ' ' + service.currency}</span>
-                            <span>Status: ${service.status}</span>
-                        </div>
-                    </div>
-                `).join('');
+                const feedHTML = this.feedItems.map(item => {
+                    return '<div class="feed-item">' +
+                        '<div class="feed-header">' +
+                            '<div class="feed-user">' +
+                                '<div class="feed-avatar">' + item.userAvatar + '</div>' +
+                                '<div class="feed-user-info">' +
+                                    '<span class="feed-user-name">' + item.user + '</span>' +
+                                    '<span class="feed-action">' + item.action + '</span>' +
+                                    '<span class="feed-subject">' + item.subject + '</span>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="feed-meta">' +
+                                '<span class="feed-icon">' + item.icon + '</span>' +
+                                '<span class="feed-time">' + this.formatTimeAgo(item.timestamp) + '</span>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="feed-content">' + item.content + '</div>' +
+                        '<div class="feed-interactions">' +
+                            '<button class="interaction-btn">' +
+                                '<span class="interaction-icon">👍</span>' +
+                                '<span class="interaction-count">' + item.interactions.likes + '</span>' +
+                            '</button>' +
+                            '<button class="interaction-btn">' +
+                                '<span class="interaction-icon">💬</span>' +
+                                '<span class="interaction-count">' + item.interactions.comments + '</span>' +
+                            '</button>' +
+                            '<button class="interaction-btn">' +
+                                '<span class="interaction-icon">🔗</span>' +
+                                '<span class="interaction-count">' + item.interactions.shares + '</span>' +
+                            '</button>' +
+                        '</div>' +
+                    '</div>';
+                }).join('');
 
-                container.innerHTML = `<div class="items-grid">${servicesHTML}</div>`;
-            }
-        }
-
-        class ForumsManager {
-            constructor() {
-                this.forums = [];
-                this.loaded = false;
-            }
-
-            async loadIfNeeded() {
-                if (!this.loaded) {
-                    await this.loadForums();
-                    this.renderForums();
-                    this.loaded = true;
-                } else {
-                    this.renderForums();
-                }
-            }
-
-            async loadForums() {
-                try {
-                    const response = await fetch('/api/forums/public');
-                    if (response.ok) {
-                        const data = await response.json();
-                        this.forums = data.forums || data;
-                    } else {
-                        this.forums = this.generateMockForums();
-                    }
-                } catch (error) {
-                    console.log('Forums API not available, using mock data');
-                    this.forums = this.generateMockForums();
-                }
-            }
-
-            generateMockForums() {
-                const forumTopics = [
-                    'General Discussion', 'Policy Development', 'Technical Support',
-                    'Community Guidelines', 'Feature Requests', 'Governance Proposals',
-                    'Service Feedback', 'New Member Introductions', 'Project Collaboration',
-                    'Resource Sharing', 'Event Planning', 'Local Chapters'
-                ];
-
-                return forumTopics.map((topic, index) => ({
-                    id: 'forum-' + (index + 1),
-                    title: topic,
-                    description: `Forum for discussing ${topic.toLowerCase()}`,
-                    stakeholders: Math.floor(Math.random() * 50) + 5,
-                    messages: Math.floor(Math.random() * 200) + 10,
-                    createdAt: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString()
-                }));
-            }
-
-            renderForums() {
-                const container = document.querySelector('#forums .placeholder-page');
-                if (!container) return;
-
-                const forumsHTML = this.forums.map(forum => `
-                    <div class="item-card">
-                        <div class="item-icon">💬</div>
-                        <h3>${forum.title}</h3>
-                        <p>${forum.description}</p>
-                        <div class="item-meta">
-                            <span>${forum.stakeholders} members</span>
-                            <span>${forum.messages} messages</span>
-                        </div>
-                    </div>
-                `).join('');
-
-                container.innerHTML = `<div class="items-grid">${forumsHTML}</div>`;
-            }
-        }
-
-        class PoliciesManager {
-            constructor() {
-                this.policies = [];
-                this.loaded = false;
-            }
-
-            async loadIfNeeded() {
-                if (!this.loaded) {
-                    await this.loadPolicies();
-                    this.renderPolicies();
-                    this.loaded = true;
-                } else {
-                    this.renderPolicies();
-                }
-            }
-
-            async loadPolicies() {
-                try {
-                    const response = await fetch('/api/policies/public');
-                    if (response.ok) {
-                        const data = await response.json();
-                        this.policies = data.policies || data;
-                    } else {
-                        this.policies = this.generateMockPolicies();
-                    }
-                } catch (error) {
-                    console.log('Policies API not available, using mock data');
-                    this.policies = this.generateMockPolicies();
-                }
-            }
-
-            generateMockPolicies() {
-                const policyTypes = [
-                    'Community Guidelines', 'Data Privacy Policy', 'Service Terms',
-                    'Governance Protocol', 'Conflict Resolution', 'Member Rights',
-                    'Content Moderation', 'Financial Transparency', 'Open Source License',
-                    'Accessibility Standards', 'Security Framework', 'Environmental Impact'
-                ];
-
-                return policyTypes.map((type, index) => ({
-                    id: 'policy-' + (index + 1),
-                    title: type,
-                    description: `Defines rules and guidelines for ${type.toLowerCase()}`,
-                    visibility: Math.random() > 0.3 ? 'public' : 'private',
-                    rules: Math.floor(Math.random() * 10) + 1,
-                    createdAt: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString()
-                }));
-            }
-
-            renderPolicies() {
-                const container = document.querySelector('#policies .placeholder-page');
-                if (!container) return;
-
-                const policiesHTML = this.policies.map(policy => `
-                    <div class="item-card">
-                        <div class="item-icon">🏛️</div>
-                        <h3>${policy.title}</h3>
-                        <p>${policy.description}</p>
-                        <div class="item-meta">
-                            <span>${policy.rules} rules</span>
-                            <span>${policy.visibility}</span>
-                        </div>
-                    </div>
-                `).join('');
-
-                container.innerHTML = `<div class="items-grid">${policiesHTML}</div>`;
+                container.innerHTML = '<div class="feed-container">' + feedHTML + '</div>';
             }
         }
 
@@ -1615,21 +783,17 @@
                 this.currentSection = 'newsfeed';
                 this.userMenuOpen = false;
                 this.activitiesOpen = false;
-                this.usersManager = new UsersManager();
-                this.servicesManager = new ServicesManager();
-                this.forumsManager = new ForumsManager();
-                this.policiesManager = new PoliciesManager();
+                this.newsfeedManager = new NewsfeedManager();
                 this.init();
             }
 
             init() {
                 this.showSection('newsfeed');
-                this.usersManager.loadIfNeeded();
+                this.newsfeedManager.loadIfNeeded();
                 this.setupGlobalEventListeners();
             }
 
             setupGlobalEventListeners() {
-                // Close user menu when clicking outside
                 document.addEventListener('click', (e) => {
                     const userMenu = document.querySelector('.user-menu');
                     if (this.userMenuOpen && !userMenu.contains(e.target)) {
@@ -1686,37 +850,33 @@
                     this.activitiesOpen = false;
                 }
                 
-                // Update nav link state
                 document.querySelectorAll('.nav-link').forEach(link => {
                     link.classList.remove('active');
                 });
                 
-                const activeLink = document.querySelector(`[data-section="${this.currentSection}"]`);
+                const activeLink = document.querySelector('[data-section="' + this.currentSection + '"]');
                 if (activeLink) {
                     activeLink.classList.add('active');
                 }
             }
 
             logout() {
-                // Add logout functionality here
-                alert('Logout functionality - This would handle user logout');
+                alert('Logout functionality');
                 this.closeUserMenu();
             }
 
             showSection(sectionId) {
-                // Handle activities as a special case - toggle the sliding panel
                 if (sectionId === 'activities') {
                     if (this.activitiesOpen) {
                         this.closeActivities();
                     } else {
                         this.openActivities();
                         
-                        // Update nav link state for activities
                         document.querySelectorAll('.nav-link').forEach(link => {
                             link.classList.remove('active');
                         });
                         
-                        const activeLink = document.querySelector(`[data-section="activities"]`);
+                        const activeLink = document.querySelector('[data-section="activities"]');
                         if (activeLink) {
                             activeLink.classList.add('active');
                         }
@@ -1724,10 +884,6 @@
                     return;
                 }
                 
-                // DON'T close activities panel when navigating to other sections
-                // The panel should persist until manually closed
-                
-                // Handle normal page sections
                 document.querySelectorAll('.page-section').forEach(section => {
                     section.classList.remove('active');
                 });
@@ -1742,44 +898,32 @@
                     link.classList.remove('active');
                 });
                 
-                const activeLink = document.querySelector(`[data-section="${sectionId}"]`);
+                const activeLink = document.querySelector('[data-section="' + sectionId + '"]');
                 if (activeLink) {
                     activeLink.classList.add('active');
                 }
 
-                // Close user menu when navigating
                 this.closeUserMenu();
 
-                switch(sectionId) {
-                    case 'users':
-                        this.usersManager.loadIfNeeded();
-                        break;
-                    case 'services':
-                        this.servicesManager.loadIfNeeded();
-                        break;
-                    case 'forums':
-                        this.forumsManager.loadIfNeeded();
-                        break;
-                    case 'policies':
-                        this.policiesManager.loadIfNeeded();
-                        break;
+                if (sectionId === 'newsfeed') {
+                    this.newsfeedManager.loadIfNeeded();
                 }
             }
 
             createUser() {
-                alert('Create User Profile - This will open a form to create a new user profile');
+                alert('Create User Profile');
             }
 
             createForum() {
-                alert('Create Forum - This will open a form to create a new discussion forum');
+                alert('Create Forum');
             }
 
             createService() {
-                alert('Create Service - This will open a form to create a new service');
+                alert('Create Service');
             }
 
             createPolicy() {
-                alert('Create Policy - This will open a form to create a new governance policy');
+                alert('Create Policy');
             }
         }
 
