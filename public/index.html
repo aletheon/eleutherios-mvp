@@ -86,6 +86,7 @@
             display: flex;
             align-items: center;
             gap: 1rem;
+            position: relative;
         }
 
         .cart-icon {
@@ -119,15 +120,362 @@
             cursor: pointer;
         }
 
+        /* User Menu Flyout */
+        .user-menu-flyout {
+            position: absolute;
+            top: 50px;
+            right: 0;
+            width: 280px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1001;
+        }
+
+        .user-menu-flyout.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .user-menu-header {
+            padding: 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-menu-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4c51bf, #667eea);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .user-details {
+            flex: 1;
+        }
+
+        .user-menu-name {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 2px;
+        }
+
+        .user-menu-email {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f2937;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .user-menu-email:hover {
+            color: #4c51bf;
+        }
+
+        .user-menu-stats {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .menu-stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .menu-stat-item:hover {
+            background: #f3f4f6;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #374151;
+        }
+
+        .stat-count {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .user-menu-actions {
+            padding: 0.5rem 0;
+        }
+
+        .menu-action-item {
+            padding: 0.5rem 1rem;
+            font-size: 14px;
+            color: #374151;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .menu-action-item:hover {
+            background: #f3f4f6;
+        }
+
+        .menu-action-item.logout {
+            color: #dc2626;
+        }
+
+        .menu-action-item.logout:hover {
+            background: #fef2f2;
+        }
+
+        /* Dashboard Styles */
+        .dashboard-header {
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-header h1 {
+            color: #1f2937;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .dashboard-card h3 {
+            color: #6b7280;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .balance-amount {
+            color: #10b981;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .stat-number.blue {
+            color: #3b82f6;
+        }
+
+        .stat-number.purple {
+            color: #8b5cf6;
+        }
+
+        .income-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .income-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 14px;
+        }
+
+        .income-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .income-dot.green {
+            background: #10b981;
+        }
+
+        .income-dot.red {
+            background: #ef4444;
+        }
+
+        .my-content-section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .content-header h2 {
+            color: #1f2937;
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .toggle-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            background: white;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: #4c51bf;
+            color: white;
+            border-color: #4c51bf;
+        }
+
+        .add-btn {
+            width: 32px;
+            height: 32px;
+            background: #4c51bf;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .policy-item, .service-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .policy-content, .service-content {
+            flex: 1;
+        }
+
+        .policy-title, .service-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .policy-name, .service-name {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .policy-tag, .service-tag {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .policy-tag.housing, .service-tag.personal {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .policy-tag.draft {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .policy-description, .service-description {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 0.5rem;
+        }
+
+        .policy-date {
+            color: #6b7280;
+            font-size: 12px;
+        }
+
+        .service-avatar {
+            width: 32px;
+            height: 32px;
+            background: #6b7280;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 1rem;
+        }
+
+        .edit-btn {
+            padding: 0.5rem 1rem;
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .edit-btn:hover {
+            background: #e5e7eb;
+        }
+
         /* Page Container */
         .page-container {
-            max-width: 1200px;
+            max-width: 100%;
             margin: 0 auto;
             min-height: calc(100vh - 80px);
+            display: flex;
+            position: relative;
+            top: 0;
         }
 
         .page-content {
             padding: 2rem;
+            width: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .page-content.activities-open {
+            width: 60%;
+            margin-left: 40%;
         }
 
         /* Page sections */
@@ -137,6 +485,66 @@
 
         .page-section.active {
             display: block;
+        }
+
+        /* Activities sliding panel */
+        .activities-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 100vh;
+            background: white;
+            border-right: 2px solid #e5e7eb;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            transition: width 0.3s ease;
+            overflow: hidden;
+            z-index: 999;
+        }
+
+        .activities-panel.active {
+            width: 40%;
+        }
+
+        .activities-panel-content {
+            padding: 2rem;
+            min-width: 400px;
+            margin-top: 80px;
+        }
+
+        .activities-panel .section-header {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(76, 81, 191, 0.1);
+            border-radius: 8px;
+        }
+
+        .activities-panel .section-header h2 {
+            font-size: 1rem;
+            margin: 0;
+        }
+
+        .close-activities {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: rgba(76, 81, 191, 0.1);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4c51bf;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .close-activities:hover {
+            background: #4c51bf;
+            color: white;
         }
 
         /* Section headers and create buttons */
@@ -477,10 +885,38 @@
     </style>
 </head>
 <body>
+    <!-- Activities Sliding Panel -->
+    <div id="activitiesPanel" class="activities-panel">
+        <button class="close-activities" onclick="app.closeActivities()">×</button>
+        <div class="activities-panel-content">
+            <div class="section-header">
+                <h2>Track user activities across forums, policies, and services</h2>
+            </div>
+            <div class="placeholder-page">
+                <div class="placeholder-icon">📋</div>
+                <p>Monitor and manage user activities across all forums and policies they participate in. Activities are automatically generated when users interact with policies, forums, or services.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activities Sliding Panel -->
+    <div id="activitiesPanel" class="activities-panel">
+        <button class="close-activities" onclick="app.closeActivities()">×</button>
+        <div class="activities-panel-content">
+            <div class="section-header">
+                <h2>Track user activities across forums, policies, and services</h2>
+            </div>
+            <div class="placeholder-page">
+                <div class="placeholder-icon">📋</div>
+                <p>Monitor and manage user activities across all forums and policies they participate in. Activities are automatically generated when users interact with policies, forums, or services.</p>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Navigation -->
     <nav class="main-nav">
         <div class="nav-container">
-            <a href="#" class="logo" onclick="app.showSection('home')">
+            <a href="#" class="logo" onclick="app.showSection('activities')">
                 <div class="logo-icon">
                     <svg width="24" height="24" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
                         <circle cx="16" cy="11.5" r="4" fill="white"/>
@@ -492,16 +928,9 @@
             </a>
             
             <ul class="nav-links">
-                <li><a href="#" class="nav-link" data-section="home" onclick="app.showSection('home')" title="Home">
+                <li><a href="#" class="nav-link" data-section="newsfeed" onclick="app.showSection('newsfeed')" title="Home">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                         <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-                    </svg>
-                </a></li>
-                <li><a href="#" class="nav-link" data-section="activities" onclick="app.showSection('activities')" title="Activities">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                        <line x1="3" y1="9" x2="21" y2="9"/>
-                        <line x1="9" y1="21" x2="9" y2="9"/>
                     </svg>
                 </a></li>
                 <li><a href="#" class="nav-link" data-section="forums" onclick="app.showSection('forums')" title="Forums">
@@ -526,15 +955,6 @@
                         <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                     </svg>
                 </a></li>
-                <li><a href="#" class="nav-link" data-section="data" onclick="app.showSection('data')" title="Data">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14,2 14,8 20,8"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/>
-                        <line x1="16" y1="17" x2="8" y2="17"/>
-                        <polyline points="10,9 9,9 8,9"/>
-                    </svg>
-                </a></li>
             </ul>
             
             <div class="user-menu">
@@ -545,7 +965,49 @@
                         <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
                     </svg>
                 </div>
-                <div class="user-avatar">U</div>
+                <div class="user-avatar" onclick="app.toggleUserMenu()">U</div>
+                
+                <!-- User Menu Flyout -->
+                <div class="user-menu-flyout" id="userMenuFlyout">
+                    <div class="user-menu-header">
+                        <div class="user-info">
+                            <div class="user-menu-avatar">U</div>
+                            <div class="user-details">
+                                <div class="user-menu-name">Signed in as</div>
+                                <div class="user-menu-email" onclick="app.showSection('dashboard')">rob.kara@gmail.com</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="user-menu-stats">
+                        <div class="menu-stat-item" onclick="app.showSection('policies')">
+                            <span class="stat-label">Policies</span>
+                            <span class="stat-count">(1)</span>
+                        </div>
+                        <div class="menu-stat-item" onclick="app.showSection('forums')">
+                            <span class="stat-label">Forums</span>
+                            <span class="stat-count">(1)</span>
+                        </div>
+                        <div class="menu-stat-item" onclick="app.showSection('services')">
+                            <span class="stat-label">Services</span>
+                            <span class="stat-count">(1)</span>
+                        </div>
+                        <div class="menu-stat-item">
+                            <span class="stat-label">Favorites</span>
+                            <span class="stat-count">(0)</span>
+                        </div>
+                        <div class="menu-stat-item">
+                            <span class="stat-label">Following</span>
+                            <span class="stat-count">(0)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="user-menu-actions">
+                        <div class="menu-action-item">Payments</div>
+                        <div class="menu-action-item">Receipts</div>
+                        <div class="menu-action-item logout" onclick="app.logout()">Logout</div>
+                    </div>
+                </div>
             </div>
         </div>
     </nav>
@@ -554,7 +1016,89 @@
     <div class="page-container">
         <div class="page-content">
             
-            <!-- Home Section -->
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="page-section">
+                <div class="dashboard-header">
+                    <h1>Dashboard</h1>
+                </div>
+                
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <h3>Stripe Balance</h3>
+                        <div class="balance-amount">$1250.75</div>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <h3>Favorites</h3>
+                        <div class="stat-number blue">0</div>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <h3>Following</h3>
+                        <div class="stat-number purple">0</div>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <h3>Income vs Expense</h3>
+                        <div class="income-stats">
+                            <div class="income-item">
+                                <span class="income-dot green"></span>
+                                <span>Income: $400</span>
+                            </div>
+                            <div class="income-item">
+                                <span class="income-dot red"></span>
+                                <span>Expense: $200</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="my-content-section">
+                    <div class="content-header">
+                        <h2>My Policies (1)</h2>
+                        <div class="view-toggle">
+                            <button class="toggle-btn active">List</button>
+                            <button class="toggle-btn">Grid</button>
+                        </div>
+                    </div>
+                    
+                    <div class="policy-item">
+                        <div class="policy-content">
+                            <div class="policy-title">
+                                <span class="policy-name">Social Housing</span>
+                                <span class="policy-tag housing">housing</span>
+                                <span class="policy-tag draft">draft</span>
+                            </div>
+                            <div class="policy-description">help get people into housing</div>
+                            <div class="policy-date">📅 Created 29/09/2025</div>
+                        </div>
+                        <button class="edit-btn">Edit</button>
+                    </div>
+                </div>
+                
+                <div class="my-content-section">
+                    <div class="content-header">
+                        <h2>My Services (1)</h2>
+                        <div class="view-toggle">
+                            <button class="toggle-btn active">List</button>
+                            <button class="toggle-btn">Grid</button>
+                            <button class="add-btn">+</button>
+                        </div>
+                    </div>
+                    
+                    <div class="service-item">
+                        <div class="service-avatar">N</div>
+                        <div class="service-content">
+                            <div class="service-title">
+                                <span class="service-name">Homeless Person</span>
+                                <span class="service-tag personal">personal</span>
+                            </div>
+                            <div class="service-description">No description</div>
+                        </div>
+                        <button class="edit-btn">Edit</button>
+                    </div>
+                </div>
+            </section>
             <section id="home" class="page-section">
                 <div class="placeholder-page">
                     <div class="placeholder-icon">🏠</div>
@@ -563,15 +1107,13 @@
                 </div>
             </section>
 
-            <!-- Activities Section -->
-            <section id="activities" class="page-section">
+            <section id="newsfeed" class="page-section active">
                 <div class="section-header">
-                    <h2>Track user activities across forums, policies, and services</h2>
-                    <button class="create-btn" onclick="app.createActivity()">Create Activity</button>
+                    <h2>Your personalized feed of activities, updates, and community content</h2>
                 </div>
                 <div class="placeholder-page">
-                    <div class="placeholder-icon">📋</div>
-                    <p>Monitor and manage user activities across all forums and policies they participate in.</p>
+                    <div class="placeholder-icon">📰</div>
+                    <p>Stay up to date with the latest activities from your followed users, policy updates, forum discussions, and service announcements.</p>
                 </div>
             </section>
 
@@ -612,7 +1154,7 @@
             </section>
 
             <!-- Users Section -->
-            <section id="users" class="page-section active">
+            <section id="users" class="page-section">
                 <div class="filters">
                     <div class="search-container">
                         <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -649,19 +1191,8 @@
                 </div>
             </section>
 
-            <!-- Data Section -->
-            <section id="data" class="page-section">
-                <div class="section-header">
-                    <h2>Analytics, logs, and state management for governance insights</h2>
-                </div>
-                <div class="placeholder-page">
-                    <div class="placeholder-icon">📊</div>
-                    <p>Raw records and analytics from services, forums, and policies for governance transparency and insights.</p>
-                </div>
-            </section>
-
-        </div>
-    </div>
+        </div> <!-- End page-content -->
+    </div> <!-- End page-container -->
 
     <script>
         class UsersManager {
@@ -1081,7 +1612,9 @@
 
         class EleutherosApp {
             constructor() {
-                this.currentSection = 'users';
+                this.currentSection = 'newsfeed';
+                this.userMenuOpen = false;
+                this.activitiesOpen = false;
                 this.usersManager = new UsersManager();
                 this.servicesManager = new ServicesManager();
                 this.forumsManager = new ForumsManager();
@@ -1090,11 +1623,111 @@
             }
 
             init() {
-                this.showSection('users');
+                this.showSection('newsfeed');
                 this.usersManager.loadIfNeeded();
+                this.setupGlobalEventListeners();
+            }
+
+            setupGlobalEventListeners() {
+                // Close user menu when clicking outside
+                document.addEventListener('click', (e) => {
+                    const userMenu = document.querySelector('.user-menu');
+                    if (this.userMenuOpen && !userMenu.contains(e.target)) {
+                        this.closeUserMenu();
+                    }
+                });
+            }
+
+            toggleUserMenu() {
+                const flyout = document.getElementById('userMenuFlyout');
+                if (!flyout) return;
+
+                if (this.userMenuOpen) {
+                    this.closeUserMenu();
+                } else {
+                    this.openUserMenu();
+                }
+            }
+
+            openUserMenu() {
+                const flyout = document.getElementById('userMenuFlyout');
+                if (flyout) {
+                    flyout.classList.add('active');
+                    this.userMenuOpen = true;
+                }
+            }
+
+            closeUserMenu() {
+                const flyout = document.getElementById('userMenuFlyout');
+                if (flyout) {
+                    flyout.classList.remove('active');
+                    this.userMenuOpen = false;
+                }
+            }
+
+            openActivities() {
+                const panel = document.getElementById('activitiesPanel');
+                const pageContent = document.querySelector('.page-content');
+                
+                if (panel && pageContent) {
+                    panel.classList.add('active');
+                    pageContent.classList.add('activities-open');
+                    this.activitiesOpen = true;
+                }
+            }
+
+            closeActivities() {
+                const panel = document.getElementById('activitiesPanel');
+                const pageContent = document.querySelector('.page-content');
+                
+                if (panel && pageContent) {
+                    panel.classList.remove('active');
+                    pageContent.classList.remove('activities-open');
+                    this.activitiesOpen = false;
+                }
+                
+                // Update nav link state
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.classList.remove('active');
+                });
+                
+                const activeLink = document.querySelector(`[data-section="${this.currentSection}"]`);
+                if (activeLink) {
+                    activeLink.classList.add('active');
+                }
+            }
+
+            logout() {
+                // Add logout functionality here
+                alert('Logout functionality - This would handle user logout');
+                this.closeUserMenu();
             }
 
             showSection(sectionId) {
+                // Handle activities as a special case - toggle the sliding panel
+                if (sectionId === 'activities') {
+                    if (this.activitiesOpen) {
+                        this.closeActivities();
+                    } else {
+                        this.openActivities();
+                        
+                        // Update nav link state for activities
+                        document.querySelectorAll('.nav-link').forEach(link => {
+                            link.classList.remove('active');
+                        });
+                        
+                        const activeLink = document.querySelector(`[data-section="activities"]`);
+                        if (activeLink) {
+                            activeLink.classList.add('active');
+                        }
+                    }
+                    return;
+                }
+                
+                // DON'T close activities panel when navigating to other sections
+                // The panel should persist until manually closed
+                
+                // Handle normal page sections
                 document.querySelectorAll('.page-section').forEach(section => {
                     section.classList.remove('active');
                 });
@@ -1114,6 +1747,9 @@
                     activeLink.classList.add('active');
                 }
 
+                // Close user menu when navigating
+                this.closeUserMenu();
+
                 switch(sectionId) {
                     case 'users':
                         this.usersManager.loadIfNeeded();
@@ -1132,10 +1768,6 @@
 
             createUser() {
                 alert('Create User Profile - This will open a form to create a new user profile');
-            }
-
-            createActivity() {
-                alert('Create Activity - This will open a form to create a new activity');
             }
 
             createForum() {
