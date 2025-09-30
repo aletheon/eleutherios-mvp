@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Users - Eleutherios</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #4c51bf;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: #6b7280;
+            margin-top: 0.5rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .filters {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px 12px 44px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #4c51bf;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #e5e7eb;
+            background: white;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .filter-btn:hover,
+        .filter-btn.active {
+            background: #4c51bf;
+            color: white;
+            border-color: #4c51bf;
+        }
+
+        .cert-score {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4c51bf, #667eea);
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 1rem;
+        }
+
+        .users-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .user-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .user-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .user-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4c51bf, #667eea);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .user-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-bio {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+
+        .user-meta {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 12px;
+        }
+
+        .meta-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 8px;
+            background: #f3f4f6;
+            border-radius: 6px;
+        }
+
+        .meta-label {
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .meta-value {
+            font-weight: 600;
+            color: #4c51bf;
+        }
+
+        .user-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .follow-btn {
+            width: 100%;
+            padding: 10px;
+            background: #4c51bf;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .follow-btn:hover {
+            background: #3730a3;
+        }
+
+        .follow-btn.following {
+            background: #10b981;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 200px;
+            font-size: 18px;
+            color: #6b7280;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 1rem;
+            }
+
+            .header {
+                padding: 1rem;
+            }
+
+            .users-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Eleutherios Community</h1>
+        <p>Governance through Love in Action - Discover public users in our community</p>
+    </div>
+
+    <div class="container">
+        <div class="filters">
+            <div class="search-container">
+                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="M21 21l-4.35-4.35"></path>
+                </svg>
+                <input type="text" class="search-input" placeholder="Search users by name or expertise..." id="searchInput">
+            </div>
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-filter="all">All Users</button>
+                <button class="filter-btn" data-filter="high-cert">High CERT Score</button>
+                <button class="filter-btn" data-filter="active">Recently Active</button>
+                <button class="filter-btn" data-filter="service-providers">Service Providers</button>
+                <button class="filter-btn" data-filter="highly-followed">Highly Followed</button>
+            </div>
+        </div>
+
+        <div id="usersContainer">
+            <div class="loading">Loading users...</div>
+        </div>
+    </div>
+
+    <script>
+        class UsersPage {
+            constructor() {
+                this.users = [];
+                this.filteredUsers = [];
+                this.currentFilter = 'all';
+                this.searchTerm = '';
+                this.init();
+            }
+
+            async init() {
+                await this.loadUsers();
+                this.setupEventListeners();
+                this.renderUsers();
+            }
+
+            async loadUsers() {
+                try {
+                    // Try to fetch from your API endpoint
+                    const response = await fetch('/api/users/public');
+                    if (response.ok) {
+                        this.users = await response.json();
+                    } else {
+                        // Fallback to mock data if API not available
+                        this.users = this.generateMockUsers();
+                    }
+                } catch (error) {
+                    console.log('API not available, using mock data');
+                    this.users = this.generateMockUsers();
+                }
+                this.filteredUsers = [...this.users];
+            }
+
+            generateMockUsers() {
+                const names = [
+                    'Alice Johnson', 'Bob Smith', 'Carol Davis', 'David Wilson',
+                    'Eva Brown', 'Frank Miller', 'Grace Lee', 'Henry Taylor',
+                    'Iris Chen', 'Jack Anderson', 'Kate Rodriguez', 'Leo Thompson'
+                ];
+
+                const bios = [
+                    'Policy researcher focused on sustainable governance models',
+                    'Community organizer with expertise in participatory democracy',
+                    'Tech entrepreneur building governance solutions',
+                    'Social scientist studying collective decision-making',
+                    'Legal expert in constitutional frameworks',
+                    'Data analyst for policy impact measurement',
+                    'Forum moderator and conflict resolution specialist',
+                    'Service provider for digital identity verification',
+                    'Governance consultant for DAOs and cooperatives',
+                    'Academic researcher in political science',
+                    'Community builder and stakeholder engagement expert',
+                    'Software developer contributing to open governance'
+                ];
+
+                return names.map((name, index) => ({
+                    id: 'user-' + (index + 1),
+                    name: name,
+                    email: name.toLowerCase().replace(' ', '.') + '@eleutherios.org',
+                    bio: bios[index],
+                    avatar: name.split(' ').map(n => n[0]).join(''),
+                    certScore: Math.floor(Math.random() * 100),
+                    stats: {
+                        followers: Math.floor(Math.random() * 100),
+                        following: Math.floor(Math.random() * 80),
+                        services: Math.floor(Math.random() * 10),
+                        activities: Math.floor(Math.random() * 20),
+                        favourites: Math.floor(Math.random() * 15)
+                    },
+                    lastActive: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+                    isFollowing: false,
+                    location: ['Christchurch, NZ', 'Auckland, NZ', 'Wellington, NZ'][Math.floor(Math.random() * 3)]
+                }));
+            }
+
+            setupEventListeners() {
+                // Search input
+                document.getElementById('searchInput').addEventListener('input', (e) => {
+                    this.searchTerm = e.target.value.toLowerCase();
+                    this.applyFilters();
+                });
+
+                // Filter buttons
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentFilter = e.target.dataset.filter;
+                        this.applyFilters();
+                    });
+                });
+            }
+
+            applyFilters() {
+                let filtered = [...this.users];
+
+                // Apply search filter
+                if (this.searchTerm) {
+                    filtered = filtered.filter(user => 
+                        user.name.toLowerCase().includes(this.searchTerm) ||
+                        user.bio.toLowerCase().includes(this.searchTerm) ||
+                        user.username.toLowerCase().includes(this.searchTerm)
+                    );
+                }
+
+                // Apply category filter
+                switch (this.currentFilter) {
+                    case 'high-cert':
+                        filtered = filtered.filter(user => user.certScore >= 70);
+                        break;
+                    case 'active':
+                        filtered = filtered.filter(user => {
+                            const daysSinceActive = (Date.now() - new Date(user.lastActive)) / (1000 * 60 * 60 * 24);
+                            return daysSinceActive <= 7;
+                        });
+                        break;
+                    case 'service-providers':
+                        filtered = filtered.filter(user => user.stats.services >= 3);
+                        break;
+                    case 'highly-followed':
+                        filtered = filtered.filter(user => user.stats.followers >= 30);
+                        break;
+                }
+
+                this.filteredUsers = filtered;
+                this.renderUsers();
+            }
+
+            renderUsers() {
+                const container = document.getElementById('usersContainer');
+                
+                if (this.filteredUsers.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>No users found</h3>
+                            <p>Try adjusting your search criteria or filters.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const usersHTML = this.filteredUsers.map(user => `
+                    <div class="user-card">
+                        <div class="user-avatar">${user.avatar}</div>
+                        <div class="cert-score">${user.certScore}</div>
+                        <div class="user-name">${user.name}</div>
+                        <div class="user-bio">${user.bio}</div>
+                        
+                        <div class="user-meta">
+                            <div class="meta-item">
+                                <span class="meta-label">Followers</span>
+                                <span class="meta-value">${user.stats.followers}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Following</span>
+                                <span class="meta-value">${user.stats.following}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Services</span>
+                                <span class="meta-value">${user.stats.services}</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Activities</span>
+                                <span class="meta-value">${user.stats.activities}</span>
+                            </div>
+                        </div>
+
+                        <div class="user-stats">
+                            <span>${user.location || 'Location not set'}</span>
+                            <span>CERT: ${user.certScore}</span>
+                        </div>
+
+                        <button class="follow-btn ${user.isFollowing ? 'following' : ''}" 
+                                onclick="usersPage.toggleFollow('${user.id}')">
+                            ${user.isFollowing ? 'Following' : 'Follow'}
+                        </button>
+                    </div>
+                `).join('');
+
+                container.innerHTML = `<div class="users-grid">${usersHTML}</div>`;
+            }
+
+            async toggleFollow(userId) {
+                const user = this.users.find(u => u.id === userId);
+                if (user) {
+                    user.isFollowing = !user.isFollowing;
+                    
+                    // In a real app, you'd make an API call here
+                    try {
+                        await fetch(`/api/users/${userId}/follow`, {
+                            method: user.isFollowing ? 'POST' : 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                    } catch (error) {
+                        console.log('Follow API not available');
+                    }
+                    
+                    this.renderUsers();
+                }
+            }
+        }
+
+        // Initialize the page
+        const usersPage = new UsersPage();
+    </script>
+</body>
+</html>
