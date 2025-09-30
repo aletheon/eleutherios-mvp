@@ -693,33 +693,85 @@
             }
 
             generateMockFeedItems() {
+                const now = Date.now();
                 const feedTypes = [
-                    { type: 'policy_update', icon: '📋', action: 'updated' },
-                    { type: 'forum_post', icon: '💬', action: 'posted in' },
-                    { type: 'service_launch', icon: '⚙️', action: 'launched' }
+                    { type: 'policy_update', icon: '📋', action: 'updated policy' },
+                    { type: 'forum_discussion', icon: '💬', action: 'started discussion in' },
+                    { type: 'service_created', icon: '⚙️', action: 'created service' },
+                    { type: 'forum_post', icon: '💭', action: 'posted in' },
+                    { type: 'policy_draft', icon: '📝', action: 'drafted new policy' },
+                    { type: 'service_update', icon: '🔧', action: 'updated service' }
                 ];
 
-                const users = ['Alice Johnson', 'Bob Smith', 'Carol Davis'];
-                const subjects = ['Housing Policy Reform', 'Community Guidelines Update', 'Identity Verification Service'];
+                const users = [
+                    { name: 'Rob Kara', email: 'rob.kara@gmail.com' },
+                    { name: 'Alice Johnson', email: 'alice.johnson@eleutherios.org' },
+                    { name: 'David Wilson', email: 'david.wilson@eleutherios.org' },
+                    { name: 'Sarah Chen', email: 'sarah.chen@eleutherios.org' }
+                ];
 
-                return Array.from({ length: 5 }, (_, index) => {
-                    const feedType = feedTypes[Math.floor(Math.random() * feedTypes.length)];
-                    const user = users[Math.floor(Math.random() * users.length)];
-                    const subject = subjects[Math.floor(Math.random() * subjects.length)];
+                const activities = [
+                    {
+                        type: 'policy_update',
+                        user: 'Rob Kara',
+                        subject: 'Social Housing Policy',
+                        content: 'Updated draft policy to include enhanced accessibility provisions and community input mechanisms. Added new rule for tenancy agreement verification through integrated RealMe authentication service.',
+                        hoursAgo: 1
+                    },
+                    {
+                        type: 'forum_discussion',
+                        user: 'Alice Johnson',
+                        subject: 'House Walk-Through Forum',
+                        content: 'Initiated discussion about standardizing house inspection procedures across different housing providers. Looking for community feedback on proposed evaluation criteria.',
+                        hoursAgo: 3
+                    },
+                    {
+                        type: 'service_created',
+                        user: 'David Wilson',
+                        subject: 'Identity Verification Service',
+                        content: 'Launched new service integrating with RealMe for secure identity verification in housing applications. Service now available for policy consumption.',
+                        hoursAgo: 6
+                    },
+                    {
+                        type: 'forum_post',
+                        user: 'Sarah Chen',
+                        subject: 'Housing Policy Development',
+                        content: 'Shared research findings on effective social housing models from international case studies. Proposed three implementation pathways for community consideration.',
+                        hoursAgo: 12
+                    },
+                    {
+                        type: 'policy_draft',
+                        user: 'Rob Kara',
+                        subject: 'Community Guidelines Policy',
+                        content: 'Created initial draft for community governance guidelines defining stakeholder roles, decision-making processes, and conflict resolution mechanisms.',
+                        hoursAgo: 18
+                    },
+                    {
+                        type: 'service_update',
+                        user: 'Alice Johnson',
+                        subject: 'Homeless Person Service',
+                        content: 'Enhanced service description and added integration capabilities with housing placement workflows. Service now supports automated referral processing.',
+                        hoursAgo: 24
+                    }
+                ];
+
+                return activities.map((activity, index) => {
+                    const user = users.find(u => u.name === activity.user) || users[0];
+                    const feedType = feedTypes.find(ft => ft.type === activity.type) || feedTypes[0];
                     
                     return {
                         id: 'feed-' + (index + 1),
-                        type: feedType.type,
+                        type: activity.type,
                         icon: feedType.icon,
-                        user: user,
-                        userAvatar: user.split(' ').map(n => n[0]).join(''),
+                        user: user.name,
+                        userAvatar: user.name.split(' ').map(n => n[0]).join(''),
                         action: feedType.action,
-                        subject: subject,
-                        timestamp: new Date(Date.now() - (index * 60 * 60 * 1000)),
-                        content: 'Sample content for ' + subject + ' activity.',
+                        subject: activity.subject,
+                        timestamp: new Date(now - (activity.hoursAgo * 60 * 60 * 1000)),
+                        content: activity.content,
                         interactions: {
-                            likes: Math.floor(Math.random() * 20),
-                            comments: Math.floor(Math.random() * 8),
+                            likes: Math.floor(Math.random() * 15) + 2,
+                            comments: Math.floor(Math.random() * 8) + 1,
                             shares: Math.floor(Math.random() * 5)
                         }
                     };
