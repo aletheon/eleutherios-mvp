@@ -1,163 +1,241 @@
-# Eleutherios Schema v2
+# Eleutherios Data Model Specification
 
 ## Overview
-This schema defines the core data models of the **Policy–Forum–Service–Data (PFSD)** protocol as implemented in Eleutherios. It integrates governance concepts with technical system requirements and supports both analogue and digital stakeholders.
 
----
+Eleutherios implements the Policy–Forum–Service–Data (PFSD) model as a governance operating system. This document defines the core data structures and relationships.
 
-## 1. Policy
+## Core Entities
 
-**Description:**  
-Policies are the root governance objects. They contain rules that define how services, forums, or other policies are instantiated and interact.
+### Policy
+Root governance objects containing rules that define system behavior.
 
-**Fields:**
-- `id` (string, UUID)  
-- `title` (string)  
-- `description` (string, markdown supported)  
-- `visibility`: `public | private`  
-- `ownerId` (ref → User)  
-- `rules[]` (array of Rule objects)  
-- `createdAt` (timestamp)  
-- `updatedAt` (timestamp)  
+```json
+{
+  "id": "string",
+  "title": "string",
+  "description": "string",
+  "visibility": "public|private",
+  "ownerId": "string",
+  "rules": ["RuleObject"],
+  "parentPolicyId": "string|null",
+  "depth": "number",
+  "createdAt": "timestamp",
+  "updatedAt": "timestamp",
+  "status": "draft|active|archived"
+}
+```
 
----
+### Rule
+Defines instantiation behavior within policies.
 
-## 2. Rule
+```json
+{
+  "id": "string",
+  "name": "string",
+  "type": "forum|service|policy",
+  "target": "string",
+  "parameters": "object",
+  "conditions": "object|null"
+}
+```
 
-**Description:**  
-Rules define the active behaviors inside a policy. They are **pointers** to other entities and only instantiate at runtime when consumed by a Service.
+### Forum
+Instantiated spaces for dialogue and decision-making.
 
-**Fields:**
-- `id` (string, UUID)  
-- `name` (string)  
-- `type`: `Forum | Service | PolicyRef`  
-- `targetRef`: (ref → Forum, Service, Policy)  
-- `defaultStakeholders[]` (array of User/Service IDs, only for Forum rules)  
-- `parameters` (JSON, e.g., currency, size options, API endpoint)  
+```json
+{
+  "id": "string",
+  "title": "string",
+  "description": "string",
+  "stakeholders": ["UserId"],
+  "permissions": "object",
+  "policyId": "string",
+  "messages": ["MessageObject"],
+  "createdAt": "timestamp",
+  "status": "active|closed|archived"
+}
+```
 
----
+### Service
+Analogue or digital agents that consume policies and provide functionality.
 
-## 3. Forum
+```json
+{
+  "id": "string",
+  "title": "string",
+  "description": "string",
+  "type": "product|ai|api|human",
+  "ownerId": "string",
+  "price": "number",
+  "currency": "string",
+  "attributes": "object",
+  "consumedPolicies": ["PolicyId"],
+  "certScore": "number",
+  "status": "active|inactive|maintenance"
+}
+```
 
-**Description:**  
-Forums are instantiated expressions of rules for discussion, collaboration, and coordination.
+### User
+Community members and stakeholders.
 
-**Fields:**
-- `id` (string, UUID)  
-- `policyId` (ref → Policy)  
-- `title` (string)  
-- `description` (string)  
-- `stakeholders[]` (array of User/Service IDs)  
-- `permissions[]` (Permission matrix for each stakeholder)  
-- `messages[]` (array of Message objects)  
-- `files[]` (array of FileRefs)  
-- `createdAt` (timestamp)  
+```json
+{
+  "id": "string",
+  "name": "string",
+  "email": "string",
+  "bio": "string",
+  "avatar": "string",
+  "certScore": "number",
+  "stats": {
+    "followers": "number",
+    "following": "number",
+    "services": "number",
+    "activities": "number",
+    "favourites": "number"
+  },
+  "location": "string",
+  "lastActive": "timestamp"
+}
+```
 
-**Permissions (defaults per stakeholder):**
-- Add stakeholder: Yes/No  
-- Remove stakeholder: Yes/No  
-- Create sub-forum: Yes/No  
-- Post message: Yes/No  
-- Remove own message: Yes/No  
-- Remove others’ messages: Yes/No  
-- Add file: Yes/No  
-- Remove own file: Yes/No  
-- Remove others’ files: Yes/No  
+### Activity
+User interactions across the platform.
 
----
+```json
+{
+  "id": "string",
+  "userId": "string",
+  "type": "policy_update|forum_post|service_created|etc",
+  "targetId": "string",
+  "targetType": "policy|forum|service",
+  "content": "string",
+  "timestamp": "timestamp",
+  "metadata": "object"
+}
+```
 
-## 4. Service
+## Policy Hierarchies and Validation
 
-**Description:**  
-Services are analogue or digital entities that perform actions, consume policies, or provide outputs.
+### Depth Limitations
+- Maximum policy nesting depth: 12 levels
+- Validation occurs at policy creation/save time
+- Prevents circular references through dependency graph validation
 
-**Fields:**
-- `id` (string, UUID)  
-- `title` (string)  
-- `description` (string)  
-- `ownerId` (ref → User)  
-- `policyRefs[]` (array of Policy IDs consumed)  
-- `attributes` (ServiceAttributes object)  
-- `status`: Active / Inactive  
-- `createdAt` (timestamp)  
+### Breadcrumb Navigation
+- Shows logical hierarchy, not instantiation path
+- Private policies in breadcrumbs appear grayed/disabled but remain visible for context
+- Format: `Parent Policy > Child Policy > Grandchild Policy`
 
-**ServiceAttributes:**  
-- `price` (number, optional if paid)  
-- `currency` (string, e.g., NZD, USD)  
-- `size` (string or enum, optional)  
-- `color` (string, optional)  
-- `quantity` (integer, stock available)  
-- `free` (boolean, true if service is free)  
+### Standard Library Policies
+Eleutherios provides foundational policies that services can consume:
+- IdentityVerification
+- PaymentProcessing
+- ConflictResolution
+- DataPrivacy
+- ServiceRating
 
----
+### Policy Reference Types
+```
+rule ExistingResource -> Forum("existing:forum-id")
+rule NewResource -> Forum("create:forum-name", stakeholders=["role1", "role2"])
+```
 
-## 5. Data
+## Service Attributes
 
-**Description:**  
-Raw records generated by services, forums, or policies. Stored for analytics, governance, and auditing.
+### Core Attributes
+All services have these base attributes:
+- Price: monetary cost
+- Type: service category (product|ai|api|human)
+- Availability: current status
 
-**Fields:**
-- `id` (string, UUID)  
-- `sourceId` (ref → Service/Forum/Policy)  
-- `payload` (JSON blob)  
-- `timestamp` (timestamp)  
+### Type-Specific Attributes
+Attributes that appear based on service category:
 
----
+**Product Services:**
+- Size, Color, Weight, Dimensions, Material
 
-## 6. User
+**AI Services:**
+- Model type, Response time, Accuracy rating, Training data
 
-**Description:**  
-Users are stakeholders in the system, representing individuals or organisations.
+**API Services:**
+- Rate limits, Uptime SLA, Response format, Authentication method
 
-**Fields:**
-- `id` (string, UUID)  
-- `name` (string)  
-- `email` (string)  
-- `certScore` (CERT aggregate)  
-- `services[]` (array of Service IDs owned)  
-- `activities[]` (array of Activity IDs)  
-- `followers[]` (User IDs)  
-- `following[]` (User IDs)  
-- `favourites[]` (Service IDs)  
-- `createdAt` (timestamp)  
+**Human Services:**
+- Qualifications, Availability hours, Languages, Location
 
-**CERT Breakdown:**  
-- Cooperation = services from others added to policies/forums.  
-- Engagement = response speed + good ratings/reviews.  
-- Retention:  
-  - For-profit → follow-up sales.  
-  - Non-profit/free → follow-up uses.  
-- Trust = number of followers/subscribers.  
+### Search and Filtering
+- Search filters adapt to service types present in results
+- Custom attributes can be defined by service creators
+- Faceted search based on attribute combinations
 
----
+## CERT Scoring System
 
-## 7. Activity
+Cooperation, Engagement, Retention, Trust metrics for users and services.
 
-**Description:**  
-Tracks what a user is actively engaged in.
+### Calculation
+- **C** – Cooperation: frequency of adding services to policies/forums
+- **E** – Engagement: responsiveness + quality of ratings/reviews
+- **R** – Retention: repeat usage (free) or sales (paid services)
+- **T** – Trust: followers, subscriptions, endorsements
 
-**Fields:**
-- `id` (string, UUID)  
-- `userId` (ref → User)  
-- `forumRefs[]` (array of Forum IDs)  
-- `policyRefs[]` (array of Policy IDs)  
-- `timestamp` (last accessed)  
+### Score Range
+0-100, calculated weekly, influences platform recommendations and visibility.
 
----
+## Data Relationships
 
-## 8. Newsfeed
+### Policy Hierarchy
+- Policies can reference other policies (parent-child relationships)
+- Circular references prevented at design time
+- Maximum depth of 12 levels enforced
 
-**Description:**  
-Aggregates updates for a user based on their follows, favourites, and notifications.
+### Service-Policy Consumption
+- Services declare which policies they consume
+- Many-to-many relationship
+- Consumption creates dependency tracking
 
-**Fields:**
-- `id` (string, UUID)  
-- `userId` (ref → User)  
-- `entries[]` (array of FeedEntry objects)  
+### Forum-Policy Instantiation
+- Forums created through policy rule instantiation
+- One-to-many relationship (policy can create multiple forums)
+- Stakeholder membership defined by policy rules
 
-**FeedEntry:**  
-- `id` (string, UUID)  
-- `sourceType`: Service | Policy | Forum | User  
-- `sourceId` (ref)  
-- `message` (string, e.g., “Doctor updated status to Away”)  
-- `timestamp` (timestamp)  
+### User Activities
+- All user actions tracked as activities
+- Activities feed the newsfeed system
+- Used for CERT score calculations
+
+## Validation Rules
+
+### Policy Creation
+1. Check circular reference prevention
+2. Validate depth limits
+3. Verify referenced policies exist and are accessible
+4. Confirm rule syntax correctness
+
+### Service Registration
+1. Validate service type and attributes
+2. Check policy consumption permissions
+3. Verify owner permissions
+4. Validate pricing and currency
+
+### Forum Instantiation
+1. Confirm policy rule authorization
+2. Validate stakeholder list
+3. Check naming conflicts
+4. Verify permissions structure
+
+## Storage Considerations
+
+### Data Consistency
+- Policy hierarchies maintained through foreign key constraints
+- Activity logs immutable for audit trail
+- CERT scores cached but recalculated periodically
+
+### Performance
+- Policy dependency graphs cached for quick validation
+- Search indexes on service attributes and types
+- Activity feeds pre-computed for active users
+
+### Privacy
+- User data encrypted at rest
+- Activity logs anonymized after retention period
+- Private policy content access controlled
