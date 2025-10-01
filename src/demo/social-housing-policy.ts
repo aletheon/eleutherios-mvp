@@ -1,4 +1,4 @@
-import type { Policy, Event } from '@/types';
+import type { Policy, Event } from '@/lib/types';
 
 // Kāinga Ora Social Housing Policy
 export const socialHousingPolicy: Policy = {

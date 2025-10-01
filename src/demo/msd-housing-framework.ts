@@ -1,4 +1,4 @@
-import type { Policy, Rule, Forum, Service, Event, User, ForumMembership } from '@/types';
+import type { Policy, Rule, Forum, Service, Event, User, ForumMembership } from '@/lib/types';
 
 // ============= STAKEHOLDER DEFINITIONS =============
 

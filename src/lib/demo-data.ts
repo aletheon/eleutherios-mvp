@@ -1,16 +1,13 @@
 // src/lib/demo-data.ts
-import type { Policy, Rule, Service, User } from '@/types';
 
-// Public Policies that homeless persons can consume
-
-export const emergencyHousingPolicy: Policy = {
+export const emergencyHousingPolicy: any = {
   id: 'policy-emergency-housing',
   title: 'Emergency Social Housing Framework',
   description: 'Unified policy ensuring immediate access to emergency housing for people experiencing homelessness. Coordinates MSD financial support, KO housing placement, and support services.',
   category: 'housing',
   version: '1.0',
   status: 'active',
-  visibility: 'public', // Anyone can consume this policy
+  visibility: 'public',
   rules: [
     {
       id: 'rule-housing-eligibility',
@@ -20,7 +17,7 @@ export const emergencyHousingPolicy: Policy = {
         name: 'Housing Eligibility Assessment',
         type: 'assessment',
         provider: 'MSD',
-        autoApprove: true, // Automatic approval for homeless persons
+        autoApprove: true,
         turnaroundTime: '24 hours'
       }
     },
@@ -53,12 +50,7 @@ export const emergencyHousingPolicy: Policy = {
       description: 'Create coordination forum for all stakeholders',
       config: {
         title: 'Emergency Housing Coordination',
-        defaultStakeholders: ['person', 'msd-caseworker', 'ko-representative'],
-        permissions: {
-          person: ['view', 'post', 'upload'],
-          'msd-caseworker': ['view', 'post', 'approve', 'upload'],
-          'ko-representative': ['view', 'post', 'approve', 'upload']
-        }
+        defaultStakeholders: ['person', 'msd-caseworker', 'ko-representative']
       }
     },
     {
@@ -91,7 +83,7 @@ export const emergencyHousingPolicy: Policy = {
   updatedBy: 'kainga-ora-admin'
 };
 
-export const healthcarePolicy: Policy = {
+export const healthcarePolicy: any = {
   id: 'policy-emergency-healthcare',
   title: 'Emergency Healthcare Access Framework',
   description: 'Ensures immediate access to primary healthcare, dental care, mental health services, and prescriptions for people experiencing homelessness.',
@@ -147,21 +139,6 @@ export const healthcarePolicy: Policy = {
         cost: '$5 per item',
         maxCost: '$20 per family per year'
       }
-    },
-    {
-      id: 'rule-healthcare-coordination',
-      kind: 'forum',
-      description: 'Healthcare coordination forum',
-      config: {
-        title: 'Healthcare Coordination',
-        defaultStakeholders: ['person', 'gp', 'nurse', 'social-worker'],
-        permissions: {
-          person: ['view', 'post'],
-          gp: ['view', 'post', 'prescribe'],
-          nurse: ['view', 'post'],
-          'social-worker': ['view', 'post']
-        }
-      }
     }
   ],
   tags: ['emergency', 'healthcare', 'dental', 'mental-health', 'dhb'],
@@ -171,7 +148,7 @@ export const healthcarePolicy: Policy = {
   updatedBy: 'dhb-admin'
 };
 
-export const foodSecurityPolicy: Policy = {
+export const foodSecurityPolicy: any = {
   id: 'policy-food-security',
   title: 'Food Security & Nutrition Framework',
   description: 'Ensures access to nutritious food through food banks, meal programs, and food grants for people experiencing hardship.',
@@ -218,20 +195,6 @@ export const foodSecurityPolicy: Policy = {
         frequency: 'As needed',
         currency: 'NZD'
       }
-    },
-    {
-      id: 'rule-nutrition-support',
-      kind: 'forum',
-      description: 'Nutrition and dietary support coordination',
-      config: {
-        title: 'Nutrition Support',
-        defaultStakeholders: ['person', 'nutritionist', 'social-worker'],
-        permissions: {
-          person: ['view', 'post'],
-          nutritionist: ['view', 'post', 'advise'],
-          'social-worker': ['view', 'post']
-        }
-      }
     }
   ],
   tags: ['food-security', 'nutrition', 'food-bank', 'msd'],
@@ -241,8 +204,7 @@ export const foodSecurityPolicy: Policy = {
   updatedBy: 'msd-admin'
 };
 
-// Demo Users
-export const demoUsers: User[] = [
+export const demoUsers: any[] = [
   {
     id: 'user-john-smith',
     email: 'john.smith@example.com',
@@ -320,17 +282,3 @@ export const demoUsers: User[] = [
     }
   }
 ];
-
-// Service template for homeless person to create
-export const homelessPersonServiceTemplate = {
-  name: 'Homeless Person Service Request',
-  type: 'person',
-  description: 'Service representing a person seeking emergency housing, healthcare, and food security',
-  status: 'active',
-  attributes: {
-    needsHousing: true,
-    needsHealthcare: true,
-    needsFood: true,
-    urgency: 'immediate'
-  }
-};

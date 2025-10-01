@@ -1,6 +1,6 @@
 import { ulid } from 'ulid';
 import crypto from 'crypto';
-import type { Rule } from '@/types';
+import type { Rule } from '@/lib/types';
 
 export function deterministicULID(inputs: string[]): string {
   const hash = crypto.createHash('sha256')
