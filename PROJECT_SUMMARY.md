@@ -5,7 +5,7 @@
 Building a governance platform called **Eleutherios** that implements the **Policy-Forum-Service-Data (PFSD) protocol**. This system enables homeless people to immediately access emergency housing, healthcare, and food security through unified public policies.
 
 **GitHub**: https://github.com/aletheon/eleutherios-mvp  
-**Vercel**: https://eleutherios-mvp.vercel.app (or similar)  
+**Vercel**: https://eleutherios-mvp.vercel.app  
 **Local Dev**: http://localhost:3001
 
 ## Core Concept: Transformation from Hierarchical to Shared Governance
@@ -71,11 +71,11 @@ Building a governance platform called **Eleutherios** that implements the **Poli
    - `/api/users` - Get all users
 
 ### 🔲 TODO
-- Deploy to Vercel
-- Create landing page explaining PFSD transformation
-- Add authentication
+- User validation interviews (priority before building more)
+- Real Firebase authentication
 - Connect to real Firebase database
 - Build policy creation/editing interface
+- Mobile optimization
 
 ## Key Technical Details
 
@@ -95,7 +95,6 @@ Building a governance platform called **Eleutherios** that implements the **Poli
 - `src/app/page.tsx` - Homepage (current: shows newsfeed)
 
 **File Structure**:
-```
 eleutherios-mvp/
 ├── src/
 │   ├── app/
@@ -115,7 +114,9 @@ eleutherios-mvp/
 │   └── lib/
 │       ├── demo-data.ts          # Policy/user data
 │       └── types.ts              # TypeScript types
-```
+├── PROJECT_SUMMARY.md            # This file
+├── GRANT_PROPOSAL.md             # Grant proposal template
+└── INTERVIEW_QUESTIONS.md        # User validation questions
 
 ## Demo Use Case: Emergency Housing Coordination
 
@@ -142,6 +143,14 @@ eleutherios-mvp/
 - Transparent process for the person
 - 24-hour housing placement (vs weeks in old system)
 
+## Project Background
+
+**Creator**: Rob Kara, working on this for 10 years
+**Original Context**: UN sustainable food systems governance work
+**Funding**: $20k grant from UN cohort (currently $10k remaining)
+**Current Status**: On benefit, transitioning from caregiving to full-time work on this project
+**Motivation**: Believes PFSD protocol could significantly improve inter-agency coordination
+
 ## Important Architectural Decisions
 
 1. **No localStorage/sessionStorage**: These don't work in Claude artifacts, so all state uses React useState
@@ -152,54 +161,56 @@ eleutherios-mvp/
 
 ## Policy Update Strategy (Discussed)
 
-When a policy is updated, we discussed spawning a new forum with the updated rules rather than forcing existing consumers to migrate. This preserves:
+When a policy is updated, spawn a new forum with updated rules rather than forcing existing consumers to migrate. This preserves:
 - Consumer choice (opt-in to new version)
 - Continuity (existing consumers not disrupted)
 - Evolution (system can improve without breaking existing cases)
 
-## Philosophical Context
+## Next Steps (Current Priority)
 
-The project is motivated by "Prior Unity" principles - the idea that shared governance systems should reflect interconnectedness. However, for adoption by government agencies (MSD, KO), we focus on practical benefits:
-- Reduced bureaucracy
-- Better coordination
-- Faster service delivery
-- Transparency and accountability
-- Cost savings
+**BEFORE BUILDING MORE FEATURES:**
+1. **User Validation** - Interview 5 potential users (MSD workers, service providers, homeless people)
+2. **Get Commitments** - Find at least ONE MSD worker and ONE service provider willing to trial
+3. **Validate Assumptions** - Confirm the coordination problem is real and this solution fits their workflow
 
-## Next Steps for Demo
+**IF VALIDATION SUCCEEDS:**
+1. Add Firebase authentication
+2. Connect to real database
+3. Simplify for actual pilot (might be just one service, not three)
+4. Run 2-week trial with 2-3 people
 
-1. **Deploy to Vercel**
-   ```bash
-   git add .
-   git commit -m "Add PFSD onboarding and forum coordination demo"
-   git push origin main
-   ```
+**IF VALIDATION FAILS:**
+1. Document what was learned
+2. Pivot based on real user feedback
+3. Consider different use cases or approaches
 
-2. **Create Landing Page** (Optional)
-   - Explain PFSD transformation
-   - Show before/after diagrams
-   - Big buttons: "Start as Homeless Person" and "View Forums"
+## Grant Strategy
 
-3. **Test Full Flow**
-   - Onboarding → Policy consumption → Forum coordination
-   - Verify all stakeholder perspectives work
-   - Check service status updates display correctly
+**Potential NZ Funders**:
+1. Ministry of Social Development - Innovation Fund
+2. Callaghan Innovation - R&D grants
+3. Wellington Community Trust
+4. Tindall Foundation
+5. Todd Foundation
+6. JR McKenzie Trust
+7. Academic partnerships (University research)
 
-4. **Prepare for KO/MSD Presentation**
-   - Focus on practical benefits
-   - Emphasize 24-hour coordination vs weeks in old system
-   - Show transparency and accountability features
+**Grant Amount Target**: $80k for 12-month pilot with 20 participants
+
+**Before Applying**:
+- Complete user validation interviews
+- Get letters of support from potential partners
+- May need to register Aletheon as legal entity (but don't spend money on this until necessary)
 
 ## Known Issues / Notes
 
-- TypeScript strict mode causes some type errors with `policy` possibly being undefined - fixed with type guards
-- Material Icons need to be imported in layout.tsx with `<link>` tag
-- No actual authentication yet - user switcher is for demo only
-- All data is static demo data - not connected to real Firebase yet
-- Forum messages are pre-populated - no real-time messaging yet
+- All data is currently static demo data
+- No real authentication system yet
+- Forum messages are pre-populated
+- Not connected to real Firebase database
+- User validation not yet completed (critical next step)
 
 ## Commands Reference
-
 ```bash
 # Development
 npm run dev              # Start local server on port 3001
@@ -212,15 +223,8 @@ git push origin main     # Auto-deploys to Vercel
 # File operations
 mkdir -p src/app/onboarding
 touch src/app/onboarding/page.tsx
-cat > filename << 'EOF'  # Create file with content
-```
+Contact & Maintenance
 
-## Contact & Maintenance
-
-- **Maintainer**: Rob Kara (rob.kara@gmail.com)
-- **Organization**: Aletheon Foundation
-- **Mission**: Advancing Prior Unity / Tino Rangatiratanga as living governance protocol
-
----
-
-**To Future Claude**: This person is building a real, practical system to help homeless people access housing faster through better inter-agency coordination. The PFSD protocol is the technical implementation. Focus on making it work well and deploy successfully.
+Maintainer: Rob Kara (rob.kara@gmail.com)
+Organization: Aletheon Foundation (to be registered)
+Mission: Advancing Prior Unity / Tino Rangatiratanga as living governance protocol
