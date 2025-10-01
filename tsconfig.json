@@ -8,6 +8,8 @@
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -23,6 +25,7 @@
     ],
     "baseUrl": ".",
     "paths": {
+      "@/types": ["src/types"],
       "@/*": [
         "./src/*"
       ]
