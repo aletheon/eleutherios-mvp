@@ -1,18 +1,30 @@
 // src/lib/firebase.ts
-import { initializeApp, getApps } from 'firebase/app';
+import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
+// Firebase config from environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyA3brwHpI2dGR2KPAsZyJcIIaONDc0UDkQ",
-  authDomain: "eleutherios-mvp-3c717.firebaseapp.com",
-  projectId: "eleutherios-mvp-3c717",
-  storageBucket: "eleutherios-mvp-3c717.firebasestorage.app",
-  messagingSenderId: "10734001589",
-  appId: "1:10734001589:web:2dc26f4e63f1f6a450cdfc",
-  databaseURL: "https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!
 };
 
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const auth = getAuth(app);
+// Validate that all required config values are present
+if (!firebaseConfig.apiKey || !firebaseConfig.authDomain) {
+  throw new Error('Missing Firebase configuration. Check your environment variables.');
+}
 
-export { auth };
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+
+// Initialize Auth
+export const auth = getAuth(app);
+
+// Initialize Firestore
+export const db = getFirestore(app);
+
+export default app;
