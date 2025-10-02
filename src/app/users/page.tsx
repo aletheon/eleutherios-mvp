@@ -114,7 +114,7 @@ const CertScoreBars = ({ certScore, size = 'sm' }: { certScore: User['certScore'
   );
 };
 
-// User Card Component
+// User Card Component - FIXED WITH NAVIGATION
 const UserCard = ({ user }: { user: User }) => {
   const getAverageCertScore = (certScore: User['certScore']) => {
     return Math.round((certScore.cooperation + certScore.engagement + certScore.retention + certScore.trust) / 4);
@@ -127,99 +127,101 @@ const UserCard = ({ user }: { user: User }) => {
   ];
   
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between mb-4">
-        {/* User Info */}
-        <div className="flex items-center space-x-3">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
-            <span className="text-white font-semibold text-lg">
-              {(user.displayName || user.email).charAt(0).toUpperCase()}
-            </span>
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">
-              {user.displayName || user.email.split('@')[0]}
-            </h3>
-            <p className="text-sm text-gray-600">{user.email}</p>
-            <p className="text-xs text-gray-500">
-              Joined {new Date(user.joinDate).toLocaleDateString()}
-            </p>
-          </div>
-        </div>
-        
-        {/* CERT Score Badge */}
-        <div className="text-center">
-          <div className="text-2xl font-bold text-blue-600">
-            {getAverageCertScore(user.certScore)}
-          </div>
-          <div className="text-xs text-gray-500">CERT</div>
-        </div>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-6">
-        {/* CERT Score Visualization */}
-        <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">CERT Breakdown</h4>
-          <CertScoreBars certScore={user.certScore} />
-        </div>
-        
-        {/* Contributions Pie Chart */}
-        <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Contributions</h4>
+    <Link href={`/users/${user.id}`} className="block">
+      <div className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow cursor-pointer">
+        <div className="flex items-start justify-between mb-4">
+          {/* User Info */}
           <div className="flex items-center space-x-3">
-            <PieChart data={contributionData} size={60} />
-            <div className="space-y-1">
-              {contributionData.map((item, index) => (
-                <div key={index} className="flex items-center space-x-2">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: item.color }}
-                  ></div>
-                  <span className="text-xs text-gray-600">
-                    {item.label}: {item.value}
-                  </span>
-                </div>
-              ))}
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
+              <span className="text-white font-semibold text-lg">
+                {(user.displayName || user.email).charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {user.displayName || user.email.split('@')[0]}
+              </h3>
+              <p className="text-sm text-gray-600">{user.email}</p>
+              <p className="text-xs text-gray-500">
+                Joined {new Date(user.joinDate).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+          
+          {/* CERT Score Badge */}
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-600">
+              {getAverageCertScore(user.certScore)}
+            </div>
+            <div className="text-xs text-gray-500">CERT</div>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-6">
+          {/* CERT Score Visualization */}
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 mb-3">CERT Breakdown</h4>
+            <CertScoreBars certScore={user.certScore} />
+          </div>
+          
+          {/* Contributions Pie Chart */}
+          <div>
+            <h4 className="text-sm font-medium text-gray-700 mb-3">Contributions</h4>
+            <div className="flex items-center space-x-3">
+              <PieChart data={contributionData} size={60} />
+              <div className="space-y-1">
+                {contributionData.map((item, index) => (
+                  <div key={index} className="flex items-center space-x-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: item.color }}
+                    ></div>
+                    <span className="text-xs text-gray-600">
+                      {item.label}: {item.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      
-      {/* Quick Links */}
-      {(user.publicPolicies.length > 0 || user.publicServices.length > 0 || user.publicForums.length > 0) && (
-        <div className="mt-4 pt-4 border-t border-gray-100">
-          <div className="flex flex-wrap gap-2">
-            {user.publicPolicies.slice(0, 2).map((policy) => (
-              <Link
-                key={policy.id}
-                href={`/policies/${policy.id}`}
-                className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 hover:bg-blue-200"
-              >
-                {policy.title}
-              </Link>
-            ))}
-            {user.publicServices.slice(0, 2).map((service) => (
-              <Link
-                key={service.id}
-                href={`/services/${service.id}`}
-                className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 hover:bg-green-200"
-              >
-                {service.title}
-              </Link>
-            ))}
-            {user.publicForums.slice(0, 1).map((forum) => (
-              <Link
-                key={forum.id}
-                href={`/forums/${forum.id}`}
-                className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800 hover:bg-purple-200"
-              >
-                {forum.title}
-              </Link>
-            ))}
+        
+        {/* Quick Links */}
+        {(user.publicPolicies.length > 0 || user.publicServices.length > 0 || user.publicForums.length > 0) && (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="flex flex-wrap gap-2">
+              {user.publicPolicies.slice(0, 2).map((policy) => (
+                <span
+                  key={policy.id}
+                  className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {policy.title}
+                </span>
+              ))}
+              {user.publicServices.slice(0, 2).map((service) => (
+                <span
+                  key={service.id}
+                  className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {service.title}
+                </span>
+              ))}
+              {user.publicForums.slice(0, 1).map((forum) => (
+                <span
+                  key={forum.id}
+                  className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {forum.title}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </Link>
   );
 };
 

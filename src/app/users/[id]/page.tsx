@@ -2,7 +2,7 @@
 
 import { DashboardLayout } from '@/components/DashboardLayout';
 import { useAuth } from '@/contexts/AuthContext';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 
@@ -145,21 +145,20 @@ const CertScoreDetailed = ({ certScore }: { certScore: User['certScore'] }) => {
 export default function UserDetailPage() {
   const { user } = useAuth();
   const params = useParams();
-  const userId = params.id as string;
+  const userId = params?.id as string;
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'policies' | 'services' | 'forums'>('policies');
 
-  useEffect(() => {
-    if (user && userId) {
-      fetchUserProfile();
+  const fetchUserProfile = useCallback(async () => {
+    if (!userId) {
+      setLoading(false);
+      return;
     }
-  }, [user, userId]);
 
-  const fetchUserProfile = async () => {
     try {
       // Mock data - in real implementation, fetch from your API
-      const mockUsers: { [key: string]: User } = {
+      const mockUsers: Record<string, User> = {
         '1': {
           id: '1',
           email: 'alex@patient.com',
@@ -319,7 +318,13 @@ export default function UserDetailPage() {
       console.error('Error fetching user profile:', error);
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    if (user && userId) {
+      fetchUserProfile();
+    }
+  }, [user, userId, fetchUserProfile]);
 
   if (!user) {
     return (
@@ -395,22 +400,26 @@ export default function UserDetailPage() {
 
             {/* Quick Stats */}
             <div className="text-right">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <div className="font-semibold text-gray-900">{profileUser.stats.totalConnections}</div>
-                  <div className="text-gray-500">Connections</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col items-center">
+                  <div className="w-11 h-11 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                    {profileUser.stats.totalConnections}
+                  </div>
                 </div>
-                <div>
-                  <div className="font-semibold text-gray-900">{profileUser.stats.totalRatings}</div>
-                  <div className="text-gray-500">Ratings</div>
+                <div className="flex flex-col items-center">
+                  <div className="w-11 h-11 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                    {profileUser.stats.totalRatings}
+                  </div>
                 </div>
-                <div>
-                  <div className="font-semibold text-gray-900">{profileUser.stats.responseTime}</div>
-                  <div className="text-gray-500">Avg Response</div>
+                <div className="flex flex-col items-center">
+                  <div className="w-11 h-11 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
+                    30m
+                  </div>
                 </div>
-                <div>
-                  <div className="font-semibold text-gray-900">{profileUser.stats.completionRate}%</div>
-                  <div className="text-gray-500">Completion</div>
+                <div className="flex flex-col items-center">
+                  <div className="w-11 h-11 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                    98%
+                  </div>
                 </div>
               </div>
             </div>
@@ -528,12 +537,9 @@ export default function UserDetailPage() {
                                 </span>
                               </div>
                             </div>
-                            <Link 
-                              href={`/services/${service.id}`}
-                              className="ml-4 text-green-600 hover:text-green-800 text-sm"
-                            >
+                            <span className="ml-4 text-green-600 text-sm">
                               View Service
-                            </Link>
+                            </span>
                           </div>
                         </div>
                       ))
