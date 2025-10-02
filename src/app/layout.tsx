@@ -1,3 +1,4 @@
+import { DashboardProvider } from '@/contexts/DashboardContext'
 import './globals.css'  // Make sure this is here
 import { AuthProvider } from '@/contexts/AuthContext'
 
@@ -10,7 +11,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <AuthProvider>
-          {children}
+          <DashboardProvider>
+            {children}
+          </DashboardProvider>
         </AuthProvider>
       </body>
     </html>
