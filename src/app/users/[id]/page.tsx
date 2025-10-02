@@ -1,586 +1,301 @@
+// src/app/users/[id]/page.tsx
 'use client';
 
-import { DashboardLayout } from '@/components/DashboardLayout';
-import { useAuth } from '@/contexts/AuthContext';
-import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 
 interface User {
   id: string;
-  email: string;
+  name?: string;
   displayName?: string;
-  joinDate: string;
+  email: string;
+  role: string;
+  isActive: boolean;
   bio?: string;
   location?: string;
   website?: string;
-  certScore: {
+  certScore?: {
     cooperation: number;
     engagement: number;
     retention: number;
     trust: number;
+    total?: number;
   };
-  publicPolicies: Policy[];
-  publicServices: Service[];
-  publicForums: Forum[];
-  stats: {
-    totalConnections: number;
-    totalRatings: number;
-    responseTime: string;
-    completionRate: number;
+  activities?: {
+    forums: string[];
+    policies: string[];
+    services: string[];
+    lastActivity?: string;
   };
+  createdAt?: string;
+  updatedAt?: string;
 }
-
-interface Policy {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  isPublic: boolean;
-  createdDate: string;
-  stakeholders: number;
-  status: 'draft' | 'active' | 'archived';
-}
-
-interface Service {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  isPublic: boolean;
-  price?: number;
-  currency?: string;
-  rating: number;
-  totalUsers: number;
-  status: 'active' | 'paused' | 'discontinued';
-}
-
-interface Forum {
-  id: string;
-  title: string;
-  description: string;
-  category: string;
-  isPublic: boolean;
-  memberCount: number;
-  messageCount: number;
-  lastActivity: string;
-}
-
-// CERT Score Detailed Component
-const CertScoreDetailed = ({ certScore }: { certScore: User['certScore'] }) => {
-  const scores = [
-    { 
-      label: 'Cooperation', 
-      key: 'C',
-      value: certScore.cooperation, 
-      color: 'bg-blue-500',
-      description: 'How often you collaborate with others'
-    },
-    { 
-      label: 'Engagement', 
-      key: 'E',
-      value: certScore.engagement, 
-      color: 'bg-green-500',
-      description: 'Responsiveness and interaction quality'
-    },
-    { 
-      label: 'Retention', 
-      key: 'R',
-      value: certScore.retention, 
-      color: 'bg-yellow-500',
-      description: 'User loyalty and repeat interactions'
-    },
-    { 
-      label: 'Trust', 
-      key: 'T',
-      value: certScore.trust, 
-      color: 'bg-purple-500',
-      description: 'Community endorsements and reputation'
-    },
-  ];
-
-  const averageScore = Math.round((certScore.cooperation + certScore.engagement + certScore.retention + certScore.trust) / 4);
-
-  return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-semibold text-gray-900">CERT Score Breakdown</h3>
-        <div className="text-center">
-          <div className="text-3xl font-bold text-blue-600">{averageScore}</div>
-          <div className="text-sm text-gray-500">Overall Score</div>
-        </div>
-      </div>
-      
-      <div className="space-y-4">
-        {scores.map((score, index) => (
-          <div key={index}>
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-3">
-                <div className={`w-8 h-8 ${score.color} rounded-full flex items-center justify-center text-white font-bold text-sm`}>
-                  {score.key}
-                </div>
-                <div>
-                  <div className="font-medium text-gray-900">{score.label}</div>
-                  <div className="text-xs text-gray-500">{score.description}</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-bold text-gray-900">{score.value}</div>
-                <div className="text-xs text-gray-500">/ 100</div>
-              </div>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <div 
-                className={`${score.color} h-3 rounded-full transition-all duration-500`}
-                style={{ width: `${score.value}%` }}
-              ></div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
 
 export default function UserDetailPage() {
-  const { user } = useAuth();
   const params = useParams();
-  const userId = params?.id as string;
-  const [profileUser, setProfileUser] = useState<User | null>(null);
+  const userId = params.id as string;
+  
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'policies' | 'services' | 'forums'>('policies');
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchUserProfile = useCallback(async () => {
-    if (!userId) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      // Mock data - in real implementation, fetch from your API
-      const mockUsers: Record<string, User> = {
-        '1': {
-          id: '1',
-          email: 'alex@patient.com',
-          displayName: 'Alex Patient',
-          joinDate: '2024-01-15',
-          bio: 'Healthcare consumer focused on preventive care and wellness tracking.',
-          location: 'Christchurch, New Zealand',
-          website: 'https://alexpatient.blog',
-          certScore: { cooperation: 85, engagement: 92, retention: 78, trust: 88 },
-          publicPolicies: [],
-          publicServices: [
-            { 
-              id: 's1', 
-              title: 'Personal Health Tracker', 
-              description: 'Track daily health metrics and share with healthcare providers',
-              category: 'healthcare', 
-              isPublic: true,
-              price: 0,
-              rating: 4.2,
-              totalUsers: 150,
-              status: 'active'
-            }
-          ],
-          publicForums: [],
-          stats: {
-            totalConnections: 12,
-            totalRatings: 25,
-            responseTime: '2 hours',
-            completionRate: 95
-          }
-        },
-        '2': {
-          id: '2',
-          email: 'dr.johnson@clinic.com',
-          displayName: 'Dr. Sarah Johnson',
-          joinDate: '2024-01-10',
-          bio: 'General practitioner with 15 years experience. Specializing in preventive care, chronic disease management, and telehealth consultations.',
-          location: 'Auckland, New Zealand',
-          website: 'https://drjohnsoncare.nz',
-          certScore: { cooperation: 95, engagement: 88, retention: 90, trust: 96 },
-          publicPolicies: [
-            { 
-              id: 'p1', 
-              title: 'Consultation Protocol', 
-              description: 'Standardized approach to telehealth consultations ensuring quality care',
-              category: 'healthcare', 
-              isPublic: true,
-              createdDate: '2024-01-12',
-              stakeholders: 45,
-              status: 'active'
-            },
-            { 
-              id: 'p2', 
-              title: 'Prescription Guidelines', 
-              description: 'Evidence-based prescribing protocols for common conditions',
-              category: 'healthcare', 
-              isPublic: true,
-              createdDate: '2024-01-20',
-              stakeholders: 28,
-              status: 'active'
-            }
-          ],
-          publicServices: [
-            { 
-              id: 's2', 
-              title: 'Telehealth Consultation', 
-              description: 'Professional medical consultations via secure video platform',
-              category: 'healthcare', 
-              isPublic: true,
-              price: 80,
-              currency: 'NZD',
-              rating: 4.8,
-              totalUsers: 320,
-              status: 'active'
-            }
-          ],
-          publicForums: [
-            { 
-              id: 'f1', 
-              title: 'Medical Questions Forum', 
-              description: 'Community space for general health questions and education',
-              category: 'healthcare', 
-              isPublic: true,
-              memberCount: 156,
-              messageCount: 892,
-              lastActivity: '2024-02-01'
-            }
-          ],
-          stats: {
-            totalConnections: 180,
-            totalRatings: 156,
-            responseTime: '30 minutes',
-            completionRate: 98
-          }
-        },
-        '3': {
-          id: '3',
-          email: 'pharmacy@local.com',
-          displayName: 'PharmaCorp Staff',
-          joinDate: '2024-01-12',
-          bio: 'Local pharmacy providing prescription fulfillment, medication delivery, and pharmaceutical consultations.',
-          location: 'Wellington, New Zealand',
-          certScore: { cooperation: 88, engagement: 85, retention: 92, trust: 89 },
-          publicPolicies: [
-            { 
-              id: 'p3', 
-              title: 'Prescription Fulfillment Protocol', 
-              description: 'Quality assurance process for prescription verification and dispensing',
-              category: 'pharmacy', 
-              isPublic: true,
-              createdDate: '2024-01-15',
-              stakeholders: 12,
-              status: 'active'
-            }
-          ],
-          publicServices: [
-            { 
-              id: 's3', 
-              title: 'Medication Delivery', 
-              description: 'Same-day prescription delivery service within Wellington region',
-              category: 'pharmacy', 
-              isPublic: true,
-              price: 15,
-              currency: 'NZD',
-              rating: 4.6,
-              totalUsers: 89,
-              status: 'active'
-            },
-            { 
-              id: 's4', 
-              title: 'Drug Interaction Check', 
-              description: 'Comprehensive medication interaction screening service',
-              category: 'pharmacy', 
-              isPublic: true,
-              price: 0,
-              rating: 4.9,
-              totalUsers: 234,
-              status: 'active'
-            }
-          ],
-          publicForums: [],
-          stats: {
-            totalConnections: 67,
-            totalRatings: 89,
-            responseTime: '1 hour',
-            completionRate: 97
-          }
-        }
-      };
-
-      const userData = mockUsers[userId];
-      if (userData) {
-        setProfileUser(userData);
-      }
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      setLoading(false);
+  useEffect(() => {
+    if (userId) {
+      fetchUser(userId);
     }
   }, [userId]);
 
-  useEffect(() => {
-    if (user && userId) {
-      fetchUserProfile();
+  const fetchUser = async (id: string) => {
+    try {
+      setLoading(true);
+      
+      // First, try to get all users and find the specific one
+      const response = await fetch('/api/users');
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch users: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      const foundUser = data.users?.find((u: User) => u.id === id);
+      
+      if (!foundUser) {
+        throw new Error('User not found');
+      }
+      
+      setUser(foundUser);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load user');
+      console.error('Error fetching user:', err);
+    } finally {
+      setLoading(false);
     }
-  }, [user, userId, fetchUserProfile]);
+  };
 
-  if (!user) {
+  const getRoleDisplayName = (role: string) => {
+    const roleMap: { [key: string]: string } = {
+      'person': 'Person in Need',
+      'caseworker': 'Case Worker',
+      'korepresentative': 'KO Representative',
+      'msdcaseworker': 'MSD Case Worker',
+      'admin': 'Administrator',
+      'provider': 'Service Provider'
+    };
+    
+    return roleMap[role.toLowerCase()] || role;
+  };
+
+  const getRoleColor = (role: string) => {
+    const colorMap: { [key: string]: string } = {
+      'person': 'bg-blue-100 text-blue-800',
+      'caseworker': 'bg-green-100 text-green-800',
+      'korepresentative': 'bg-purple-100 text-purple-800',
+      'msdcaseworker': 'bg-orange-100 text-orange-800',
+      'admin': 'bg-red-100 text-red-800',
+      'provider': 'bg-yellow-100 text-yellow-800'
+    };
+    
+    return colorMap[role.toLowerCase()] || 'bg-gray-100 text-gray-800';
+  };
+
+  const calculateCERTTotal = (certScore: User['certScore']) => {
+    if (!certScore) return 0;
+    return certScore.cooperation + certScore.engagement + certScore.retention + certScore.trust;
+  };
+
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Please log in</h2>
-          <p className="text-gray-600">You need to be logged in to view user profiles.</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading user...</p>
         </div>
       </div>
     );
   }
 
-  if (loading) {
+  if (error || !user) {
     return (
-      <DashboardLayout title="User Profile">
-        <div className="flex items-center justify-center py-12">
-          <div className="text-lg">Loading user profile...</div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  if (!profileUser) {
-    return (
-      <DashboardLayout title="User Not Found">
-        <div className="text-center py-12">
-          <h2 className="text-xl font-semibold mb-2">User not found</h2>
-          <p className="text-gray-600 mb-4">The user profile you're looking for doesn't exist.</p>
-          <Link href="/users" className="text-blue-600 hover:text-blue-800">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-6xl text-gray-400 mb-4">👤</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">User Not Found</h1>
+          <p className="text-gray-600 mb-6">The user profile you're looking for doesn't exist.</p>
+          <a
+            href="/directory"
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
             Back to Users Directory
-          </Link>
+          </a>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout
-      title={profileUser.displayName || profileUser.email}
-      subtitle="User Profile"
-    >
-      <div className="space-y-6">
-        {/* User Header */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex items-start space-x-6">
-            {/* Avatar */}
-            <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-2xl">
-                {(profileUser.displayName || profileUser.email).charAt(0).toUpperCase()}
-              </span>
-            </div>
-            
-            {/* User Info */}
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                {profileUser.displayName || profileUser.email}
-              </h1>
-              <p className="text-gray-600 mb-2">{profileUser.email}</p>
-              {profileUser.bio && (
-                <p className="text-gray-700 mb-3">{profileUser.bio}</p>
-              )}
-              <div className="flex items-center space-x-4 text-sm text-gray-500">
-                <span>Joined {new Date(profileUser.joinDate).toLocaleDateString()}</span>
-                {profileUser.location && <span>• {profileUser.location}</span>}
-                {profileUser.website && (
-                  <a href={profileUser.website} target="_blank" rel="noopener noreferrer" 
-                     className="text-blue-600 hover:text-blue-800">
-                    Website
-                  </a>
-                )}
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="text-right">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col items-center">
-                  <div className="w-11 h-11 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                    {profileUser.stats.totalConnections}
-                  </div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <div className="w-11 h-11 bg-yellow-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                    {profileUser.stats.totalRatings}
-                  </div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <div className="w-11 h-11 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-xs">
-                    30m
-                  </div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <div className="w-11 h-11 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                    98%
-                  </div>
-                </div>
-              </div>
-            </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center py-6">
+            <a
+              href="/directory"
+              className="text-blue-600 hover:text-blue-800 mr-4"
+            >
+              ← Back to Directory
+            </a>
+            <h1 className="text-2xl font-bold text-gray-900">User Profile</h1>
           </div>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* CERT Score */}
-          <div className="lg:col-span-1">
-            <CertScoreDetailed certScore={profileUser.certScore} />
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+          {/* User Header */}
+          <div className="px-6 py-8 bg-gradient-to-r from-blue-500 to-purple-600">
+            <div className="flex items-center">
+              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-3xl font-bold text-gray-700">
+                {(user.name || user.displayName || 'U').charAt(0).toUpperCase()}
+              </div>
+              <div className="ml-6 text-white">
+                <h2 className="text-3xl font-bold">
+                  {user.name || user.displayName || 'Unknown User'}
+                </h2>
+                <p className="text-blue-100 mt-1">{user.email}</p>
+                <div className="mt-3">
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white bg-opacity-20 text-white`}>
+                    {getRoleDisplayName(user.role)}
+                  </span>
+                  <span className={`ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs ${user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                    {user.isActive ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Public Contributions */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-6">Public Contributions</h3>
-              
-              {/* Tab Navigation */}
-              <div className="flex space-x-1 mb-6">
-                <button
-                  onClick={() => setActiveTab('policies')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                    activeTab === 'policies' 
-                      ? 'bg-blue-100 text-blue-700' 
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Policies ({profileUser.publicPolicies.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab('services')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                    activeTab === 'services' 
-                      ? 'bg-green-100 text-green-700' 
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Services ({profileUser.publicServices.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab('forums')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                    activeTab === 'forums' 
-                      ? 'bg-purple-100 text-purple-700' 
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Forums ({profileUser.publicForums.length})
-                </button>
+          {/* User Details */}
+          <div className="px-6 py-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Basic Information */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">User ID</label>
+                    <p className="text-gray-900">{user.id}</p>
+                  </div>
+                  {user.bio && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Bio</label>
+                      <p className="text-gray-900">{user.bio}</p>
+                    </div>
+                  )}
+                  {user.location && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Location</label>
+                      <p className="text-gray-900">{user.location}</p>
+                    </div>
+                  )}
+                  {user.website && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Website</label>
+                      <a href={user.website} className="text-blue-600 hover:underline">{user.website}</a>
+                    </div>
+                  )}
+                  {user.createdAt && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Member Since</label>
+                      <p className="text-gray-900">{new Date(user.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Tab Content */}
-              <div className="space-y-4">
-                {activeTab === 'policies' && (
-                  <>
-                    {profileUser.publicPolicies.length === 0 ? (
-                      <p className="text-gray-500 text-center py-8">No public policies yet</p>
-                    ) : (
-                      profileUser.publicPolicies.map((policy) => (
-                        <div key={policy.id} className="border border-gray-200 rounded-lg p-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-gray-900">{policy.title}</h4>
-                              <p className="text-gray-600 text-sm mt-1">{policy.description}</p>
-                              <div className="flex items-center space-x-4 mt-3 text-xs text-gray-500">
-                                <span>Created {new Date(policy.createdDate).toLocaleDateString()}</span>
-                                <span>• {policy.stakeholders} stakeholders</span>
-                                <span className={`px-2 py-1 rounded-full ${
-                                  policy.status === 'active' ? 'bg-green-100 text-green-800' :
-                                  policy.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-gray-100 text-gray-800'
-                                }`}>
-                                  {policy.status}
-                                </span>
-                              </div>
-                            </div>
-                            <Link 
-                              href={`/policies/${policy.id}`}
-                              className="ml-4 text-blue-600 hover:text-blue-800 text-sm"
-                            >
-                              View Policy
-                            </Link>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </>
+              {/* CERT Score */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">CERT Score</h3>
+                {user.certScore ? (
+                  <div className="space-y-4">
+                    <div className="text-center">
+                      <div className="text-4xl font-bold text-blue-600 mb-2">
+                        {calculateCERTTotal(user.certScore)}
+                      </div>
+                      <p className="text-sm text-gray-500">Total CERT Score</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-3 bg-gray-50 rounded">
+                        <div className="text-xl font-semibold text-gray-900">{user.certScore.cooperation}</div>
+                        <p className="text-xs text-gray-500">Cooperation</p>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 rounded">
+                        <div className="text-xl font-semibold text-gray-900">{user.certScore.engagement}</div>
+                        <p className="text-xs text-gray-500">Engagement</p>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 rounded">
+                        <div className="text-xl font-semibold text-gray-900">{user.certScore.retention}</div>
+                        <p className="text-xs text-gray-500">Retention</p>
+                      </div>
+                      <div className="text-center p-3 bg-gray-50 rounded">
+                        <div className="text-xl font-semibold text-gray-900">{user.certScore.trust}</div>
+                        <p className="text-xs text-gray-500">Trust</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-gray-500">No CERT score available</p>
                 )}
+              </div>
+            </div>
 
-                {activeTab === 'services' && (
-                  <>
-                    {profileUser.publicServices.length === 0 ? (
-                      <p className="text-gray-500 text-center py-8">No public services yet</p>
-                    ) : (
-                      profileUser.publicServices.map((service) => (
-                        <div key={service.id} className="border border-gray-200 rounded-lg p-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-gray-900">{service.title}</h4>
-                              <p className="text-gray-600 text-sm mt-1">{service.description}</p>
-                              <div className="flex items-center space-x-4 mt-3 text-xs text-gray-500">
-                                {service.price !== undefined && (
-                                  <span>
-                                    {service.price === 0 ? 'Free' : `${service.currency} $${service.price}`}
-                                  </span>
-                                )}
-                                <span>• ⭐ {service.rating.toFixed(1)}</span>
-                                <span>• {service.totalUsers} users</span>
-                                <span className={`px-2 py-1 rounded-full ${
-                                  service.status === 'active' ? 'bg-green-100 text-green-800' :
-                                  service.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-gray-100 text-gray-800'
-                                }`}>
-                                  {service.status}
-                                </span>
-                              </div>
-                            </div>
-                            <span className="ml-4 text-green-600 text-sm">
-                              View Service
-                            </span>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </>
+            {/* Activities */}
+            {user.activities && (
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Activities</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <h4 className="font-medium text-gray-700 mb-2">Forums</h4>
+                    <p className="text-2xl font-bold text-blue-600">{user.activities.forums?.length || 0}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-700 mb-2">Policies</h4>
+                    <p className="text-2xl font-bold text-green-600">{user.activities.policies?.length || 0}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-gray-700 mb-2">Services</h4>
+                    <p className="text-2xl font-bold text-purple-600">{user.activities.services?.length || 0}</p>
+                  </div>
+                </div>
+                {user.activities.lastActivity && (
+                  <p className="text-sm text-gray-500 mt-4">
+                    Last activity: {new Date(user.activities.lastActivity).toLocaleDateString()}
+                  </p>
                 )}
+              </div>
+            )}
 
-                {activeTab === 'forums' && (
-                  <>
-                    {profileUser.publicForums.length === 0 ? (
-                      <p className="text-gray-500 text-center py-8">No public forums yet</p>
-                    ) : (
-                      profileUser.publicForums.map((forum) => (
-                        <div key={forum.id} className="border border-gray-200 rounded-lg p-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-gray-900">{forum.title}</h4>
-                              <p className="text-gray-600 text-sm mt-1">{forum.description}</p>
-                              <div className="flex items-center space-x-4 mt-3 text-xs text-gray-500">
-                                <span>{forum.memberCount} members</span>
-                                <span>• {forum.messageCount} messages</span>
-                                <span>• Last active {new Date(forum.lastActivity).toLocaleDateString()}</span>
-                              </div>
-                            </div>
-                            <Link 
-                              href={`/forums/${forum.id}`}
-                              className="ml-4 text-purple-600 hover:text-purple-800 text-sm"
-                            >
-                              Join Forum
-                            </Link>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </>
+            {/* Migration Status */}
+            <div className="mt-8 pt-6 border-t">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Migration Status</h3>
+              <div className="flex items-center">
+                {user.name ? (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                    ✓ Data Migrated
+                  </span>
+                ) : user.displayName ? (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                    ⚠ Needs Migration
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
+                    ✗ Incomplete Data
+                  </span>
                 )}
               </div>
             </div>
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }
