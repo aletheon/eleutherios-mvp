@@ -68,14 +68,17 @@ Eleutherios is a governance platform implementing the Policy-Forum-Service-Data 
 
 ### 🚧 Currently In Development (Path B: Real User-Generated Content)
 
-#### Transition from Mock Data to Real Users
-- **Replace User Directory** - Update `/users` to pull from Firebase/Firestore instead of mock data
+#### Transition from Mock Data to Real Users ✅ IN PROGRESS
+- **User Directory Updated** ✅ - Successfully pulling real users from Firebase/Firestore instead of mock data
+- **Data Standardization** 🚧 - Creating migration scripts to fix inconsistent user data structures in Firestore
+  - Issue: Users have mixed data formats (displayName vs name, role inconsistencies, missing CERT/activities structures)
+  - Solution: Data migration script to standardize all user records to consistent format
 - **Policy Creation Interface** - Enable authenticated users to create real policies
 - **Service Registration** - Allow users to register and manage their own services
 - **Real CERT Score Calculation** - Track actual user interactions for dynamic scoring
 - **User-Generated Content Workflows** - Complete end-to-end flows for policy → forum → service creation
 
-**Current Focus**: Learning the system from the user's perspective by implementing real user workflows and content creation interfaces.
+**Current Focus**: Completing data migration to standardize user records, then building policy creation interface. Learning the system from the user's perspective by implementing real user workflows and content creation interfaces.
 
 ### ⏳ Planned Features (Phase 2: Demo-Ready Features)
 
