@@ -1,6 +1,6 @@
 // src/app/layout.tsx
 import { DashboardProvider } from '@/contexts/DashboardContext'
-import { ActivitiesProvider } from '@/contexts/activitiesContext'
+import { ActivitiesProvider } from '@/contexts/ActivitiesContext'
 import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 
