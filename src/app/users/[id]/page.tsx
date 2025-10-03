@@ -1,301 +1,435 @@
-// src/app/users/[id]/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useState } from 'react';
 import { useParams } from 'next/navigation';
-
-interface User {
-  id: string;
-  name?: string;
-  displayName?: string;
-  email: string;
-  role: string;
-  isActive: boolean;
-  bio?: string;
-  location?: string;
-  website?: string;
-  certScore?: {
-    cooperation: number;
-    engagement: number;
-    retention: number;
-    trust: number;
-    total?: number;
-  };
-  activities?: {
-    forums: string[];
-    policies: string[];
-    services: string[];
-    lastActivity?: string;
-  };
-  createdAt?: string;
-  updatedAt?: string;
-}
 
 export default function UserDetailPage() {
   const params = useParams();
-  const userId = params.id as string;
-  
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const userId = params.id;
+  const [isActivitiesExpanded, setIsActivitiesExpanded] = useState(false);
 
-  useEffect(() => {
-    if (userId) {
-      fetchUser(userId);
+  // Mock user data - in real app, fetch based on userId
+  const user = {
+    id: userId,
+    name: 'Sarah Chen',
+    role: 'caseworker',
+    organization: 'Community Services',
+    location: 'Christchurch, NZ',
+    certScore: 85,
+    avatar: '👩‍💼',
+    status: 'online',
+    bio: 'Dedicated caseworker specializing in housing assistance and family support. Experienced in crisis intervention and community coordination.',
+    email: 'sarah.chen@community.nz',
+    joinDate: '2023-06-15',
+    certBreakdown: {
+      cooperation: 88,
+      engagement: 82,
+      retention: 90,
+      trust: 80
+    },
+    connections: 24,
+    reviews: 18,
+    responseTime: '2 hours',
+    successRate: 94
+  };
+
+  // Mock activities data
+  const activities = [
+    { id: '1', type: 'forum', title: 'Emergency Housing', status: 'active' },
+    { id: '2', type: 'policy', title: 'Healthcare Policy', status: 'pending' },
+    { id: '3', type: 'service', title: 'Food Bank', status: 'completed' }
+  ];
+
+  // Mock users for activities panel
+  const users = [
+    { id: '1', name: 'Sarah Chen', avatar: '👩‍💼', status: 'online' },
+    { id: '2', name: 'Marcus Johnson', avatar: '👨‍⚕️', status: 'busy' },
+    { id: '3', name: 'Elena Rodriguez', avatar: '👩‍🏫', status: 'away' }
+  ];
+
+  // Mock user contributions
+  const contributions = [
+    {
+      id: '1',
+      type: 'policy',
+      title: 'Emergency Housing Protocol',
+      description: 'Created comprehensive housing assistance policy',
+      date: '2024-01-15',
+      status: 'active'
+    },
+    {
+      id: '2',
+      type: 'forum',
+      title: 'Community Coordination',
+      description: 'Leading discussion on multi-agency collaboration',
+      date: '2024-01-10',
+      status: 'active'
+    },
+    {
+      id: '3',
+      type: 'service',
+      title: 'Case Management Service',
+      description: 'Providing direct case management support',
+      date: '2024-01-05',
+      status: 'active'
     }
-  }, [userId]);
+  ];
 
-  const fetchUser = async (id: string) => {
-    try {
-      setLoading(true);
-      
-      // First, try to get all users and find the specific one
-      const response = await fetch('/api/users');
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch users: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      const foundUser = data.users?.find((u: User) => u.id === id);
-      
-      if (!foundUser) {
-        throw new Error('User not found');
-      }
-      
-      setUser(foundUser);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load user');
-      console.error('Error fetching user:', err);
-    } finally {
-      setLoading(false);
+  const handleLogoClick = () => {
+    setIsActivitiesExpanded(!isActivitiesExpanded);
+  };
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'forum': return '💬';
+      case 'policy': return '📋';
+      case 'service': return '🔧';
+      default: return '📄';
     }
   };
 
-  const getRoleDisplayName = (role: string) => {
-    const roleMap: { [key: string]: string } = {
-      'person': 'Person in Need',
-      'caseworker': 'Case Worker',
-      'korepresentative': 'KO Representative',
-      'msdcaseworker': 'MSD Case Worker',
-      'admin': 'Administrator',
-      'provider': 'Service Provider'
-    };
-    
-    return roleMap[role.toLowerCase()] || role;
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-green-500';
+      case 'pending': return 'bg-yellow-500';
+      case 'completed': return 'bg-blue-500';
+      default: return 'bg-gray-500';
+    }
   };
 
   const getRoleColor = (role: string) => {
-    const colorMap: { [key: string]: string } = {
-      'person': 'bg-blue-100 text-blue-800',
-      'caseworker': 'bg-green-100 text-green-800',
-      'korepresentative': 'bg-purple-100 text-purple-800',
-      'msdcaseworker': 'bg-orange-100 text-orange-800',
-      'admin': 'bg-red-100 text-red-800',
-      'provider': 'bg-yellow-100 text-yellow-800'
-    };
-    
-    return colorMap[role.toLowerCase()] || 'bg-gray-100 text-gray-800';
+    switch (role) {
+      case 'admin': return 'bg-purple-100 text-purple-800';
+      case 'caseworker': return 'bg-blue-100 text-blue-800';
+      case 'healthcare-provider': return 'bg-red-100 text-red-800';
+      case 'housing-officer': return 'bg-green-100 text-green-800';
+      case 'person': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
-  const calculateCERTTotal = (certScore: User['certScore']) => {
-    if (!certScore) return 0;
-    return certScore.cooperation + certScore.engagement + certScore.retention + certScore.trust;
+  const getUserStatusColor = (status: string) => {
+    switch (status) {
+      case 'online': return 'bg-green-500';
+      case 'busy': return 'bg-yellow-500';
+      case 'away': return 'bg-gray-500';
+      default: return 'bg-gray-500';
+    }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading user...</p>
-        </div>
-      </div>
-    );
-  }
+  const getCertScoreColor = (score: number) => {
+    if (score >= 90) return 'text-green-600';
+    if (score >= 80) return 'text-blue-600';
+    if (score >= 70) return 'text-yellow-600';
+    return 'text-red-600';
+  };
 
-  if (error || !user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-6xl text-gray-400 mb-4">👤</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">User Not Found</h1>
-          <p className="text-gray-600 mb-6">The user profile you're looking for doesn't exist.</p>
-          <a
-            href="/directory"
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Back to Users Directory
-          </a>
-        </div>
-      </div>
-    );
-  }
+  const formatRole = (role: string) => {
+    return role.split('-').map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center py-6">
-            <a
-              href="/directory"
-              className="text-blue-600 hover:text-blue-800 mr-4"
-            >
-              ← Back to Directory
-            </a>
-            <h1 className="text-2xl font-bold text-gray-900">User Profile</h1>
-          </div>
+    <>
+      {/* Material Icons Font */}
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+      
+      {/* Activities Panel */}
+      <div 
+        className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
+          isActivitiesExpanded ? 'w-80' : 'w-16'
+        }`}
+      >
+        <div 
+          className="h-16 flex items-center justify-center cursor-pointer hover:bg-gray-50 border-b border-gray-200"
+          onClick={handleLogoClick}
+        >
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {isActivitiesExpanded ? (
+            <div className="p-4">
+              <h3 className="text-sm font-semibold text-gray-600 mb-3">Recent Activities</h3>
+              <div className="space-y-3">
+                {activities.map((activity) => (
+                  <div key={activity.id} className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 cursor-pointer">
+                    <div className="flex items-start space-x-3">
+                      <div className="text-lg">{getActivityIcon(activity.type)}</div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <h4 className="text-sm font-medium text-gray-900">{activity.title}</h4>
+                          <div className={`w-2 h-2 rounded-full ${getStatusColor(activity.status)}`}></div>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1">
+                          {activity.type === 'forum' ? 'Active discussion' : 
+                           activity.type === 'policy' ? 'Review pending' : 'Completed successfully'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <h3 className="text-sm font-semibold text-gray-600 mb-3 mt-6">Active Users</h3>
+              <div className="space-y-2">
+                {users.map((user) => (
+                  <div key={user.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded">
+                    <div className="text-2xl">{user.avatar}</div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                      <p className="text-xs text-gray-500">{user.status}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="py-4">
+              {users.slice(0, 3).map((user, index) => (
+                <div key={user.id} className="flex justify-center py-2">
+                  <div className="text-2xl">{user.avatar}</div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          {/* User Header */}
-          <div className="px-6 py-8 bg-gradient-to-r from-blue-500 to-purple-600">
-            <div className="flex items-center">
-              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center text-3xl font-bold text-gray-700">
-                {(user.name || user.displayName || 'U').charAt(0).toUpperCase()}
-              </div>
-              <div className="ml-6 text-white">
-                <h2 className="text-3xl font-bold">
-                  {user.name || user.displayName || 'Unknown User'}
-                </h2>
-                <p className="text-blue-100 mt-1">{user.email}</p>
-                <div className="mt-3">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white bg-opacity-20 text-white`}>
-                    {getRoleDisplayName(user.role)}
-                  </span>
-                  <span className={`ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs ${user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                    {user.isActive ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-              </div>
+      {/* Full Width Navigation Background */}
+      <div className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-purple-600 to-blue-600 z-30"></div>
+
+      {/* Home Icon - Left Edge */}
+      <div 
+        className={`fixed top-0 h-16 z-40 transition-all duration-300 flex items-center ${
+          isActivitiesExpanded ? 'left-80 w-20' : 'left-16 w-20'
+        }`}
+      >
+        <Link href="/" className="flex flex-col items-center space-y-1 px-3 py-2 mx-auto rounded-lg text-white/80 hover:text-white hover:bg-white/10">
+          <span className="material-icons text-2xl">home</span>
+          <span className="text-xs font-medium">Home</span>
+        </Link>
+      </div>
+
+      {/* Main Navigation Bar */}
+      <nav 
+        className={`fixed top-0 right-0 h-16 z-40 transition-all duration-300 ${
+          isActivitiesExpanded ? 'left-96' : 'left-36'
+        }`}
+      >
+        <div className="h-full flex items-center justify-between px-6">
+          <div className="flex-1 flex justify-center">
+            <div className="flex items-center space-x-8">
+              <Link href="/forums" className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10">
+                <span className="material-icons text-2xl">forum</span>
+                <span className="text-xs font-medium">Forums</span>
+              </Link>
+
+              <Link href="/services" className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10">
+                <span className="material-icons text-2xl">build</span>
+                <span className="text-xs font-medium">Services</span>
+              </Link>
+
+              <Link href="/policies" className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10">
+                <span className="material-icons text-2xl">account_balance</span>
+                <span className="text-xs font-medium">Policies</span>
+              </Link>
+
+              <Link href="/users" className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg bg-white/20 text-white">
+                <span className="material-icons text-2xl">people_alt</span>
+                <span className="text-xs font-medium">Users</span>
+              </Link>
             </div>
           </div>
 
-          {/* User Details */}
-          <div className="px-6 py-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Basic Information */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">User ID</label>
-                    <p className="text-gray-900">{user.id}</p>
+          <div className="flex items-center space-x-4">
+            <button className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10">
+              <span className="material-icons text-2xl">shopping_cart</span>
+            </button>
+
+            <div className="flex items-center space-x-2 text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10">
+              <span className="material-icons text-2xl">account_circle</span>
+              <span className="text-sm font-medium">RK</span>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main 
+        className={`transition-all duration-300 ${
+          isActivitiesExpanded ? 'ml-80' : 'ml-16'
+        } pt-16 p-6 min-h-screen bg-gray-50`}
+      >
+        <div className="max-w-7xl mx-auto">
+          {/* Breadcrumb */}
+          <div className="mb-6 mt-8">
+            <Link href="/users" className="text-blue-600 hover:text-blue-800">
+              ← Back to Users
+            </Link>
+          </div>
+
+          {/* User Profile Header */}
+          <div className="bg-white rounded-lg shadow p-6 mb-8">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center space-x-6">
+                <div className="relative">
+                  <div className="text-6xl">{user.avatar}</div>
+                  <div className={`absolute -bottom-2 -right-2 w-6 h-6 rounded-full border-4 border-white ${getUserStatusColor(user.status)}`}></div>
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">{user.name}</h1>
+                  <span className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${getRoleColor(user.role)} mb-2`}>
+                    {formatRole(user.role)}
+                  </span>
+                  <div className="space-y-1 text-gray-600">
+                    <p className="flex items-center space-x-2">
+                      <span>🏢</span>
+                      <span>{user.organization}</span>
+                    </p>
+                    <p className="flex items-center space-x-2">
+                      <span>📍</span>
+                      <span>{user.location}</span>
+                    </p>
+                    <p className="flex items-center space-x-2">
+                      <span>📧</span>
+                      <span>{user.email}</span>
+                    </p>
+                    <p className="flex items-center space-x-2">
+                      <span>📅</span>
+                      <span>Joined {new Date(user.joinDate).toLocaleDateString()}</span>
+                    </p>
                   </div>
-                  {user.bio && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Bio</label>
-                      <p className="text-gray-900">{user.bio}</p>
+                </div>
+              </div>
+              
+              <div className="text-right">
+                <div className="text-sm text-gray-500 mb-1">CERT Score</div>
+                <div className={`text-4xl font-bold ${getCertScoreColor(user.certScore)} mb-4`}>
+                  {user.certScore}
+                </div>
+                <div className="flex space-x-2">
+                  <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
+                    Connect
+                  </button>
+                  <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
+                    Message
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <p className="text-gray-700">{user.bio}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column */}
+            <div className="lg:col-span-2 space-y-8">
+              {/* CERT Score Breakdown */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">CERT Score Breakdown</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl mb-2 text-blue-600">🤝</div>
+                    <h4 className="font-medium text-gray-900">Cooperation</h4>
+                    <div className={`text-2xl font-bold ${getCertScoreColor(user.certBreakdown.cooperation)}`}>
+                      {user.certBreakdown.cooperation}
                     </div>
-                  )}
-                  {user.location && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Location</label>
-                      <p className="text-gray-900">{user.location}</p>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl mb-2 text-green-600">⚡</div>
+                    <h4 className="font-medium text-gray-900">Engagement</h4>
+                    <div className={`text-2xl font-bold ${getCertScoreColor(user.certBreakdown.engagement)}`}>
+                      {user.certBreakdown.engagement}
                     </div>
-                  )}
-                  {user.website && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Website</label>
-                      <a href={user.website} className="text-blue-600 hover:underline">{user.website}</a>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl mb-2 text-yellow-600">🔄</div>
+                    <h4 className="font-medium text-gray-900">Retention</h4>
+                    <div className={`text-2xl font-bold ${getCertScoreColor(user.certBreakdown.retention)}`}>
+                      {user.certBreakdown.retention}
                     </div>
-                  )}
-                  {user.createdAt && (
-                    <div>
-                      <label className="text-sm font-medium text-gray-500">Member Since</label>
-                      <p className="text-gray-900">{new Date(user.createdAt).toLocaleDateString()}</p>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl mb-2 text-purple-600">⭐</div>
+                    <h4 className="font-medium text-gray-900">Trust</h4>
+                    <div className={`text-2xl font-bold ${getCertScoreColor(user.certBreakdown.trust)}`}>
+                      {user.certBreakdown.trust}
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
 
-              {/* CERT Score */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">CERT Score</h3>
-                {user.certScore ? (
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <div className="text-4xl font-bold text-blue-600 mb-2">
-                        {calculateCERTTotal(user.certScore)}
-                      </div>
-                      <p className="text-sm text-gray-500">Total CERT Score</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center p-3 bg-gray-50 rounded">
-                        <div className="text-xl font-semibold text-gray-900">{user.certScore.cooperation}</div>
-                        <p className="text-xs text-gray-500">Cooperation</p>
-                      </div>
-                      <div className="text-center p-3 bg-gray-50 rounded">
-                        <div className="text-xl font-semibold text-gray-900">{user.certScore.engagement}</div>
-                        <p className="text-xs text-gray-500">Engagement</p>
-                      </div>
-                      <div className="text-center p-3 bg-gray-50 rounded">
-                        <div className="text-xl font-semibold text-gray-900">{user.certScore.retention}</div>
-                        <p className="text-xs text-gray-500">Retention</p>
-                      </div>
-                      <div className="text-center p-3 bg-gray-50 rounded">
-                        <div className="text-xl font-semibold text-gray-900">{user.certScore.trust}</div>
-                        <p className="text-xs text-gray-500">Trust</p>
+              {/* Contributions */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Contributions</h3>
+                <div className="space-y-4">
+                  {contributions.map((contribution) => (
+                    <div key={contribution.id} className="border rounded-lg p-4 hover:bg-gray-50">
+                      <div className="flex items-start space-x-3">
+                        <div className="text-2xl">{getActivityIcon(contribution.type)}</div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{contribution.title}</h4>
+                          <p className="text-gray-600 text-sm mt-1">{contribution.description}</p>
+                          <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                            <span>{new Date(contribution.date).toLocaleDateString()}</span>
+                            <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(contribution.status)} text-white`}>
+                              {contribution.status}
+                            </span>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <p className="text-gray-500">No CERT score available</p>
-                )}
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* Activities */}
-            {user.activities && (
-              <div className="mt-8">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Activities</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <h4 className="font-medium text-gray-700 mb-2">Forums</h4>
-                    <p className="text-2xl font-bold text-blue-600">{user.activities.forums?.length || 0}</p>
+            {/* Right Column */}
+            <div className="space-y-8">
+              {/* Quick Stats */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h3>
+                <div className="space-y-4">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Connections</span>
+                    <span className="font-medium text-blue-600">{user.connections}</span>
                   </div>
-                  <div>
-                    <h4 className="font-medium text-gray-700 mb-2">Policies</h4>
-                    <p className="text-2xl font-bold text-green-600">{user.activities.policies?.length || 0}</p>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Reviews</span>
+                    <span className="font-medium text-yellow-600">{user.reviews}</span>
                   </div>
-                  <div>
-                    <h4 className="font-medium text-gray-700 mb-2">Services</h4>
-                    <p className="text-2xl font-bold text-purple-600">{user.activities.services?.length || 0}</p>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Response Time</span>
+                    <span className="font-medium text-green-600">{user.responseTime}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Success Rate</span>
+                    <span className="font-medium text-purple-600">{user.successRate}%</span>
                   </div>
                 </div>
-                {user.activities.lastActivity && (
-                  <p className="text-sm text-gray-500 mt-4">
-                    Last activity: {new Date(user.activities.lastActivity).toLocaleDateString()}
-                  </p>
-                )}
               </div>
-            )}
 
-            {/* Migration Status */}
-            <div className="mt-8 pt-6 border-t">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Migration Status</h3>
-              <div className="flex items-center">
-                {user.name ? (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                    ✓ Data Migrated
-                  </span>
-                ) : user.displayName ? (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-                    ⚠ Needs Migration
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800">
-                    ✗ Incomplete Data
-                  </span>
-                )}
+              {/* Status */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Status</h3>
+                <div className="flex items-center space-x-3">
+                  <div className={`w-4 h-4 rounded-full ${getUserStatusColor(user.status)}`}></div>
+                  <span className="font-medium capitalize">{user.status}</span>
+                </div>
+                <p className="text-gray-600 text-sm mt-2">
+                  {user.status === 'online' ? 'Available for coordination and support' :
+                   user.status === 'busy' ? 'Currently in meetings or handling cases' :
+                   'Away - will respond when available'}
+                </p>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </main>
+    </>
   );
 }

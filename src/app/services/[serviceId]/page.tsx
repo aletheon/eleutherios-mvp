@@ -1,623 +1,590 @@
-// src/app/services/[serviceId]/page.tsx
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Navigation } from '@/components/Navigation';
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 
 interface Service {
   id: string;
-  name: string;
-  type: 'person' | 'assessment' | 'financial' | 'housing' | 'healthcare' | 'dental' | 'mental-health' | 'pharmaceutical' | 'food' | 'support' | 'legal' | 'product';
-  description: string;
-  status: 'active' | 'inactive';
-  provider?: string;
+  title: string;
+  description?: string;
+  category: string;
+  price: string;
+  provider: string;
+  status: string;
+  createdAt: string;
   providerId?: string;
-  cost?: string;
   attributes?: {
-    needsHousing?: boolean;
-    needsHealthcare?: boolean;
-    needsFood?: boolean;
-    urgency?: string;
-    price?: number;
     size?: string;
     color?: string;
     quantity?: number;
-    currency?: string;
-    availability?: string;
-    location?: string;
   };
-  reviews?: {
+  connectedPolicies?: string[];
+  reviews?: Array<{
+    id: string;
+    userId: string;
     rating: number;
-    totalReviews: number;
-    averageResponseTime?: string;
-  };
-  certScore?: {
-    cooperation: number;
-    engagement: number;
-    retention: number;
-    trust: number;
-  };
-  createdAt?: string;
-  updatedAt?: string;
+    comment: string;
+    date: string;
+  }>;
 }
 
 interface User {
   id: string;
   name: string;
-  organization?: string;
-  certScore: {
-    cooperation: number;
-    engagement: number;
-    retention: number;
-    trust: number;
-  };
+  role: string;
+  avatar?: string;
+  certScore?: number;
 }
-
-// Mock service data - replace with actual API call
-const mockServices: Service[] = [
-  {
-    id: 'service-emergency-housing',
-    name: 'Emergency Housing Assessment',
-    type: 'housing',
-    description: 'Immediate housing assessment and placement service for people experiencing homelessness. Provides rapid access to emergency accommodation and support services.',
-    status: 'active',
-    provider: 'Housing New Zealand',
-    providerId: 'user-housing-nz',
-    cost: 'Free',
-    attributes: {
-      urgency: 'immediate',
-      availability: '24/7',
-      location: 'Auckland Central',
-      needsHousing: true
-    },
-    reviews: {
-      rating: 4.5,
-      totalReviews: 127,
-      averageResponseTime: '2 hours'
-    },
-    certScore: {
-      cooperation: 85,
-      engagement: 92,
-      retention: 78,
-      trust: 89
-    },
-    createdAt: '2024-01-15T10:30:00Z',
-    updatedAt: '2024-03-20T14:45:00Z'
-  },
-  {
-    id: 'service-healthcare-enrollment',
-    name: 'Primary Healthcare Enrollment',
-    type: 'healthcare',
-    description: 'Fast-track enrollment into primary healthcare services. Includes GP registration, health assessments, and connection to ongoing medical support.',
-    status: 'active',
-    provider: 'Auckland DHB',
-    providerId: 'user-dhb-auckland',
-    cost: 'Free',
-    attributes: {
-      urgency: 'standard',
-      availability: 'Business hours',
-      location: 'Multiple locations',
-      needsHealthcare: true
-    },
-    reviews: {
-      rating: 4.2,
-      totalReviews: 89,
-      averageResponseTime: '1 day'
-    },
-    certScore: {
-      cooperation: 78,
-      engagement: 85,
-      retention: 92,
-      trust: 88
-    },
-    createdAt: '2024-02-01T09:00:00Z',
-    updatedAt: '2024-03-15T11:20:00Z'
-  },
-  {
-    id: 'service-food-bank-access',
-    name: 'Food Bank Access & Registration',
-    type: 'food',
-    description: 'Connect people with local food banks and nutritional support services. Includes weekly food parcels and meal planning assistance.',
-    status: 'active',
-    provider: 'Auckland City Mission',
-    providerId: 'user-city-mission',
-    cost: 'Free',
-    attributes: {
-      urgency: 'immediate',
-      availability: 'Mon-Fri 9am-5pm',
-      location: 'Auckland CBD',
-      needsFood: true,
-      quantity: 52
-    },
-    reviews: {
-      rating: 4.7,
-      totalReviews: 156,
-      averageResponseTime: '30 minutes'
-    },
-    certScore: {
-      cooperation: 95,
-      engagement: 88,
-      retention: 85,
-      trust: 93
-    },
-    createdAt: '2024-01-20T08:15:00Z',
-    updatedAt: '2024-03-18T16:30:00Z'
-  },
-  {
-    id: 'service-stripe-payment',
-    name: 'Digital Payment Processing',
-    type: 'financial',
-    description: 'Secure payment processing for rent, bills, and service fees. Supports multiple payment methods and automated recurring payments.',
-    status: 'active',
-    provider: 'Stripe Inc.',
-    providerId: 'user-stripe',
-    cost: '2.9% + 30¢ per transaction',
-    attributes: {
-      price: 0.029,
-      currency: 'NZD',
-      availability: '24/7',
-      location: 'Online'
-    },
-    reviews: {
-      rating: 4.8,
-      totalReviews: 2341,
-      averageResponseTime: 'Instant'
-    },
-    certScore: {
-      cooperation: 72,
-      engagement: 96,
-      retention: 98,
-      trust: 94
-    },
-    createdAt: '2024-01-10T12:00:00Z',
-    updatedAt: '2024-03-22T10:15:00Z'
-  }
-];
-
-// Mock users for provider lookup
-const mockUsers: User[] = [
-  {
-    id: 'user-housing-nz',
-    name: 'Housing New Zealand',
-    organization: 'Housing New Zealand Corporation',
-    certScore: { cooperation: 85, engagement: 92, retention: 78, trust: 89 }
-  },
-  {
-    id: 'user-dhb-auckland',
-    name: 'Auckland DHB',
-    organization: 'Auckland District Health Board',
-    certScore: { cooperation: 78, engagement: 85, retention: 92, trust: 88 }
-  },
-  {
-    id: 'user-city-mission',
-    name: 'Auckland City Mission',
-    organization: 'Auckland City Mission',
-    certScore: { cooperation: 95, engagement: 88, retention: 85, trust: 93 }
-  },
-  {
-    id: 'user-stripe',
-    name: 'Stripe Inc.',
-    organization: 'Stripe Payment Processing',
-    certScore: { cooperation: 72, engagement: 96, retention: 98, trust: 94 }
-  }
-];
-
-const formatCurrency = (amount: number, currency: string = 'NZD') => {
-  return new Intl.NumberFormat('en-NZ', {
-    style: 'currency',
-    currency: currency
-  }).format(amount);
-};
-
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('en-NZ', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-};
-
-const getServiceTypeColor = (type: string) => {
-  const colors = {
-    housing: 'bg-blue-100 text-blue-800',
-    healthcare: 'bg-green-100 text-green-800',
-    food: 'bg-orange-100 text-orange-800',
-    financial: 'bg-purple-100 text-purple-800',
-    legal: 'bg-red-100 text-red-800',
-    support: 'bg-yellow-100 text-yellow-800',
-    assessment: 'bg-gray-100 text-gray-800',
-    'mental-health': 'bg-pink-100 text-pink-800',
-    dental: 'bg-teal-100 text-teal-800',
-    pharmaceutical: 'bg-indigo-100 text-indigo-800',
-    product: 'bg-emerald-100 text-emerald-800',
-    person: 'bg-cyan-100 text-cyan-800'
-  };
-  return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
-};
-
-const CERTScoreCircle = ({ score, label, color }: { score: number, label: string, color: string }) => (
-  <div className="flex flex-col items-center">
-    <div className={`w-16 h-16 rounded-full ${color} flex items-center justify-center text-white font-bold text-lg`}>
-      {score}
-    </div>
-    <span className="text-sm text-gray-600 mt-1">{label}</span>
-  </div>
-);
-
-const StarRating = ({ rating }: { rating: number }) => {
-  return (
-    <div className="flex items-center space-x-1">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <svg
-          key={star}
-          className={`w-5 h-5 ${star <= rating ? 'text-yellow-400' : 'text-gray-300'}`}
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-        </svg>
-      ))}
-      <span className="text-sm text-gray-600 ml-2">{rating.toFixed(1)}</span>
-    </div>
-  );
-};
 
 export default function ServiceDetailPage() {
   const params = useParams();
   const serviceId = params?.serviceId as string;
+  const [isActivitiesExpanded, setIsActivitiesExpanded] = useState(false);
   const [service, setService] = useState<Service | null>(null);
   const [provider, setProvider] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Mock activities data
+  const activities = [
+    { id: '1', type: 'forum', title: 'Emergency Housing', status: 'active' },
+    { id: '2', type: 'policy', title: 'Healthcare Policy', status: 'pending' },
+    { id: '3', type: 'service', title: 'Food Bank', status: 'completed' }
+  ];
+
+  // Mock users for activities panel
+  const users = [
+    { id: '1', name: 'Sarah Chen', avatar: '👩‍💼', status: 'online' },
+    { id: '2', name: 'Marcus Johnson', avatar: '👨‍⚕️', status: 'busy' },
+    { id: '3', name: 'Elena Rodriguez', avatar: '👩‍🏫', status: 'away' }
+  ];
 
   useEffect(() => {
-    // Simulate API call
-    const fetchService = async () => {
-      try {
-        // In real app, this would be: const response = await fetch(`/api/services/${serviceId}`);
-        const foundService = mockServices.find(s => s.id === serviceId);
-        setService(foundService || null);
-        
-        if (foundService?.providerId) {
-          const foundProvider = mockUsers.find(u => u.id === foundService.providerId);
-          setProvider(foundProvider || null);
-        }
-      } catch (error) {
-        console.error('Error fetching service:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchService();
   }, [serviceId]);
 
+  const fetchService = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch service from Firebase Realtime Database
+      const response = await fetch(
+        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/services/${serviceId}.json`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch service');
+      }
+
+      const serviceData = await response.json();
+      
+      if (!serviceData) {
+        throw new Error('Service not found');
+      }
+
+      const fetchedService: Service = {
+        id: serviceId,
+        title: serviceData.title ? String(serviceData.title) : 'Untitled Service',
+        category: serviceData.category ? String(serviceData.category) : 'General',
+        price: serviceData.price ? String(serviceData.price) : 'Contact for pricing',
+        provider: serviceData.provider ? String(serviceData.provider) : 'Unknown Provider',
+        status: serviceData.status ? String(serviceData.status) : 'available',
+        createdAt: serviceData.createdAt ? String(serviceData.createdAt) : new Date().toISOString(),
+        ...(serviceData.description && { description: String(serviceData.description) }),
+        ...(serviceData.providerId && { providerId: String(serviceData.providerId) }),
+        ...(serviceData.attributes && { attributes: serviceData.attributes }),
+        ...(serviceData.connectedPolicies && Array.isArray(serviceData.connectedPolicies) && { 
+          connectedPolicies: serviceData.connectedPolicies.map((p: any) => String(p)) 
+        }),
+        ...(serviceData.reviews && Array.isArray(serviceData.reviews) && { 
+          reviews: serviceData.reviews 
+        })
+      };
+
+      setService(fetchedService);
+
+      // Fetch provider information if available
+      if (fetchedService.providerId) {
+        await fetchProvider(fetchedService.providerId);
+      }
+
+    } catch (error) {
+      console.error('Error fetching service:', error);
+      setError(error instanceof Error ? error.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchProvider = async (providerId: string) => {
+    try {
+      // Try Firestore first (for user profiles)
+      const firestoreResponse = await fetch(
+        `https://firestore.googleapis.com/v1/projects/eleutherios-mvp-3c717/databases/(default)/documents/users/${providerId}`
+      );
+
+      if (firestoreResponse.ok) {
+        const userData = await firestoreResponse.json();
+        if (userData.fields) {
+          setProvider({
+            id: providerId,
+            name: userData.fields.displayName?.stringValue || userData.fields.name?.stringValue || 'Unknown Provider',
+            role: userData.fields.role?.stringValue || 'provider',
+            avatar: userData.fields.avatar?.stringValue,
+            certScore: userData.fields.certScore?.integerValue || userData.fields.certScore?.doubleValue
+          });
+          return;
+        }
+      }
+
+      // Fallback to Realtime Database
+      const rtdbResponse = await fetch(
+        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/users/${providerId}.json`
+      );
+
+      if (rtdbResponse.ok) {
+        const userData = await rtdbResponse.json();
+        if (userData) {
+          setProvider({
+            id: providerId,
+            name: userData.displayName || userData.name || 'Unknown Provider',
+            role: userData.role || 'provider',
+            avatar: userData.avatar,
+            certScore: userData.certScore
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching provider:', error);
+    }
+  };
+
+  const handleLogoClick = () => {
+    setIsActivitiesExpanded(!isActivitiesExpanded);
+  };
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'forum': return '💬';
+      case 'policy': return '📋';
+      case 'service': return '🔧';
+      default: return '📄';
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-green-500';
+      case 'pending': return 'bg-yellow-500';
+      case 'completed': return 'bg-blue-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  const getCategoryColor = (category: string) => {
+    switch (category.toLowerCase()) {
+      case 'payment': return 'bg-blue-100 text-blue-800';
+      case 'housing': return 'bg-green-100 text-green-800';
+      case 'healthcare': return 'bg-red-100 text-red-800';
+      case 'food security': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category.toLowerCase()) {
+      case 'payment': return '💳';
+      case 'housing': return '🏠';
+      case 'healthcare': return '🏥';
+      case 'food security': return '🍽️';
+      default: return '🔧';
+    }
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'available': return 'bg-green-100 text-green-800';
+      case 'unavailable': return 'bg-red-100 text-red-800';
+      case 'limited': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const renderStars = (rating: number) => {
+    return Array.from({ length: 5 }, (_, i) => (
+      <span key={i} className={i < rating ? 'text-yellow-400' : 'text-gray-300'}>
+        ★
+      </span>
+    ));
+  };
+
+  const calculateAverageRating = (reviews: any[]) => {
+    if (!reviews || reviews.length === 0) return 0;
+    const sum = reviews.reduce((acc, review) => acc + review.rating, 0);
+    return (sum / reviews.length).toFixed(1);
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="animate-pulse">
-            <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-            <div className="h-4 bg-gray-200 rounded w-2/3 mb-8"></div>
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
-              <div className="space-y-3">
-                <div className="h-4 bg-gray-200 rounded"></div>
-                <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-                <div className="h-4 bg-gray-200 rounded w-4/6"></div>
-              </div>
-            </div>
+      <>
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading service...</p>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
-  if (!service) {
+  if (error || !service) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <>
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Service Not Found</h1>
-            <p className="text-gray-600 mb-8">The service you're looking for doesn't exist or has been removed.</p>
-            <Link href="/users" className="text-blue-600 hover:text-blue-800 underline">
-              ← Back to Users
+            <div className="text-6xl mb-4">❌</div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Service Not Found</h1>
+            <p className="text-gray-600 mb-4">{error || 'The service you are looking for does not exist.'}</p>
+            <Link href="/services" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+              Back to Services
             </Link>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
+    <>
+      {/* Material Icons Font */}
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
       
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center space-x-2 text-sm text-gray-600 mb-4">
-            <Link href="/users" className="hover:text-blue-600">Users</Link>
-            <span>→</span>
-            <span className={`px-2 py-1 rounded-full text-xs ${getServiceTypeColor(service.type)}`}>
-              {service.type.replace('-', ' ')}
-            </span>
-            <span>→</span>
-            <span className="text-gray-900 font-medium">{service.name}</span>
-          </div>
-          
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{service.name}</h1>
-              <p className="text-lg text-gray-600">{service.description}</p>
+      {/* Activities Panel */}
+      <div 
+        className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
+          isActivitiesExpanded ? 'w-80' : 'w-16'
+        }`}
+      >
+        <div 
+          className="h-16 flex items-center justify-center cursor-pointer hover:bg-gray-50 border-b border-gray-200"
+          onClick={handleLogoClick}
+        >
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {isActivitiesExpanded ? (
+            <div className="p-4">
+              <h3 className="text-sm font-semibold text-gray-600 mb-3">Recent Activities</h3>
+              <div className="space-y-3">
+                {activities.map((activity) => (
+                  <div key={activity.id} className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 cursor-pointer">
+                    <div className="flex items-start space-x-3">
+                      <div className="text-lg">{getActivityIcon(activity.type)}</div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <h4 className="text-sm font-medium text-gray-900">{activity.title}</h4>
+                          <div className={`w-2 h-2 rounded-full ${getStatusColor(activity.status)}`}></div>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1">
+                          {activity.type === 'forum' ? 'Active discussion' : 
+                           activity.type === 'policy' ? 'Review pending' : 'Completed successfully'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <h3 className="text-sm font-semibold text-gray-600 mb-3 mt-6">Active Users</h3>
+              <div className="space-y-2">
+                {users.map((user) => (
+                  <div key={user.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded">
+                    <div className="text-2xl">{user.avatar}</div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                      <p className="text-xs text-gray-500">{user.status}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            
-            <div className="flex space-x-3">
-              <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                Request Service
-              </button>
-              <button className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-                Share
-              </button>
-              <button className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-                Save
-              </button>
+          ) : (
+            <div className="py-4">
+              {users.slice(0, 3).map((user, index) => (
+                <div key={user.id} className="flex justify-center py-2">
+                  <div className="text-2xl">{user.avatar}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Full Width Navigation Background */}
+      <div className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-purple-600 to-blue-600 z-30"></div>
+
+      {/* Home Icon - Left Edge */}
+      <div 
+        className={`fixed top-0 h-16 z-40 transition-all duration-300 flex items-center ${
+          isActivitiesExpanded ? 'left-80 w-20' : 'left-16 w-20'
+        }`}
+      >
+        <Link href="/" className="flex flex-col items-center space-y-1 px-3 py-2 mx-auto rounded-lg text-white/80 hover:text-white hover:bg-white/10">
+          <span className="material-icons text-2xl">home</span>
+          <span className="text-xs font-medium">Home</span>
+        </Link>
+      </div>
+
+      {/* Main Navigation Bar */}
+      <nav 
+        className={`fixed top-0 right-0 h-16 z-40 transition-all duration-300 ${
+          isActivitiesExpanded ? 'left-96' : 'left-36'
+        }`}
+      >
+        <div className="h-full flex items-center justify-between px-6">
+          <div className="flex-1 flex justify-center">
+            <div className="flex items-center space-x-8">
+              <Link href="/forums" className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10">
+                <span className="material-icons text-2xl">forum</span>
+                <span className="text-xs font-medium">Forums</span>
+              </Link>
+
+              <Link href="/services" className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg bg-white/20 text-white">
+                <span className="material-icons text-2xl">build</span>
+                <span className="text-xs font-medium">Services</span>
+              </Link>
+
+              <Link href="/policies" className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10">
+                <span className="material-icons text-2xl">account_balance</span>
+                <span className="text-xs font-medium">Policies</span>
+              </Link>
+
+              <Link href="/users" className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10">
+                <span className="material-icons text-2xl">people_alt</span>
+                <span className="text-xs font-medium">Users</span>
+              </Link>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-4">
+            <button className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10">
+              <span className="material-icons text-2xl">shopping_cart</span>
+            </button>
+
+            <div className="flex items-center space-x-2 text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10">
+              <span className="material-icons text-2xl">account_circle</span>
+              <span className="text-sm font-medium">RK</span>
             </div>
           </div>
         </div>
+      </nav>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Service Information */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Service Information</h2>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Type</label>
-                  <span className={`inline-block px-3 py-1 rounded-full text-sm mt-1 ${getServiceTypeColor(service.type)}`}>
-                    {service.type.replace('-', ' ')}
-                  </span>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Status</label>
-                  <span className={`inline-block px-3 py-1 rounded-full text-sm mt-1 ${
-                    service.status === 'active' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {service.status}
-                  </span>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Cost</label>
-                  <p className="text-gray-900 mt-1">{service.cost}</p>
-                </div>
-                
-                {service.attributes?.availability && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Availability</label>
-                    <p className="text-gray-900 mt-1">{service.attributes.availability}</p>
-                  </div>
-                )}
-                
-                {service.attributes?.location && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Location</label>
-                    <p className="text-gray-900 mt-1">{service.attributes.location}</p>
-                  </div>
-                )}
-                
-                {service.attributes?.urgency && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Urgency</label>
-                    <span className={`inline-block px-3 py-1 rounded-full text-sm mt-1 ${
-                      service.attributes.urgency === 'immediate' 
-                        ? 'bg-red-100 text-red-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {service.attributes.urgency}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Reviews & Ratings */}
-            {service.reviews && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Reviews & Performance</h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="text-center">
-                    <StarRating rating={service.reviews.rating} />
-                    <p className="text-sm text-gray-600 mt-1">
-                      {service.reviews.totalReviews} reviews
-                    </p>
-                  </div>
-                  
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {service.reviews.averageResponseTime}
-                    </div>
-                    <p className="text-sm text-gray-600">Average response time</p>
-                  </div>
-                  
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">
-                      {Math.round((service.reviews.rating / 5) * 100)}%
-                    </div>
-                    <p className="text-sm text-gray-600">Satisfaction rate</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Service Attributes */}
-            {service.attributes && Object.keys(service.attributes).length > 0 && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Service Attributes</h2>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  {service.attributes.price && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Price</label>
-                      <p className="text-gray-900 mt-1">
-                        {typeof service.attributes.price === 'number' 
-                          ? formatCurrency(service.attributes.price, service.attributes.currency)
-                          : service.attributes.price
-                        }
-                      </p>
-                    </div>
-                  )}
-                  
-                  {service.attributes.size && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Size</label>
-                      <p className="text-gray-900 mt-1">{service.attributes.size}</p>
-                    </div>
-                  )}
-                  
-                  {service.attributes.color && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Color</label>
-                      <p className="text-gray-900 mt-1">{service.attributes.color}</p>
-                    </div>
-                  )}
-                  
-                  {service.attributes.quantity && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Quantity Available</label>
-                      <p className="text-gray-900 mt-1">{service.attributes.quantity}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+      {/* Main Content */}
+      <main 
+        className={`transition-all duration-300 ${
+          isActivitiesExpanded ? 'ml-80' : 'ml-16'
+        } pt-16 p-6 min-h-screen bg-gray-50`}
+      >
+        <div className="max-w-4xl mx-auto">
+          {/* Breadcrumb */}
+          <div className="mb-6 mt-8">
+            <Link href="/services" className="text-blue-600 hover:text-blue-800">
+              ← Back to Services
+            </Link>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Provider Information */}
-            {provider && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Service Provider</h2>
-                
-                <div className="flex items-center space-x-4 mb-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span className="text-blue-600 font-semibold text-lg">
-                      {provider.name.charAt(0)}
+          {/* Service Header */}
+          <div className="bg-white rounded-lg shadow p-6 mb-8">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-start space-x-4">
+                <div className="text-6xl">{getCategoryIcon(service.category)}</div>
+                <div className="flex-1">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <h1 className="text-3xl font-bold text-gray-900">{service.title}</h1>
+                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${getCategoryColor(service.category)}`}>
+                      {service.category}
+                    </span>
+                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusBadgeColor(service.status)}`}>
+                      {service.status}
                     </span>
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">
-                      <Link href={`/users/${provider.id}`} className="hover:text-blue-600">
-                        {provider.name}
-                      </Link>
-                    </h3>
-                    {provider.organization && (
-                      <p className="text-gray-600 text-sm">{provider.organization}</p>
+                  
+                  {service.description && (
+                    <p className="text-gray-600 mb-4">{service.description}</p>
+                  )}
+                  
+                  <div className="flex items-center space-x-6 text-sm text-gray-500">
+                    <span>💰 {service.price}</span>
+                    <span>🏢 {service.provider}</span>
+                    <span>📅 Available since {new Date(service.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex flex-col space-y-2">
+                <button className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-medium">
+                  Request Service
+                </button>
+                <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
+                  Add to Cart
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Content */}
+            <div className="lg:col-span-2 space-y-8">
+              {/* Service Attributes */}
+              {service.attributes && Object.keys(service.attributes).length > 0 && (
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Service Attributes</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    {service.attributes.size && (
+                      <div>
+                        <span className="text-gray-600">Size:</span>
+                        <span className="ml-2 font-medium">{service.attributes.size}</span>
+                      </div>
+                    )}
+                    {service.attributes.color && (
+                      <div>
+                        <span className="text-gray-600">Color:</span>
+                        <span className="ml-2 font-medium">{service.attributes.color}</span>
+                      </div>
+                    )}
+                    {service.attributes.quantity && (
+                      <div>
+                        <span className="text-gray-600">Quantity:</span>
+                        <span className="ml-2 font-medium">{service.attributes.quantity}</span>
+                      </div>
                     )}
                   </div>
                 </div>
+              )}
 
-                {/* Provider CERT Score */}
-                <div className="border-t pt-4">
-                  <h4 className="font-medium text-gray-900 mb-3">Provider CERT Score</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <CERTScoreCircle 
-                      score={provider.certScore.cooperation} 
-                      label="Cooperation" 
-                      color="bg-blue-500" 
-                    />
-                    <CERTScoreCircle 
-                      score={provider.certScore.engagement} 
-                      label="Engagement" 
-                      color="bg-green-500" 
-                    />
-                    <CERTScoreCircle 
-                      score={provider.certScore.retention} 
-                      label="Retention" 
-                      color="bg-yellow-500" 
-                    />
-                    <CERTScoreCircle 
-                      score={provider.certScore.trust} 
-                      label="Trust" 
-                      color="bg-purple-500" 
-                    />
+              {/* Reviews */}
+              {service.reviews && service.reviews.length > 0 && (
+                <div className="bg-white rounded-lg shadow p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Reviews</h3>
+                    <div className="flex items-center space-x-2">
+                      <div className="flex">{renderStars(Math.round(Number(calculateAverageRating(service.reviews))))}</div>
+                      <span className="text-gray-600">({calculateAverageRating(service.reviews)} avg)</span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {service.reviews.map((review) => (
+                      <div key={review.id} className="border-b border-gray-200 pb-4 last:border-b-0">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <div className="flex">{renderStars(review.rating)}</div>
+                          <span className="text-sm text-gray-500">by User {review.userId}</span>
+                          <span className="text-sm text-gray-500">•</span>
+                          <span className="text-sm text-gray-500">{new Date(review.date).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-gray-700">{review.comment}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Connected Policies */}
+              {service.connectedPolicies && service.connectedPolicies.length > 0 && (
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Connected Policies</h3>
+                  <div className="space-y-2">
+                    {service.connectedPolicies.map((policyId) => (
+                      <Link
+                        key={policyId}
+                        href={`/policies/${policyId}`}
+                        className="block p-3 border rounded-lg hover:bg-gray-50"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span className="text-lg">📋</span>
+                          <span className="text-blue-600 hover:text-blue-800">Policy: {policyId}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Provider Info */}
+              {provider && (
+                <div className="bg-white rounded-lg shadow p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Service Provider</h3>
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="text-3xl">{provider.avatar || '👤'}</div>
+                    <div>
+                      <Link href={`/users/${provider.id}`} className="font-medium text-blue-600 hover:text-blue-800">
+                        {provider.name}
+                      </Link>
+                      <p className="text-sm text-gray-500 capitalize">{provider.role}</p>
+                      {provider.certScore && (
+                        <p className="text-sm text-gray-500">CERT Score: {provider.certScore}</p>
+                      )}
+                    </div>
+                  </div>
+                  <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 text-sm">
+                    Contact Provider
+                  </button>
+                </div>
+              )}
+
+              {/* Service Info */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Service Details</h3>
+                <div className="space-y-3">
+                  <div>
+                    <span className="text-gray-600">Price:</span>
+                    <span className="ml-2 font-medium text-green-600">{service.price}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Category:</span>
+                    <span className="ml-2 font-medium">{service.category}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Status:</span>
+                    <span className="ml-2 font-medium capitalize">{service.status}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Provider:</span>
+                    <span className="ml-2 font-medium">{service.provider}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-600">Service ID:</span>
+                    <span className="ml-2 font-mono text-sm">{service.id}</span>
                   </div>
                 </div>
               </div>
-            )}
 
-            {/* Service Metadata */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Service Details</h2>
-              
-              <div className="space-y-3">
-                {service.createdAt && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Created</label>
-                    <p className="text-gray-900">{formatDate(service.createdAt)}</p>
-                  </div>
-                )}
-                
-                {service.updatedAt && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Last Updated</label>
-                    <p className="text-gray-900">{formatDate(service.updatedAt)}</p>
-                  </div>
-                )}
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Service ID</label>
-                  <p className="text-gray-600 font-mono text-sm">{service.id}</p>
+              {/* Actions */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
+                <div className="space-y-3">
+                  <button className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 text-sm">
+                    Connect to Policy
+                  </button>
+                  <button className="w-full bg-yellow-600 text-white py-2 px-4 rounded-lg hover:bg-yellow-700 text-sm">
+                    Leave Review
+                  </button>
+                  <button className="w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 text-sm">
+                    Report Issue
+                  </button>
                 </div>
               </div>
             </div>
-
-            {/* Service CERT Score */}
-            {service.certScore && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Service CERT Score</h2>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <CERTScoreCircle 
-                    score={service.certScore.cooperation} 
-                    label="Cooperation" 
-                    color="bg-blue-500" 
-                  />
-                  <CERTScoreCircle 
-                    score={service.certScore.engagement} 
-                    label="Engagement" 
-                    color="bg-green-500" 
-                  />
-                  <CERTScoreCircle 
-                    score={service.certScore.retention} 
-                    label="Retention" 
-                    color="bg-yellow-500" 
-                  />
-                  <CERTScoreCircle 
-                    score={service.certScore.trust} 
-                    label="Trust" 
-                    color="bg-purple-500" 
-                  />
-                </div>
-                
-                <div className="mt-4 text-sm text-gray-600">
-                  <p>Service quality metrics based on user interactions and feedback.</p>
-                </div>
-              </div>
-            )}
           </div>
         </div>
-      </div>
-    </div>
+      </main>
+    </>
   );
 }

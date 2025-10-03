@@ -1,12 +1,7 @@
-// src/app/policies/page.tsx
 'use client';
 
-import { useAuth } from '@/contexts/AuthContext';
-import { DashboardLayout } from '@/components/DashboardLayout';
-import { useDashboard } from '@/contexts/DashboardContext';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface Policy {
   id: string;
@@ -19,174 +14,328 @@ interface Policy {
 }
 
 export default function PoliciesPage() {
-  const { user, loading } = useAuth();
-  const { addActivity } = useDashboard();
-  const router = useRouter();
+  const [isActivitiesExpanded, setIsActivitiesExpanded] = useState(false);
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loadingPolicies, setLoadingPolicies] = useState(true);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/auth');
-    }
-  }, [user, loading, router]);
+  // Mock activities data
+  const activities = [
+    { id: '1', type: 'forum', title: 'Emergency Housing', status: 'active' },
+    { id: '2', type: 'policy', title: 'Healthcare Policy', status: 'pending' },
+    { id: '3', type: 'service', title: 'Food Bank', status: 'completed' }
+  ];
+
+  // Mock users for activities panel
+  const users = [
+    { id: '1', name: 'Sarah Chen', avatar: '👩‍💼', status: 'online' },
+    { id: '2', name: 'Marcus Johnson', avatar: '👨‍⚕️', status: 'busy' },
+    { id: '3', name: 'Elena Rodriguez', avatar: '👩‍🏫', status: 'away' }
+  ];
 
   useEffect(() => {
-    if (user) {
-      fetchPolicies();
-    }
-  }, [user]);
-
-  const fetchPolicies = async () => {
-    try {
-      const token = await user?.getIdToken();
-      const response = await fetch(
-        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/policies.json?auth=${token}`
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data) {
-          const policiesList: Policy[] = Object.entries(data).map(([id, policy]: [string, any]) => ({
-            id,
-            title: String(policy.title || 'Untitled Policy'),
-            description: policy.description ? String(policy.description) : undefined,
-            category: String(policy.category || 'General'),
-            status: String(policy.status || 'draft'),
-            createdAt: policy.createdAt || new Date().toISOString(),
-            authorId: policy.authorId ? String(policy.authorId) : undefined,
-          }));
-          setPolicies(policiesList);
+    // Simulate loading policies - replace with real Firebase call
+    setTimeout(() => {
+      setPolicies([
+        {
+          id: '1',
+          title: 'Emergency Housing Policy',
+          description: 'Policies for emergency housing coordination and tenant rights',
+          category: 'Housing',
+          status: 'active',
+          createdAt: '2024-01-15',
+          authorId: 'user1'
+        },
+        {
+          id: '2',
+          title: 'Healthcare Access Policy',
+          description: 'Patient care protocols and medical decision support',
+          category: 'Healthcare',
+          status: 'draft',
+          createdAt: '2024-01-10',
+          authorId: 'user2'
+        },
+        {
+          id: '3',
+          title: 'Food Security Policy',
+          description: 'Community food distribution and nutrition support',
+          category: 'Food Security',
+          status: 'active',
+          createdAt: '2024-01-05',
+          authorId: 'user3'
         }
-      }
-    } catch (error) {
-      console.error('Error fetching policies:', error);
-    } finally {
+      ]);
       setLoadingPolicies(false);
+    }, 1000);
+  }, []);
+
+  const handleLogoClick = () => {
+    setIsActivitiesExpanded(!isActivitiesExpanded);
+  };
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'forum': return '💬';
+      case 'policy': return '📋';
+      case 'service': return '🔧';
+      default: return '📄';
     }
   };
 
-  const handleCreatePolicy = () => {
-    // Add activity for creating policy
-    addActivity({
-      type: 'notification',
-      title: 'Started creating new policy',
-      description: 'Began policy creation process',
-      priority: 'medium',
-    });
-    
-    // Navigate to policy creation (you'll need to create this route)
-    router.push('/policies/create');
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-green-500';
+      case 'pending': return 'bg-yellow-500';
+      case 'completed': return 'bg-blue-500';
+      default: return 'bg-gray-500';
+    }
   };
 
-  if (loading) {
-    return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center py-12">
-          <div className="text-lg">Loading...</div>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const getCategoryColor = (category: string) => {
+    switch (category.toLowerCase()) {
+      case 'housing': return 'bg-green-100 text-green-800';
+      case 'healthcare': return 'bg-red-100 text-red-800';
+      case 'food security': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-blue-100 text-blue-800';
+    }
+  };
 
-  if (!user) return null;
-
-  const headerActions = (
-    <button
-      onClick={handleCreatePolicy}
-      className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2"
-    >
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M12 5v14m-7-7h14"/>
-      </svg>
-      Add Policy
-    </button>
-  );
+  const getStatusBadgeColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'active': return 'bg-green-100 text-green-800';
+      case 'draft': return 'bg-gray-100 text-gray-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   return (
-    <DashboardLayout 
-      title="Policies" 
-      subtitle="Policies define rules that can be instantiated into Forums, connected to Services, or reference other Policies. This creates the governance layer of the PFSD model."
-      headerActions={headerActions}
-    >
-      <div className="space-y-6">
-        {/* Tabs */}
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-8">
-            <button className="border-b-2 border-purple-500 text-purple-600 whitespace-nowrap py-2 px-1 text-sm font-medium">
-              All Policies ({policies.length})
-            </button>
-            <button className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 text-sm font-medium">
-              Create Policy
-            </button>
-          </nav>
+    <>
+      {/* Material Icons Font */}
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+      
+      {/* Activities Panel */}
+      <div 
+        className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
+          isActivitiesExpanded ? 'w-80' : 'w-16'
+        }`}
+      >
+        {/* Toggle Area - Just for clicking */}
+        <div 
+          className="h-16 flex items-center justify-center cursor-pointer hover:bg-gray-50 border-b border-gray-200"
+          onClick={handleLogoClick}
+        >
+          {/* Empty click area - no logo needed */}
         </div>
 
-        {loadingPolicies ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="bg-white rounded-lg shadow p-6">
-                <div className="animate-pulse">
-                  <div className="h-6 bg-gray-200 rounded w-1/3 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-2/3 mb-4"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-                </div>
+        {/* Activities Content */}
+        <div className="flex-1 overflow-y-auto">
+          {isActivitiesExpanded ? (
+            <div className="p-4">
+              <h3 className="text-sm font-semibold text-gray-600 mb-3">Recent Activities</h3>
+              <div className="space-y-3">
+                {activities.map((activity) => (
+                  <div key={activity.id} className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 cursor-pointer">
+                    <div className="flex items-start space-x-3">
+                      <div className="text-lg">{getActivityIcon(activity.type)}</div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <h4 className="text-sm font-medium text-gray-900">{activity.title}</h4>
+                          <div className={`w-2 h-2 rounded-full ${getStatusColor(activity.status)}`}></div>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-1">
+                          {activity.type === 'forum' ? 'Active discussion' : 
+                           activity.type === 'policy' ? 'Review pending' : 'Completed successfully'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : policies.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-8 text-center">
-            <div className="w-12 h-12 mx-auto mb-4 bg-purple-100 rounded-full flex items-center justify-center">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-purple-600">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14,2 14,8 20,8"/>
-                <line x1="16" x2="8" y1="13" y2="13"/>
-                <line x1="16" x2="8" y1="17" y2="17"/>
-                <polyline points="10,9 9,9 8,9"/>
-              </svg>
+              
+              <h3 className="text-sm font-semibold text-gray-600 mb-3 mt-6">Active Users</h3>
+              <div className="space-y-2">
+                {users.map((user) => (
+                  <div key={user.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded">
+                    <div className="text-2xl">{user.avatar}</div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                      <p className="text-xs text-gray-500">{user.status}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <p className="text-gray-500 mb-4">No policies created yet</p>
-            <button 
-              onClick={handleCreatePolicy}
-              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
-            >
-              Create First Policy
+          ) : (
+            <div className="py-4">
+              {users.slice(0, 3).map((user, index) => (
+                <div key={user.id} className="flex justify-center py-2">
+                  <div className="text-2xl">{user.avatar}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Full Width Navigation Background */}
+      <div className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-purple-600 to-blue-600 z-30"></div>
+
+      {/* Home Icon - Left Edge */}
+      <div 
+        className={`fixed top-0 h-16 z-40 transition-all duration-300 flex items-center ${
+          isActivitiesExpanded ? 'left-80 w-20' : 'left-16 w-20'
+        }`}
+      >
+        <Link href="/" className="flex flex-col items-center space-y-1 px-3 py-2 mx-auto rounded-lg text-white/80 hover:text-white hover:bg-white/10">
+          <span className="material-icons text-2xl">home</span>
+          <span className="text-xs font-medium">Home</span>
+        </Link>
+      </div>
+
+      {/* Main Navigation Bar */}
+      <nav 
+        className={`fixed top-0 right-0 h-16 z-40 transition-all duration-300 ${
+          isActivitiesExpanded ? 'left-96' : 'left-36'
+        }`}
+      >
+        <div className="h-full flex items-center justify-between px-6">
+          {/* Center Navigation Icons - Forums, Services, Policies, Users */}
+          <div className="flex-1 flex justify-center">
+            <div className="flex items-center space-x-8">
+              <Link href="/forums" className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10">
+                <span className="material-icons text-2xl">forum</span>
+                <span className="text-xs font-medium">Forums</span>
+              </Link>
+
+              <Link href="/services" className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10">
+                <span className="material-icons text-2xl">build</span>
+                <span className="text-xs font-medium">Services</span>
+              </Link>
+
+              <Link href="/policies" className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg bg-white/20 text-white">
+                <span className="material-icons text-2xl">account_balance</span>
+                <span className="text-xs font-medium">Policies</span>
+              </Link>
+
+              <Link href="/users" className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10">
+                <span className="material-icons text-2xl">people_alt</span>
+                <span className="text-xs font-medium">Users</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Right Side - Shopping Cart and User Menu */}
+          <div className="flex items-center space-x-4">
+            <button className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10">
+              <span className="material-icons text-2xl">shopping_cart</span>
+            </button>
+
+            <div className="flex items-center space-x-2 text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10">
+              <span className="material-icons text-2xl">account_circle</span>
+              <span className="text-sm font-medium">RK</span>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main 
+        className={`transition-all duration-300 ${
+          isActivitiesExpanded ? 'ml-80' : 'ml-16'
+        } pt-16 p-6 min-h-screen bg-gray-50`}
+      >
+        <div className="max-w-7xl mx-auto">
+          {/* Page Header */}
+          <div className="flex items-center justify-between mb-8 mt-8">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Policies</h1>
+              <p className="text-gray-600 mt-2">
+                Policies define rules that can be instantiated into Forums, connected to Services, or reference other Policies.
+              </p>
+            </div>
+            <button className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 flex items-center space-x-2">
+              <span className="material-icons text-lg">add</span>
+              <span>Add Policy</span>
             </button>
           </div>
-        ) : (
-          <div className="grid gap-6">
-            {policies.map((policy) => (
-              <Link
-                key={policy.id}
-                href={`/policies/${policy.id}`}
-                className="block bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-xl font-semibold text-gray-900">
-                    {policy.title}
-                  </h3>
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      {policy.category}
-                    </span>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      {policy.status}
-                    </span>
-                  </div>
+
+          {/* Policies List */}
+          <div className="bg-white rounded-lg shadow">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">
+                All Policies ({policies.length})
+              </h2>
+            </div>
+
+            {loadingPolicies ? (
+              <div className="p-6">
+                <div className="space-y-4">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="border-b border-gray-200 pb-4">
+                      <div className="animate-pulse">
+                        <div className="h-6 bg-gray-200 rounded w-1/3 mb-2"></div>
+                        <div className="h-4 bg-gray-200 rounded w-2/3 mb-2"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                
-                {policy.description && (
-                  <p className="text-gray-600 mb-4">{policy.description}</p>
-                )}
-                
-                <div className="flex items-center text-sm text-gray-500">
-                  <span>Created {new Date(policy.createdAt).toLocaleDateString()}</span>
-                </div>
-              </Link>
-            ))}
+              </div>
+            ) : policies.length === 0 ? (
+              <div className="p-12 text-center">
+                <div className="text-6xl mb-4">📋</div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No policies found</h3>
+                <p className="text-gray-600 mb-6">
+                  Get started by creating your first policy to define governance rules.
+                </p>
+                <button className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700">
+                  Create Your First Policy
+                </button>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-200">
+                {policies.map((policy) => (
+                  <Link
+                    key={policy.id}
+                    href={`/policies/${policy.id}`}
+                    className="block p-6 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <h3 className="text-lg font-medium text-gray-900">
+                            {policy.title}
+                          </h3>
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(policy.category)}`}>
+                            {policy.category}
+                          </span>
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeColor(policy.status)}`}>
+                            {policy.status}
+                          </span>
+                        </div>
+                        
+                        {policy.description && (
+                          <p className="text-gray-600 mb-3">{policy.description}</p>
+                        )}
+                        
+                        <div className="flex items-center text-sm text-gray-500 space-x-4">
+                          <span>Created {new Date(policy.createdAt).toLocaleDateString()}</span>
+                          <span>•</span>
+                          <span>ID: {policy.id}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="ml-4">
+                        <span className="material-icons text-gray-400">chevron_right</span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
-    </DashboardLayout>
+        </div>
+      </main>
+    </>
   );
 }
