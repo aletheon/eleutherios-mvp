@@ -80,3 +80,29 @@ policy CERTExample {
 - **Instantiation:** Rules do not create objects until a service *consumes* the policy.  
 - **Flexibility:** Any rule must resolve to *Forum*, *Service*, or *Policy* to be useful.  
 - **Future Extensions:** IoT, APIs, AI models, or humans are all valid **Service** implementations.
+
+
+<!-- Policy ConsultationPolicy {
+	rule BookAppointment -> Forum("Consultation Room", stakeholders = ["Patient", "Doctor"],permissions = {"Patient", ["join", "message", "upload_files"], "Doctor": ["join", "message", "upload_files", "end_session"]})
+	rule DocumentConsultation -> Service("ConsultationNotes", required_fields = ["symptoms", "diagnosis", "recommendations"])
+	rule CreatePrescription -> Policy("PrescriptionPolicy", conditions = ["consultation_completed", "doctor_verified"])	
+}
+
+PrescriptionPolicy {
+	rule VerifyPrescription -> Service("PrescriptionValidation",
+		stakeholders = [],
+		required_data = ["patient_id", "medication",
+			"dosage",
+			"duration"
+			]
+	)
+
+	rule FulfillPrescription -> Forum("Pharmacy Fulfillment", stakeholders = ["Patient", "Pharmacist"],
+	permissions = {
+		"Patient": ["view", "confirm_pickup"],
+		"Pharmacist": ["view", "update_status", "message"]
+	})
+	
+	rule PaymentProcessing -> Service("StripePayment", currency = "NZD", conditions = ["prescription_verified", "insurance_checked"]
+	)
+} -->

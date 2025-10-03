@@ -1,56 +1,68 @@
 'use client';
 
+import { useState, useEffect, useRef, use } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
 
-interface Forum {
-  id: string;
-  title: string;
-  description?: string;
-  status: string;
-  createdAt: string;
-  createdBy?: string;
-  participants?: string[];
-  permissions?: {
-    canPost?: string[];
-    canAddMembers?: string[];
-    canRemoveMembers?: string[];
-    canUploadFiles?: string[];
-  };
-  connectedPolicies?: string[];
+interface Participant {
+  userId: string;
+  role: 'owner' | 'admin' | 'moderator' | 'member' | 'guest';
+  joinedAt: string;
+  leftAt?: string;
+  attrs?: Record<string, unknown>;
 }
 
 interface Message {
   id: string;
-  userId: string;
-  userName: string;
-  userRole: string;
+  forumId: string;
+  authorId: string;
   content: string;
-  timestamp: string;
-  type: 'message' | 'status_update' | 'file_upload';
-  attachments?: Array<{
-    name: string;
-    url: string;
-    type: string;
-  }>;
+  createdAt: string;
+  editedAt?: string;
+  replyToId?: string;
+  reactions?: Record<string, string[]>;
+}
+
+interface Forum {
+  id: string;
+  orgId: string;
+  policyId: string;
+  parentForumId?: string;
+  title: string;
+  description?: string;
+  visibility: 'public' | 'restricted' | 'private';
+  settings?: Record<string, unknown>;
+  lastActivityAt?: string;
+  status: 'active' | 'closed' | 'archived';
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface User {
   id: string;
   name: string;
-  role: string;
   avatar?: string;
-  status?: string;
+  handle?: string;
 }
 
-export default function ForumDetailPage() {
-  const params = useParams();
-  const forumId = params.forumId as string;
+interface ActivityItem {
+  id: string;
+  type: 'forum' | 'policy' | 'service';
+  title: string;
+  status: string;
+}
+
+export default function ForumDetailPage({ params }: { params: Promise<{ forumId: string }> }) {
+  const router = useRouter();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const resolvedParams = use(params);
   const [isActivitiesExpanded, setIsActivitiesExpanded] = useState(false);
+  
   const [forum, setForum] = useState<Forum | null>(null);
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [participantUsers, setParticipantUsers] = useState<Record<string, User>>({});
   const [messages, setMessages] = useState<Message[]>([]);
-  const [participants, setParticipants] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState('');
@@ -70,82 +82,205 @@ export default function ForumDetailPage() {
   ];
 
   useEffect(() => {
-    fetchForum();
-    fetchMessages();
-  }, [forumId]);
+    fetchForumData();
+  }, [resolvedParams.forumId]);
 
-  const fetchForum = async () => {
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const fetchForumData = async () => {
     try {
       setLoading(true);
       setError(null);
 
       // Fetch forum from Firebase Realtime Database
-      const response = await fetch(
-        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/forums/${forumId}.json`
+      const forumResponse = await fetch(
+        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/forums/${resolvedParams.forumId}.json`
       );
       
-      if (!response.ok) {
+      if (!forumResponse.ok) {
         throw new Error('Failed to fetch forum');
       }
 
-      const forumData = await response.json();
+      const forumData = await forumResponse.json();
       
       if (!forumData) {
-        throw new Error('Forum not found');
-      }
+        // Demo data fallback
+        const demoForum: Forum = {
+          id: resolvedParams.forumId,
+          orgId: 'org-1',
+          policyId: 'emergency-housing-policy',
+          title: 'Emergency Housing Coordination',
+          description: 'Real-time coordination between service providers for emergency housing placement and support services.',
+          visibility: 'restricted',
+          lastActivityAt: '2024-09-30T16:45:00Z',
+          status: 'active',
+          createdBy: 'system',
+          createdAt: '2024-09-30T08:00:00Z',
+          updatedAt: '2024-09-30T16:45:00Z'
+        };
+        setForum(demoForum);
 
-      const fetchedForum: Forum = {
-        id: forumId,
-        title: forumData.title ? String(forumData.title) : 'Untitled Forum',
-        status: forumData.status ? String(forumData.status) : 'active',
-        createdAt: forumData.createdAt ? String(forumData.createdAt) : new Date().toISOString(),
-        ...(forumData.description && { description: String(forumData.description) }),
-        ...(forumData.createdBy && { createdBy: String(forumData.createdBy) }),
-        ...(forumData.participants && Array.isArray(forumData.participants) && { 
-          participants: forumData.participants.map((p: any) => String(p)) 
-        }),
-        ...(forumData.permissions && { permissions: forumData.permissions }),
-        ...(forumData.connectedPolicies && Array.isArray(forumData.connectedPolicies) && { 
-          connectedPolicies: forumData.connectedPolicies.map((p: any) => String(p)) 
-        })
-      };
+        // Demo participants
+        const demoParticipants: Participant[] = [
+          {
+            userId: 'user-john',
+            role: 'member',
+            joinedAt: '2024-09-30T08:15:00Z'
+          },
+          {
+            userId: 'user-sarah-msd',
+            role: 'moderator', 
+            joinedAt: '2024-09-30T08:00:00Z'
+          },
+          {
+            userId: 'user-mike-ko',
+            role: 'moderator',
+            joinedAt: '2024-09-30T08:00:00Z'
+          },
+          {
+            userId: 'ai-coordinator',
+            role: 'member',
+            joinedAt: '2024-09-30T08:00:00Z'
+          }
+        ];
+        setParticipants(demoParticipants);
 
-      setForum(fetchedForum);
+        // Demo users
+        const demoUsers: Record<string, User> = {
+          'user-john': { id: 'user-john', name: 'John Smith', avatar: '👤' },
+          'user-sarah-msd': { id: 'user-sarah-msd', name: 'Sarah Jones (MSD)', avatar: '👩‍💼' },
+          'user-mike-ko': { id: 'user-mike-ko', name: 'Mike Wilson (KO)', avatar: '👨‍💼' },
+          'ai-coordinator': { id: 'ai-coordinator', name: 'Coordination Assistant', avatar: '🤖' }
+        };
+        setParticipantUsers(demoUsers);
 
-      // Fetch participant details
-      if (fetchedForum.participants && fetchedForum.participants.length > 0) {
-        await fetchParticipants(fetchedForum.participants);
+        // Demo messages
+        const demoMessages: Message[] = [
+          {
+            id: 'msg-1',
+            forumId: resolvedParams.forumId,
+            authorId: 'user-john',
+            content: 'Hi, I urgently need emergency housing. I\'ve been sleeping rough for 3 nights.',
+            createdAt: '2024-09-30T08:15:00Z'
+          },
+          {
+            id: 'msg-2',
+            forumId: resolvedParams.forumId,
+            authorId: 'user-sarah-msd',
+            content: 'Hello John, I can see your emergency housing application has been received. Let me coordinate with Kāinga Ora immediately.',
+            createdAt: '2024-09-30T08:18:00Z'
+          },
+          {
+            id: 'msg-3',
+            forumId: resolvedParams.forumId,
+            authorId: 'ai-coordinator',
+            content: 'System update: Emergency Housing Policy requirements checked ✓ - Applicant qualifies for immediate placement.',
+            createdAt: '2024-09-30T08:20:00Z'
+          },
+          {
+            id: 'msg-4',
+            forumId: resolvedParams.forumId,
+            authorId: 'user-mike-ko',
+            content: 'I have a transitional housing unit available at 42 Queen Street, Auckland. Can accommodate tonight. Housing unit 42-QUEEN-ST-01 reserved for John Smith. Check-in code: H2K9L4.',
+            createdAt: '2024-09-30T08:25:00Z'
+          },
+          {
+            id: 'msg-5',
+            forumId: resolvedParams.forumId,
+            authorId: 'user-sarah-msd',
+            content: 'Excellent! John, please head to 42 Queen Street. The access code is H2K9L4. I\'ll also arrange transport support and a $200 emergency payment for immediate needs.',
+            createdAt: '2024-09-30T08:30:00Z'
+          },
+          {
+            id: 'msg-6',
+            forumId: resolvedParams.forumId,
+            authorId: 'user-john',
+            content: 'Thank you so much! This is incredible - from homelessness to housing in 15 minutes. How do I get to Queen Street?',
+            createdAt: '2024-09-30T08:32:00Z'
+          },
+          {
+            id: 'msg-7',
+            forumId: resolvedParams.forumId,
+            authorId: 'ai-coordinator',
+            content: 'Transport arranged: Uber arriving in 5 minutes (License: ABC123). Healthcare intake appointment scheduled for tomorrow at 9 AM. Welcome package ready at reception.',
+            createdAt: '2024-09-30T08:35:00Z'
+          }
+        ];
+        setMessages(demoMessages);
+      } else {
+        // Use real data
+        const fetchedForum: Forum = {
+          id: resolvedParams.forumId,
+          orgId: forumData.orgId || 'org-1',
+          policyId: forumData.policyId || '',
+          parentForumId: forumData.parentForumId,
+          title: forumData.title || 'Untitled Forum',
+          description: forumData.description,
+          visibility: forumData.visibility || 'public',
+          settings: forumData.settings,
+          lastActivityAt: forumData.lastActivityAt,
+          status: forumData.status || 'active',
+          createdBy: forumData.createdBy || 'unknown',
+          createdAt: forumData.createdAt || new Date().toISOString(),
+          updatedAt: forumData.updatedAt || new Date().toISOString()
+        };
+        setForum(fetchedForum);
+
+        // Fetch participants
+        await fetchParticipants();
+        
+        // Fetch messages
+        await fetchMessages();
       }
 
     } catch (error) {
-      console.error('Error fetching forum:', error);
+      console.error('Error fetching forum data:', error);
       setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchParticipants = async () => {
+    try {
+      const response = await fetch(
+        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/forum_memberships.json?orderBy="forumId"&equalTo="${resolvedParams.forumId}"`
+      );
+      
+      if (response.ok) {
+        const participantsData = await response.json();
+        if (participantsData) {
+          const participantsList = Object.values(participantsData) as Participant[];
+          setParticipants(participantsList);
+          
+          // Fetch user details for each participant
+          const userPromises = participantsList.map(p => fetchUser(p.userId));
+          const users = await Promise.all(userPromises);
+          const usersMap: Record<string, User> = {};
+          users.forEach(user => {
+            if (user) usersMap[user.id] = user;
+          });
+          setParticipantUsers(usersMap);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching participants:', error);
+    }
+  };
+
   const fetchMessages = async () => {
     try {
-      // Fetch messages from Firebase Realtime Database
       const response = await fetch(
-        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/forums/${forumId}/messages.json`
+        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/messages.json?orderBy="forumId"&equalTo="${resolvedParams.forumId}"`
       );
       
       if (response.ok) {
         const messagesData = await response.json();
         if (messagesData) {
-          const messagesList: Message[] = Object.entries(messagesData).map(([id, message]: [string, any]) => ({
-            id,
-            userId: String(message.userId || 'unknown'),
-            userName: String(message.userName || 'Unknown User'),
-            userRole: String(message.userRole || 'user'),
-            content: String(message.content || ''),
-            timestamp: message.timestamp || new Date().toISOString(),
-            type: message.type || 'message',
-            attachments: message.attachments || []
-          })).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-          
+          const messagesList = Object.values(messagesData) as Message[];
+          messagesList.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
           setMessages(messagesList);
         }
       }
@@ -154,91 +289,69 @@ export default function ForumDetailPage() {
     }
   };
 
-  const fetchParticipants = async (participantIds: string[]) => {
+  const fetchUser = async (userId: string): Promise<User | null> => {
     try {
-      const participantPromises = participantIds.map(async (participantId) => {
-        // Try Firestore first
-        const firestoreResponse = await fetch(
-          `https://firestore.googleapis.com/v1/projects/eleutherios-mvp-3c717/databases/(default)/documents/users/${participantId}`
-        );
+      // Try Firestore first
+      const firestoreResponse = await fetch(
+        `https://firestore.googleapis.com/v1/projects/eleutherios-mvp-3c717/databases/(default)/documents/users/${userId}`
+      );
 
-        if (firestoreResponse.ok) {
-          const userData = await firestoreResponse.json();
-          if (userData.fields) {
-            return {
-              id: participantId,
-              name: userData.fields.displayName?.stringValue || userData.fields.name?.stringValue || 'Unknown User',
-              role: userData.fields.role?.stringValue || 'user',
-              avatar: userData.fields.avatar?.stringValue,
-              status: userData.fields.status?.stringValue || 'offline'
-            };
-          }
+      if (firestoreResponse.ok) {
+        const userData = await firestoreResponse.json();
+        if (userData.fields) {
+          return {
+            id: userId,
+            name: userData.fields.name?.stringValue || 'Unknown User',
+            avatar: userData.fields.avatar?.stringValue,
+            handle: userData.fields.handle?.stringValue
+          };
         }
+      }
 
-        // Fallback to Realtime Database
-        const rtdbResponse = await fetch(
-          `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/users/${participantId}.json`
-        );
+      // Fallback to Realtime Database
+      const rtdbResponse = await fetch(
+        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/users/${userId}.json`
+      );
 
-        if (rtdbResponse.ok) {
-          const userData = await rtdbResponse.json();
-          if (userData) {
-            return {
-              id: participantId,
-              name: userData.displayName || userData.name || 'Unknown User',
-              role: userData.role || 'user',
-              avatar: userData.avatar,
-              status: userData.status || 'offline'
-            };
-          }
+      if (rtdbResponse.ok) {
+        const userData = await rtdbResponse.json();
+        if (userData) {
+          return {
+            id: userId,
+            name: userData.name || 'Unknown User',
+            avatar: userData.avatar,
+            handle: userData.handle
+          };
         }
-
-        return {
-          id: participantId,
-          name: 'Unknown User',
-          role: 'user',
-          status: 'offline'
-        };
-      });
-
-      const participantResults = await Promise.all(participantPromises);
-      setParticipants(participantResults);
+      }
     } catch (error) {
-      console.error('Error fetching participants:', error);
+      console.error('Error fetching user:', error);
     }
+    return null;
   };
 
   const handleSendMessage = async () => {
     if (!newMessage.trim()) return;
+    
+    const message: Message = {
+      id: `msg-${Date.now()}`,
+      forumId: resolvedParams.forumId,
+      authorId: 'current-user',
+      content: newMessage.trim(),
+      createdAt: new Date().toISOString()
+    };
+
+    setMessages(prev => [...prev, message]);
+    setNewMessage('');
 
     try {
-      const message = {
-        userId: 'current-user', // Replace with actual current user ID
-        userName: 'Current User', // Replace with actual current user name
-        userRole: 'user', // Replace with actual current user role
-        content: newMessage,
-        timestamp: new Date().toISOString(),
-        type: 'message'
-      };
-
-      // Send message to Firebase Realtime Database
-      const response = await fetch(
-        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/forums/${forumId}/messages.json`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(message)
-        }
-      );
-
-      if (response.ok) {
-        setNewMessage('');
-        fetchMessages(); // Refresh messages
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
+      await fetch(`/api/forums/${resolvedParams.forumId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(message)
+      });
+    } catch (err) {
+      console.error('Error sending message:', err);
     }
   };
 
@@ -264,43 +377,23 @@ export default function ForumDetailPage() {
     }
   };
 
-  const getForumStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'archived': return 'bg-gray-100 text-gray-800';
-      case 'locked': return 'bg-red-100 text-red-800';
-      default: return 'bg-blue-100 text-blue-800';
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'owner': return 'bg-purple-100 text-purple-800';
+      case 'admin': return 'bg-red-100 text-red-800';
+      case 'moderator': return 'bg-blue-100 text-blue-800';
+      case 'member': return 'bg-green-100 text-green-800';
+      case 'guest': return 'bg-gray-100 text-gray-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getUserStatusColor = (status: string) => {
-    switch (status) {
-      case 'online': return 'bg-green-500';
-      case 'busy': return 'bg-yellow-500';
-      case 'away': return 'bg-gray-500';
-      default: return 'bg-gray-500';
-    }
-  };
-
-  const getRoleIcon = (role: string) => {
-    switch (role.toLowerCase()) {
-      case 'admin': return '👑';
-      case 'caseworker': return '👩‍💼';
-      case 'healthcare-provider': return '👨‍⚕️';
-      case 'housing-officer': return '🏠';
-      default: return '👤';
-    }
-  };
-
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
-
-    if (diffInHours < 24) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else {
-      return date.toLocaleDateString();
+  const getVisibilityColor = (visibility: string) => {
+    switch (visibility) {
+      case 'public': return 'bg-green-100 text-green-800';
+      case 'restricted': return 'bg-yellow-100 text-yellow-800';
+      case 'private': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -326,7 +419,7 @@ export default function ForumDetailPage() {
           <div className="text-center">
             <div className="text-6xl mb-4">❌</div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Forum Not Found</h1>
-            <p className="text-gray-600 mb-4">{error || 'The forum you are looking for does not exist.'}</p>
+            <p className="text-gray-600 mb-4">{error || 'The forum you are looking for does not exist or you do not have access to it.'}</p>
             <Link href="/forums" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
               Back to Forums
             </Link>
@@ -475,13 +568,16 @@ export default function ForumDetailPage() {
             </Link>
           </div>
 
-          {/* Forum Header */}
-          <div className="bg-white rounded-lg shadow p-6 mb-8">
+          {/* EleuScript Policy Context */}
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
                 <div className="flex items-center space-x-3 mb-2">
                   <h1 className="text-3xl font-bold text-gray-900">{forum.title}</h1>
-                  <span className={`px-3 py-1 text-sm font-medium rounded-full ${getForumStatusColor(forum.status)}`}>
+                  <span className={`px-3 py-1 text-sm font-medium rounded-full ${getVisibilityColor(forum.visibility)}`}>
+                    {forum.visibility}
+                  </span>
+                  <span className={`px-3 py-1 text-sm font-medium rounded-full ${forum.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
                     {forum.status}
                   </span>
                 </div>
@@ -490,168 +586,228 @@ export default function ForumDetailPage() {
                   <p className="text-gray-600 mb-4">{forum.description}</p>
                 )}
                 
-                <div className="flex items-center space-x-6 text-sm text-gray-500">
+                <div className="flex items-center space-x-6 text-sm text-gray-500 mb-4">
                   <span>📅 Created {new Date(forum.createdAt).toLocaleDateString()}</span>
                   <span>👥 {participants.length} participants</span>
                   <span>💬 {messages.length} messages</span>
+                  {forum.policyId && (
+                    <Link href={`/policies/${forum.policyId}`} className="text-blue-600 hover:text-blue-800">
+                      📋 Policy: {forum.policyId}
+                    </Link>
+                  )}
+                </div>
+
+                {/* EleuScript Rule that Created This Forum */}
+                <div className="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-2">
+                    🔧 Created by EleuScript Rule:
+                  </h3>
+                  <div className="font-mono text-sm text-gray-800 bg-white rounded p-3 border">
+                    <div className="text-blue-600">policy</div> <span className="text-purple-600">EmergencyHousingPolicy</span> {'{'}<br/>
+                    &nbsp;&nbsp;<div className="text-blue-600">rule</div> <span className="text-green-600">CreateCoordinationSpace</span> -&gt; <span className="text-red-600">Forum</span>(<span className="text-orange-600">"Emergency Housing Coordination"</span>,<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-gray-600">stakeholders</span> = [<span className="text-orange-600">"Person"</span>, <span className="text-orange-600">"MSD"</span>, <span className="text-orange-600">"KaingarOra"</span>, <span className="text-orange-600">"Healthcare"</span>],<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-gray-600">permissions</span> = {'{'}<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-orange-600">"Person"</span>: [<span className="text-orange-600">"join"</span>, <span className="text-orange-600">"message"</span>, <span className="text-orange-600">"view_status"</span>],<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-orange-600">"MSD"</span>: [<span className="text-orange-600">"join"</span>, <span className="text-orange-600">"message"</span>, <span className="text-orange-600">"approve_funding"</span>],<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-orange-600">"KaingarOra"</span>: [<span className="text-orange-600">"join"</span>, <span className="text-orange-600">"message"</span>, <span className="text-orange-600">"reserve_housing"</span>]<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;{'}'}<br/>
+                    &nbsp;&nbsp;)<br/>
+                    {'}'}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-2">
+                    ⚡ This forum was automatically instantiated when John Smith's housing request triggered the EmergencyHousingPolicy rule
+                  </div>
                 </div>
               </div>
-              
-              <div className="flex space-x-2">
-                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
-                  Join Forum
-                </button>
-                <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
-                  Invite Members
-                </button>
+            </div>
+          </div>
+
+          {/* Active Policy Rules */}
+          <div className="bg-white rounded-lg shadow p-6 mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">⚙️ Active Policy Rules</h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                <div>
+                  <span className="font-mono text-sm text-green-700">ProcessApplication</span>
+                  <p className="text-sm text-gray-600">Eligibility check and verification</p>
+                </div>
+                <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">✓ EXECUTED</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                <div>
+                  <span className="font-mono text-sm text-green-700">ProvideFinancialSupport</span>
+                  <p className="text-sm text-gray-600">$200 emergency payment approval</p>
+                </div>
+                <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">✓ EXECUTED</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div>
+                  <span className="font-mono text-sm text-blue-700">ReserveHousing</span>
+                  <p className="text-sm text-gray-600">Housing unit allocation and booking</p>
+                </div>
+                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">⚡ EXECUTING</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                <div>
+                  <span className="font-mono text-sm text-yellow-700">ArrangeTransport</span>
+                  <p className="text-sm text-gray-600">Transport to housing location</p>
+                </div>
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">⏳ PENDING</span>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Messages Area */}
+            {/* Main Chat Area */}
             <div className="lg:col-span-3">
-              <div className="bg-white rounded-lg shadow">
-                {/* Messages Header */}
-                <div className="p-4 border-b border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900">Discussion</h3>
-                </div>
-
-                {/* Messages List */}
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                {/* Rule-Based Coordination Messages */}
                 <div className="h-96 overflow-y-auto p-4 space-y-4">
-                  {messages.length === 0 ? (
-                    <div className="text-center py-8">
-                      <div className="text-4xl mb-4">💬</div>
-                      <p className="text-gray-500">No messages yet. Start the conversation!</p>
+                  {/* System Rule Execution Message */}
+                  <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-lg">⚙️</span>
+                      <span className="font-medium text-blue-800">EleuScript Rule Execution</span>
+                      <span className="text-xs text-gray-500">08:15 AM</span>
                     </div>
-                  ) : (
-                    messages.map((message) => (
-                      <div key={message.id} className="flex space-x-3">
-                        <div className="text-2xl">{getRoleIcon(message.userRole)}</div>
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <span className="font-medium text-gray-900">{message.userName}</span>
-                            <span className="text-xs text-gray-500">{formatTimestamp(message.timestamp)}</span>
-                            <span className="text-xs text-gray-400 capitalize">({message.userRole})</span>
+                    <div className="text-sm text-blue-700 mb-2">
+                      <span className="font-mono bg-blue-100 px-2 py-1 rounded">ProcessApplication</span> rule triggered by John Smith's housing request
+                    </div>
+                    <div className="text-sm text-gray-700">
+                      ✓ Eligibility verified: homeless_status_confirmed, urgent_need_validated<br/>
+                      ✓ Stakeholders auto-assigned: MSD (Sarah Jones), Kainga Ora (Mike Wilson)<br/>
+                      ✓ Forum permissions configured per policy rules
+                    </div>
+                  </div>
+
+                  {messages.map((message) => {
+                    const author = participantUsers[message.authorId];
+                    const isSystemMessage = message.authorId === 'ai-coordinator';
+                    const isRuleExecution = isSystemMessage && message.content.includes('✓');
+                    
+                    return (
+                      <div key={message.id} className={`flex gap-3 ${
+                        isSystemMessage ? 'bg-blue-50 p-3 rounded-lg border-l-4 border-blue-500' : ''
+                      }`}>
+                        <div className="text-2xl">{
+                          isSystemMessage ? '⚙️' : author?.avatar || '👤'
+                        }</div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-sm">
+                              {isSystemMessage ? 'EleuScript Execution Engine' : author?.name || 'Unknown User'}
+                            </span>
+                            {isSystemMessage && (
+                              <span className="px-2 py-0.5 bg-blue-100 text-blue-800 rounded text-xs font-mono">
+                                AUTO-RULE
+                              </span>
+                            )}
+                            <span className="text-xs text-gray-500">
+                              {new Date(message.createdAt).toLocaleTimeString()}
+                            </span>
                           </div>
-                          <div className="bg-gray-50 rounded-lg p-3">
-                            <p className="text-gray-800">{message.content}</p>
-                            {message.type === 'status_update' && (
-                              <div className="mt-2 text-xs text-blue-600 font-medium">
-                                Status Update
+                          
+                          <div className={`text-sm ${
+                            isSystemMessage ? 'text-blue-700 font-medium' : 'text-gray-900'
+                          }`}>
+                            {isRuleExecution ? (
+                              <div>
+                                <div className="font-mono text-xs text-blue-600 mb-1">
+                                  rule: ProvideFinancialSupport → Service("EmergencyPayment")
+                                </div>
+                                {message.content}
                               </div>
+                            ) : (
+                              message.content
                             )}
                           </div>
+
+                          {/* Show rule context for automated actions */}
+                          {message.content.includes('Housing unit') && (
+                            <div className="mt-2 p-2 bg-green-50 rounded border text-xs">
+                              <span className="font-mono text-green-700">rule: ReserveHousing</span>
+                              <div className="text-gray-600">Auto-executed: housing_available && applicant_verified</div>
+                            </div>
+                          )}
+
+                          {message.content.includes('Transport arranged') && (
+                            <div className="mt-2 p-2 bg-yellow-50 rounded border text-xs">
+                              <span className="font-mono text-yellow-700">rule: ArrangeTransport</span>
+                              <div className="text-gray-600">Triggered by: housing_confirmed && payment_approved</div>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    ))
-                  )}
+                    );
+                  })}
+                  <div ref={messagesEndRef} />
                 </div>
 
-                {/* Message Input */}
-                <div className="p-4 border-t border-gray-200">
-                  <div className="flex space-x-3">
+                {/* Rule-Based Input */}
+                <div className="p-4 border-t bg-gray-50">
+                  <div className="text-xs text-gray-600 mb-2">
+                    💡 <strong>Rule-Based Coordination:</strong> Most actions happen automatically via EleuScript rules. 
+                    Manual messages are for clarification and human coordination only.
+                  </div>
+                  <div className="flex gap-2">
                     <input
                       type="text"
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder="Type your message..."
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                      placeholder="Add clarification or coordination note..."
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <button
                       onClick={handleSendMessage}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+                      disabled={!newMessage.trim()}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Send
                     </button>
                   </div>
                 </div>
               </div>
-
-              {/* Connected Policies */}
-              {forum.connectedPolicies && forum.connectedPolicies.length > 0 && (
-                <div className="bg-white rounded-lg shadow p-6 mt-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Connected Policies</h3>
-                  <div className="space-y-2">
-                    {forum.connectedPolicies.map((policyId) => (
-                      <Link
-                        key={policyId}
-                        href={`/policies/${policyId}`}
-                        className="block p-3 border rounded-lg hover:bg-gray-50"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <span className="text-lg">📋</span>
-                          <span className="text-blue-600 hover:text-blue-800">Policy: {policyId}</span>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Sidebar */}
             <div className="space-y-6">
               {/* Participants */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Participants ({participants.length})</h3>
-                <div className="space-y-3">
-                  {participants.map((participant) => (
-                    <div key={participant.id} className="flex items-center space-x-3">
-                      <div className="relative">
-                        <div className="text-2xl">{participant.avatar || getRoleIcon(participant.role)}</div>
-                        <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${getUserStatusColor(participant.status || 'offline')}`}></div>
+              <div className="bg-white rounded-lg shadow p-4">
+                <h3 className="font-medium mb-3">Participants ({participants.length})</h3>
+                <div className="space-y-2">
+                  {participants.map((participant) => {
+                    const user = participantUsers[participant.userId];
+                    return (
+                      <div key={participant.userId} className="flex items-center gap-3">
+                        <div className="text-2xl">{user?.avatar || '👤'}</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{user?.name || 'Unknown User'}</p>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${getRoleColor(participant.role)}`}>
+                              {participant.role}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <Link href={`/users/${participant.id}`} className="font-medium text-blue-600 hover:text-blue-800">
-                          {participant.name}
-                        </Link>
-                        <p className="text-xs text-gray-500 capitalize">{participant.role}</p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Forum Info */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Forum Details</h3>
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <span className="text-gray-600">Status:</span>
-                    <span className="ml-2 font-medium capitalize">{forum.status}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Created:</span>
-                    <span className="ml-2 font-medium">{new Date(forum.createdAt).toLocaleDateString()}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Messages:</span>
-                    <span className="ml-2 font-medium">{messages.length}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Forum ID:</span>
-                    <span className="ml-2 font-mono text-xs">{forum.id}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
-                <div className="space-y-3">
-                  <button className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 text-sm">
-                    Connect Policy
+              {/* Forum Actions */}
+              <div className="bg-white rounded-lg shadow p-4">
+                <h3 className="font-medium mb-3">Actions</h3>
+                <div className="space-y-2">
+                  <button className="w-full bg-blue-600 text-white py-2 px-3 rounded text-sm hover:bg-blue-700">
+                    Invite Participants
                   </button>
-                  <button className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 text-sm">
-                    Activate Service
+                  <button className="w-full bg-green-600 text-white py-2 px-3 rounded text-sm hover:bg-green-700">
+                    Add Service
                   </button>
-                  <button className="w-full bg-yellow-600 text-white py-2 px-4 rounded-lg hover:bg-yellow-700 text-sm">
+                  <button className="w-full bg-purple-600 text-white py-2 px-3 rounded text-sm hover:bg-purple-700">
                     Share Forum
-                  </button>
-                  <button className="w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 text-sm">
-                    Report Issue
                   </button>
                 </div>
               </div>

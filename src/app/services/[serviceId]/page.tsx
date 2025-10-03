@@ -1,48 +1,53 @@
 'use client';
 
+import { useState, useEffect, use } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+
+interface ServiceAttribute {
+  name: string;
+  value: string | number;
+  type: 'price' | 'size' | 'color' | 'quantity' | 'text' | 'date' | 'location';
+}
 
 interface Service {
   id: string;
+  orgId: string;
+  ownerId: string;
+  type: 'product' | 'ai' | 'api' | 'human';
   title: string;
   description?: string;
-  category: string;
-  price: string;
-  provider: string;
-  status: string;
+  attributes?: Record<string, unknown>;
+  price?: { amountCents: number; currency: string };
+  availability?: 'active' | 'inactive' | 'maintenance';
+  cert: { c: number; e: number; r: number; t: number; score: number };
+  rating?: { average: number; count: number };
   createdAt: string;
-  providerId?: string;
-  attributes?: {
-    size?: string;
-    color?: string;
-    quantity?: number;
-  };
-  connectedPolicies?: string[];
-  reviews?: Array<{
-    id: string;
-    userId: string;
-    rating: number;
-    comment: string;
-    date: string;
-  }>;
+  updatedAt: string;
 }
 
 interface User {
   id: string;
   name: string;
-  role: string;
+  email: string;
+  bio?: string;
   avatar?: string;
-  certScore?: number;
+  role?: string;
 }
 
-export default function ServiceDetailPage() {
-  const params = useParams();
-  const serviceId = params?.serviceId as string;
+interface ActivityItem {
+  id: string;
+  type: 'forum' | 'policy' | 'service';
+  title: string;
+  status: string;
+}
+
+export default function ServiceDetailPage({ params }: { params: Promise<{ serviceId: string }> }) {
+  const router = useRouter();
+  const resolvedParams = use(params);
   const [isActivitiesExpanded, setIsActivitiesExpanded] = useState(false);
   const [service, setService] = useState<Service | null>(null);
-  const [provider, setProvider] = useState<User | null>(null);
+  const [owner, setOwner] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -62,7 +67,7 @@ export default function ServiceDetailPage() {
 
   useEffect(() => {
     fetchService();
-  }, [serviceId]);
+  }, [resolvedParams.serviceId]);
 
   const fetchService = async () => {
     try {
@@ -71,7 +76,7 @@ export default function ServiceDetailPage() {
 
       // Fetch service from Firebase Realtime Database
       const response = await fetch(
-        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/services/${serviceId}.json`
+        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/services/${resolvedParams.serviceId}.json`
       );
       
       if (!response.ok) {
@@ -81,33 +86,60 @@ export default function ServiceDetailPage() {
       const serviceData = await response.json();
       
       if (!serviceData) {
-        throw new Error('Service not found');
-      }
+        // Demo data fallback
+        const demoService: Service = {
+          id: resolvedParams.serviceId,
+          orgId: 'org-1',
+          ownerId: 'user-ko-1',
+          type: 'human',
+          title: 'Emergency Housing Support',
+          description: 'Immediate housing assistance for individuals in crisis situations. We provide temporary accommodation, support services, and pathways to permanent housing solutions.',
+          attributes: {
+            price: 'Free',
+            availability: '24/7',
+            location: 'Auckland Central',
+            capacity: 50
+          },
+          price: { amountCents: 0, currency: 'NZD' },
+          availability: 'active',
+          cert: { c: 85, e: 92, r: 78, t: 88, score: 86 },
+          rating: { average: 4.2, count: 127 },
+          createdAt: '2024-01-15T10:00:00Z',
+          updatedAt: '2024-09-30T14:30:00Z'
+        };
+        setService(demoService);
+        
+        // Set demo owner
+        setOwner({
+          id: 'user-ko-1',
+          name: 'Kāinga Ora',
+          email: 'support@kaingaora.govt.nz',
+          bio: 'Government housing provider',
+          avatar: '🏠',
+          role: 'Housing Provider'
+        });
+      } else {
+        const fetchedService: Service = {
+          id: resolvedParams.serviceId,
+          orgId: serviceData.orgId || 'org-1',
+          ownerId: serviceData.ownerId || 'unknown',
+          type: serviceData.type || 'human',
+          title: serviceData.title || 'Untitled Service',
+          description: serviceData.description,
+          attributes: serviceData.attributes || {},
+          price: serviceData.price,
+          availability: serviceData.availability || 'active',
+          cert: serviceData.cert || { c: 0, e: 0, r: 0, t: 0, score: 0 },
+          rating: serviceData.rating,
+          createdAt: serviceData.createdAt || new Date().toISOString(),
+          updatedAt: serviceData.updatedAt || new Date().toISOString()
+        };
+        setService(fetchedService);
 
-      const fetchedService: Service = {
-        id: serviceId,
-        title: serviceData.title ? String(serviceData.title) : 'Untitled Service',
-        category: serviceData.category ? String(serviceData.category) : 'General',
-        price: serviceData.price ? String(serviceData.price) : 'Contact for pricing',
-        provider: serviceData.provider ? String(serviceData.provider) : 'Unknown Provider',
-        status: serviceData.status ? String(serviceData.status) : 'available',
-        createdAt: serviceData.createdAt ? String(serviceData.createdAt) : new Date().toISOString(),
-        ...(serviceData.description && { description: String(serviceData.description) }),
-        ...(serviceData.providerId && { providerId: String(serviceData.providerId) }),
-        ...(serviceData.attributes && { attributes: serviceData.attributes }),
-        ...(serviceData.connectedPolicies && Array.isArray(serviceData.connectedPolicies) && { 
-          connectedPolicies: serviceData.connectedPolicies.map((p: any) => String(p)) 
-        }),
-        ...(serviceData.reviews && Array.isArray(serviceData.reviews) && { 
-          reviews: serviceData.reviews 
-        })
-      };
-
-      setService(fetchedService);
-
-      // Fetch provider information if available
-      if (fetchedService.providerId) {
-        await fetchProvider(fetchedService.providerId);
+        // Fetch owner information
+        if (fetchedService.ownerId) {
+          await fetchOwner(fetchedService.ownerId);
+        }
       }
 
     } catch (error) {
@@ -118,22 +150,23 @@ export default function ServiceDetailPage() {
     }
   };
 
-  const fetchProvider = async (providerId: string) => {
+  const fetchOwner = async (ownerId: string) => {
     try {
-      // Try Firestore first (for user profiles)
+      // Try Firestore first
       const firestoreResponse = await fetch(
-        `https://firestore.googleapis.com/v1/projects/eleutherios-mvp-3c717/databases/(default)/documents/users/${providerId}`
+        `https://firestore.googleapis.com/v1/projects/eleutherios-mvp-3c717/databases/(default)/documents/users/${ownerId}`
       );
 
       if (firestoreResponse.ok) {
         const userData = await firestoreResponse.json();
         if (userData.fields) {
-          setProvider({
-            id: providerId,
-            name: userData.fields.displayName?.stringValue || userData.fields.name?.stringValue || 'Unknown Provider',
-            role: userData.fields.role?.stringValue || 'provider',
+          setOwner({
+            id: ownerId,
+            name: userData.fields.name?.stringValue || 'Unknown User',
+            email: userData.fields.email?.stringValue || '',
+            bio: userData.fields.bio?.stringValue,
             avatar: userData.fields.avatar?.stringValue,
-            certScore: userData.fields.certScore?.integerValue || userData.fields.certScore?.doubleValue
+            role: userData.fields.role?.stringValue || 'user'
           });
           return;
         }
@@ -141,23 +174,24 @@ export default function ServiceDetailPage() {
 
       // Fallback to Realtime Database
       const rtdbResponse = await fetch(
-        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/users/${providerId}.json`
+        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/users/${ownerId}.json`
       );
 
       if (rtdbResponse.ok) {
         const userData = await rtdbResponse.json();
         if (userData) {
-          setProvider({
-            id: providerId,
-            name: userData.displayName || userData.name || 'Unknown Provider',
-            role: userData.role || 'provider',
+          setOwner({
+            id: ownerId,
+            name: userData.name || 'Unknown User',
+            email: userData.email || '',
+            bio: userData.bio,
             avatar: userData.avatar,
-            certScore: userData.certScore
+            role: userData.role || 'user'
           });
         }
       }
     } catch (error) {
-      console.error('Error fetching provider:', error);
+      console.error('Error fetching owner:', error);
     }
   };
 
@@ -183,47 +217,41 @@ export default function ServiceDetailPage() {
     }
   };
 
-  const getCategoryColor = (category: string) => {
-    switch (category.toLowerCase()) {
-      case 'payment': return 'bg-blue-100 text-blue-800';
-      case 'housing': return 'bg-green-100 text-green-800';
-      case 'healthcare': return 'bg-red-100 text-red-800';
-      case 'food security': return 'bg-yellow-100 text-yellow-800';
+  const getServiceTypeColor = (type: string) => {
+    switch (type) {
+      case 'human': return 'bg-green-100 text-green-800';
+      case 'api': return 'bg-blue-100 text-blue-800';
+      case 'ai': return 'bg-purple-100 text-purple-800';
+      case 'product': return 'bg-pink-100 text-pink-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getCategoryIcon = (category: string) => {
-    switch (category.toLowerCase()) {
-      case 'payment': return '💳';
-      case 'housing': return '🏠';
-      case 'healthcare': return '🏥';
-      case 'food security': return '🍽️';
-      default: return '🔧';
-    }
-  };
-
-  const getStatusBadgeColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'available': return 'bg-green-100 text-green-800';
-      case 'unavailable': return 'bg-red-100 text-red-800';
-      case 'limited': return 'bg-yellow-100 text-yellow-800';
+  const getAvailabilityColor = (availability: string) => {
+    switch (availability) {
+      case 'active': return 'bg-green-100 text-green-800';
+      case 'inactive': return 'bg-red-100 text-red-800';
+      case 'maintenance': return 'bg-yellow-100 text-yellow-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
-      <span key={i} className={i < rating ? 'text-yellow-400' : 'text-gray-300'}>
+      <span
+        key={i}
+        className={`text-lg ${
+          i < Math.floor(rating) ? 'text-yellow-400' : 'text-gray-300'
+        }`}
+      >
         ★
       </span>
     ));
   };
 
-  const calculateAverageRating = (reviews: any[]) => {
-    if (!reviews || reviews.length === 0) return 0;
-    const sum = reviews.reduce((acc, review) => acc + review.rating, 0);
-    return (sum / reviews.length).toFixed(1);
+  const formatPrice = (price?: { amountCents: number; currency: string }) => {
+    if (!price || price.amountCents === 0) return 'Free';
+    return `${price.currency} $${(price.amountCents / 100).toFixed(2)}`;
   };
 
   if (loading) {
@@ -400,115 +428,88 @@ export default function ServiceDetailPage() {
           {/* Service Header */}
           <div className="bg-white rounded-lg shadow p-6 mb-8">
             <div className="flex items-start justify-between mb-4">
-              <div className="flex items-start space-x-4">
-                <div className="text-6xl">{getCategoryIcon(service.category)}</div>
-                <div className="flex-1">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <h1 className="text-3xl font-bold text-gray-900">{service.title}</h1>
-                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${getCategoryColor(service.category)}`}>
-                      {service.category}
-                    </span>
-                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusBadgeColor(service.status)}`}>
-                      {service.status}
-                    </span>
-                  </div>
-                  
-                  {service.description && (
-                    <p className="text-gray-600 mb-4">{service.description}</p>
+              <div className="flex-1">
+                <div className="flex items-center space-x-3 mb-2">
+                  <h1 className="text-3xl font-bold text-gray-900">{service.title}</h1>
+                  <span className={`px-3 py-1 text-sm font-medium rounded-full ${getServiceTypeColor(service.type)}`}>
+                    {service.type.toUpperCase()}
+                  </span>
+                  <span className={`px-3 py-1 text-sm font-medium rounded-full ${getAvailabilityColor(service.availability || 'active')}`}>
+                    {service.availability || 'Active'}
+                  </span>
+                </div>
+                
+                {service.description && (
+                  <p className="text-gray-600 mb-4">{service.description}</p>
+                )}
+                
+                <div className="flex items-center space-x-6 text-sm text-gray-500 mb-4">
+                  <span>📅 Created {new Date(service.createdAt).toLocaleDateString()}</span>
+                  {owner && (
+                    <span>👤 By {owner.name}</span>
                   )}
-                  
-                  <div className="flex items-center space-x-6 text-sm text-gray-500">
-                    <span>💰 {service.price}</span>
-                    <span>🏢 {service.provider}</span>
-                    <span>📅 Available since {new Date(service.createdAt).toLocaleDateString()}</span>
+                  <span>💰 {formatPrice(service.price)}</span>
+                </div>
+
+                {/* Rating */}
+                {service.rating && (
+                  <div className="flex items-center space-x-2 mb-4">
+                    <div className="flex">{renderStars(service.rating.average)}</div>
+                    <span className="text-sm font-medium">{service.rating.average}</span>
+                    <span className="text-sm text-gray-500">({service.rating.count} reviews)</span>
+                  </div>
+                )}
+
+                {/* CERT Score */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-medium text-gray-900 mb-2">CERT Score: {service.cert.score}/100</h4>
+                  <div className="grid grid-cols-4 gap-4 text-sm">
+                    <div className="text-center">
+                      <div className="font-medium text-blue-600">{service.cert.c}</div>
+                      <div className="text-gray-600">Cooperation</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium text-green-600">{service.cert.e}</div>
+                      <div className="text-gray-600">Engagement</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium text-yellow-600">{service.cert.r}</div>
+                      <div className="text-gray-600">Retention</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium text-purple-600">{service.cert.t}</div>
+                      <div className="text-gray-600">Trust</div>
+                    </div>
                   </div>
                 </div>
               </div>
               
-              <div className="flex flex-col space-y-2">
-                <button className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-medium">
-                  Request Service
+              <div className="flex space-x-2">
+                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
+                  Contact
                 </button>
-                <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
-                  Add to Cart
-                </button>
+                {service.type === 'product' && (
+                  <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
+                    Add to Cart
+                  </button>
+                )}
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main Content */}
-            <div className="lg:col-span-2 space-y-8">
+            <div className="lg:col-span-2">
               {/* Service Attributes */}
               {service.attributes && Object.keys(service.attributes).length > 0 && (
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Service Attributes</h3>
+                <div className="bg-white rounded-lg shadow p-6 mb-8">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Service Details</h3>
                   <div className="grid grid-cols-2 gap-4">
-                    {service.attributes.size && (
-                      <div>
-                        <span className="text-gray-600">Size:</span>
-                        <span className="ml-2 font-medium">{service.attributes.size}</span>
+                    {Object.entries(service.attributes).map(([key, value]) => (
+                      <div key={key} className="bg-gray-50 rounded-lg p-3">
+                        <div className="text-sm font-medium text-gray-700 capitalize">{key}</div>
+                        <div className="text-sm text-gray-900">{String(value)}</div>
                       </div>
-                    )}
-                    {service.attributes.color && (
-                      <div>
-                        <span className="text-gray-600">Color:</span>
-                        <span className="ml-2 font-medium">{service.attributes.color}</span>
-                      </div>
-                    )}
-                    {service.attributes.quantity && (
-                      <div>
-                        <span className="text-gray-600">Quantity:</span>
-                        <span className="ml-2 font-medium">{service.attributes.quantity}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Reviews */}
-              {service.reviews && service.reviews.length > 0 && (
-                <div className="bg-white rounded-lg shadow p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Reviews</h3>
-                    <div className="flex items-center space-x-2">
-                      <div className="flex">{renderStars(Math.round(Number(calculateAverageRating(service.reviews))))}</div>
-                      <span className="text-gray-600">({calculateAverageRating(service.reviews)} avg)</span>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {service.reviews.map((review) => (
-                      <div key={review.id} className="border-b border-gray-200 pb-4 last:border-b-0">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <div className="flex">{renderStars(review.rating)}</div>
-                          <span className="text-sm text-gray-500">by User {review.userId}</span>
-                          <span className="text-sm text-gray-500">•</span>
-                          <span className="text-sm text-gray-500">{new Date(review.date).toLocaleDateString()}</span>
-                        </div>
-                        <p className="text-gray-700">{review.comment}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Connected Policies */}
-              {service.connectedPolicies && service.connectedPolicies.length > 0 && (
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Connected Policies</h3>
-                  <div className="space-y-2">
-                    {service.connectedPolicies.map((policyId) => (
-                      <Link
-                        key={policyId}
-                        href={`/policies/${policyId}`}
-                        className="block p-3 border rounded-lg hover:bg-gray-50"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <span className="text-lg">📋</span>
-                          <span className="text-blue-600 hover:text-blue-800">Policy: {policyId}</span>
-                        </div>
-                      </Link>
                     ))}
                   </div>
                 </div>
@@ -517,67 +518,42 @@ export default function ServiceDetailPage() {
 
             {/* Sidebar */}
             <div className="space-y-6">
-              {/* Provider Info */}
-              {provider && (
+              {/* Owner Info */}
+              {owner && (
                 <div className="bg-white rounded-lg shadow p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Service Provider</h3>
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="text-3xl">{provider.avatar || '👤'}</div>
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className="text-2xl">{owner.avatar || '👤'}</div>
                     <div>
-                      <Link href={`/users/${provider.id}`} className="font-medium text-blue-600 hover:text-blue-800">
-                        {provider.name}
+                      <Link href={`/users/${owner.id}`} className="font-medium text-blue-600 hover:text-blue-800">
+                        {owner.name}
                       </Link>
-                      <p className="text-sm text-gray-500 capitalize">{provider.role}</p>
-                      {provider.certScore && (
-                        <p className="text-sm text-gray-500">CERT Score: {provider.certScore}</p>
-                      )}
+                      <p className="text-sm text-gray-500">{owner.role}</p>
                     </div>
                   </div>
-                  <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 text-sm">
-                    Contact Provider
-                  </button>
+                  {owner.bio && (
+                    <p className="text-sm text-gray-600 mb-3">{owner.bio}</p>
+                  )}
+                  {owner.email && (
+                    <div className="text-sm text-gray-500">
+                      📧 {owner.email}
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Service Info */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Service Details</h3>
-                <div className="space-y-3">
-                  <div>
-                    <span className="text-gray-600">Price:</span>
-                    <span className="ml-2 font-medium text-green-600">{service.price}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Category:</span>
-                    <span className="ml-2 font-medium">{service.category}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Status:</span>
-                    <span className="ml-2 font-medium capitalize">{service.status}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Provider:</span>
-                    <span className="ml-2 font-medium">{service.provider}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-600">Service ID:</span>
-                    <span className="ml-2 font-mono text-sm">{service.id}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions */}
+              {/* Service Actions */}
               <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
                 <div className="space-y-3">
+                  <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 text-sm">
+                    Add to Forum
+                  </button>
+                  <button className="w-full bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 text-sm">
+                    Bind to Policy
+                  </button>
                   <button className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 text-sm">
-                    Connect to Policy
-                  </button>
-                  <button className="w-full bg-yellow-600 text-white py-2 px-4 rounded-lg hover:bg-yellow-700 text-sm">
-                    Leave Review
-                  </button>
-                  <button className="w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 text-sm">
-                    Report Issue
+                    Rate & Review
                   </button>
                 </div>
               </div>
