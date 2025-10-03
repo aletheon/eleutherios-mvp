@@ -609,7 +609,8 @@ export default function ForumDetailPage({ params }: { params: Promise<{ forumId:
                     &nbsp;&nbsp;&nbsp;&nbsp;<span className="text-gray-600">permissions</span> = {'{'}<br/>
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-orange-600">"Person"</span>: [<span className="text-orange-600">"join"</span>, <span className="text-orange-600">"message"</span>, <span className="text-orange-600">"view_status"</span>],<br/>
                     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-orange-600">"MSD"</span>: [<span className="text-orange-600">"join"</span>, <span className="text-orange-600">"message"</span>, <span className="text-orange-600">"approve_funding"</span>],<br/>
-                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-orange-600">"KaingarOra"</span>: [<span className="text-orange-600">"join"</span>, <span className="text-orange-600">"message"</span>, <span className="text-orange-600">"reserve_housing"</span>]<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-orange-600">"KaingarOra"</span>: [<span className="text-orange-600">"join"</span>, <span className="text-orange-600">"message"</span>, <span className="text-orange-600">"reserve_housing"</span>],<br/>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-orange-600">"Healthcare"</span>: [<span className="text-orange-600">"join"</span>, <span className="text-orange-600">"message"</span>, <span className="text-orange-600">"schedule_appointments"</span>]<br/>
                     &nbsp;&nbsp;&nbsp;&nbsp;{'}'}<br/>
                     &nbsp;&nbsp;)<br/>
                     {'}'}
@@ -622,37 +623,93 @@ export default function ForumDetailPage({ params }: { params: Promise<{ forumId:
             </div>
           </div>
 
-          {/* Active Policy Rules */}
+          {/* Active Policy Rules - Dynamic from EmergencyHousingPolicy */}
           <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">⚙️ Active Policy Rules</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">⚙️ EmergencyHousingPolicy Rule Execution</h3>
             <div className="space-y-3">
+              {/* CreateCoordinationSpace - Always executed first when forum is created */}
+              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                <div>
+                  <span className="font-mono text-sm text-green-700">CreateCoordinationSpace</span>
+                  <p className="text-sm text-gray-600">Forum instantiated with stakeholders: Person, MSD, KaingarOra, Healthcare</p>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Permissions configured • 4 stakeholders assigned • Coordination space active
+                  </div>
+                </div>
+                <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">✓ EXECUTED</span>
+              </div>
+
+              {/* ProcessApplication - Eligibility check service */}
               <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
                 <div>
                   <span className="font-mono text-sm text-green-700">ProcessApplication</span>
-                  <p className="text-sm text-gray-600">Eligibility check and verification</p>
+                  <p className="text-sm text-gray-600">Service("EligibilityCheck") - homeless_status_verified, urgent_need_confirmed</p>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Auto-approved • MSD stakeholder assigned • Application processed
+                  </div>
                 </div>
                 <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">✓ EXECUTED</span>
               </div>
+
+              {/* ProvideFinancialSupport - Emergency payment */}
               <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
                 <div>
                   <span className="font-mono text-sm text-green-700">ProvideFinancialSupport</span>
-                  <p className="text-sm text-gray-600">$200 emergency payment approval</p>
+                  <p className="text-sm text-gray-600">Service("EmergencyPayment") - $200 NZD emergency support</p>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Triggered: eligibility_approved • MSD caseworker assigned • Payment approved
+                  </div>
                 </div>
                 <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">✓ EXECUTED</span>
               </div>
+
+              {/* ReserveHousing - Currently executing */}
               <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <div>
                   <span className="font-mono text-sm text-blue-700">ReserveHousing</span>
-                  <p className="text-sm text-gray-600">Housing unit allocation and booking</p>
+                  <p className="text-sm text-gray-600">Service("HousingAllocation") - Unit 42-QUEEN-ST-01 reserved</p>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Triggered: application_approved • KaingarOra coordinating • Housing confirmed
+                  </div>
                 </div>
-                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">⚡ EXECUTING</span>
+                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">✓ EXECUTED</span>
               </div>
+
+              {/* ArrangeTransport - Executing */}
               <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-200">
                 <div>
                   <span className="font-mono text-sm text-yellow-700">ArrangeTransport</span>
-                  <p className="text-sm text-gray-600">Transport to housing location</p>
+                  <p className="text-sm text-gray-600">Service("TransportBooking") - Uber dispatched (License: ABC123)</p>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Triggered: housing_confirmed • Auto-execute enabled • Transport coordinated
+                  </div>
                 </div>
-                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">⏳ PENDING</span>
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">⚡ EXECUTING</span>
+              </div>
+
+              {/* ScheduleHealthcareIntake - Pending */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div>
+                  <span className="font-mono text-sm text-gray-700">ScheduleHealthcareIntake</span>
+                  <p className="text-sm text-gray-600">Service("HealthcareEnrollment") - Intake appointment scheduling</p>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Waiting: housing_secured • Healthcare stakeholder ready • Enrollment pending
+                  </div>
+                </div>
+                <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium">⏳ PENDING</span>
+              </div>
+            </div>
+
+            {/* Rule Dependencies Visualization */}
+            <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">Rule Execution Flow:</h4>
+              <div className="text-xs text-gray-600">
+                <span className="font-mono">CreateCoordinationSpace</span> → 
+                <span className="font-mono">ProcessApplication</span> → 
+                <span className="font-mono">ProvideFinancialSupport</span> + 
+                <span className="font-mono">ReserveHousing</span> → 
+                <span className="font-mono">ArrangeTransport</span> → 
+                <span className="font-mono">ScheduleHealthcareIntake</span>
               </div>
             </div>
           </div>
@@ -773,6 +830,92 @@ export default function ForumDetailPage({ params }: { params: Promise<{ forumId:
 
             {/* Sidebar */}
             <div className="space-y-6">
+              {/* Service Status - Matches UX Examples */}
+              <div className="bg-white rounded-lg shadow p-4">
+                <h3 className="font-semibold text-gray-900 mb-4">Service Status</h3>
+                <div className="space-y-4">
+                  {/* Eligibility - Approved */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <span className="text-green-600 text-sm">✓</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">Eligibility</p>
+                      <p className="text-xs text-green-600 font-medium">✓ Approved</p>
+                    </div>
+                  </div>
+
+                  {/* Financial Support - Approved */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <span className="text-green-600 text-lg">$</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">Financial Support</p>
+                      <p className="text-xs text-green-600 font-medium">✓ Approved ($200 payment)</p>
+                    </div>
+                  </div>
+
+                  {/* Housing Placement - Confirmed */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <span className="text-green-600 text-sm">🏠</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">Housing Placement</p>
+                      <p className="text-xs text-green-600 font-medium">✓ Confirmed (42 Queen St)</p>
+                    </div>
+                  </div>
+
+                  {/* Transport - Dispatched */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 text-sm">🚗</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">Transport</p>
+                      <p className="text-xs text-blue-600 font-medium">⚡ Dispatched (Uber ABC123)</p>
+                    </div>
+                  </div>
+
+                  {/* Healthcare Intake - Scheduled */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                      <span className="text-gray-500 text-sm">🏥</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">Healthcare Intake</p>
+                      <p className="text-xs text-gray-500">⏳ Pending accommodation check-in</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Next Steps Section */}
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-900 mb-3">Next Steps</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <div className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
+                        <span className="text-blue-600 text-xs">⏰</span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-700">Check into housing at 42 Queen Street</p>
+                        <p className="text-xs text-gray-500">Access code: H2K9L4</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <div className="w-4 h-4 bg-purple-100 rounded-full flex items-center justify-center mt-0.5">
+                        <span className="text-purple-600 text-xs">📅</span>
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs text-gray-700">Healthcare intake appointment</p>
+                        <p className="text-xs text-gray-500">Tomorrow at 9:00 AM</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Participants */}
               <div className="bg-white rounded-lg shadow p-4">
                 <h3 className="font-medium mb-3">Participants ({participants.length})</h3>
