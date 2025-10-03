@@ -3,48 +3,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { Users, Settings, ChevronRight, Code, Zap, Clock, CheckCircle, XCircle, Send, AlertCircle } from 'lucide-react';
+import { EleuScriptParser, RuleExecutionEngine } from '@/lib/eleuScript/parser';
 
-// Simple EleuScript parser - inline to avoid import issues
-function isEleuScriptRule(text: string): boolean {
-  const cleaned = text.trim();
-  return cleaned.includes('rule ') && 
-         cleaned.includes(' -> ') && 
-         (cleaned.includes('Service(') || 
-          cleaned.includes('Forum(') || 
-          cleaned.includes('Policy('));
-}
-
-function parseEleuScriptRule(input: string) {
-  const rawText = input.trim();
-  
-  const rulePattern = /rule\s+(\w+)\s+->\s+(Service|Forum|Policy)\("([^"]+)"(?:,\s*(.+))?\)/;
-  const match = rawText.match(rulePattern);
-  
-  if (!match) {
-    return {
-      isValid: false,
-      error: 'Invalid EleuScript syntax. Expected: rule RuleName -> Target("name", parameters)'
-    };
-  }
-
-  const [, ruleName, ruleTarget, targetName, paramString] = match;
-  
-  return {
-    isValid: true,
-    ruleName,
-    ruleTarget,
-    targetName,
-    parameters: paramString || '',
-    rawText
-  };
-}
-
+// Interface definitions
 interface PolicyRule {
   id: string;
   name: string;
   target: 'Forum' | 'Service' | 'Policy';
   targetName: string;
-  conditions?: string[];
   status: 'executed' | 'executing' | 'pending' | 'failed';
   executedBy?: string;
   timestamp?: string;
@@ -55,7 +21,6 @@ interface ForumData {
   title: string;
   description: string;
   parentPolicyId: string;
-  activePolicies: string[];
   participants: Array<{
     stakeholder: string;
     role: string;
@@ -67,8 +32,6 @@ interface ForumData {
     status: 'pending' | 'active' | 'completed' | 'failed';
     description: string;
   }>;
-  createdAt: string;
-  lastActivity: string;
 }
 
 interface Message {
@@ -93,13 +56,20 @@ function EleuScriptChatInput({
   const [parsedRule, setParsedRule] = useState<any>(null);
 
   useEffect(() => {
-    const isScript = isEleuScriptRule(input);
-    setIsEleuScript(isScript);
-    
-    if (isScript) {
-      const parsed = parseEleuScriptRule(input);
-      setParsedRule(parsed);
-    } else {
+    try {
+      const isScript = EleuScriptParser.isEleuScriptRule(input);
+      setIsEleuScript(isScript);
+      
+      if (isScript) {
+        const parsed = EleuScriptParser.parseRule(input);
+        setParsedRule(parsed);
+        console.log('EleuScript detected and parsed:', parsed);
+      } else {
+        setParsedRule(null);
+      }
+    } catch (error) {
+      console.error('Error parsing EleuScript:', error);
+      setIsEleuScript(false);
       setParsedRule(null);
     }
   }, [input]);
@@ -109,6 +79,8 @@ function EleuScriptChatInput({
     if (!input.trim()) return;
 
     if (isEleuScript && parsedRule?.isValid) {
+      console.log('Executing EleuScript rule:', parsedRule);
+      
       const ruleMessage: Message = {
         id: `msg_${Date.now()}`,
         content: input,
@@ -120,18 +92,42 @@ function EleuScriptChatInput({
       
       onMessageSend(ruleMessage);
       
-      setTimeout(() => {
-        const systemMessage: Message = {
-          id: `sys_${Date.now()}`,
-          content: `⚙️ EleuScript Execution Engine\nrule: ${parsedRule.ruleName} → ${parsedRule.ruleTarget}("${parsedRule.targetName}")\n${parsedRule.ruleTarget} "${parsedRule.targetName}" activated by ${currentStakeholder}`,
-          stakeholder: 'system',
-          timestamp: new Date().toISOString(),
-          type: 'system'
-        };
-        onMessageSend(systemMessage);
+      // Simulate rule execution
+      setTimeout(async () => {
+        try {
+          const executionResult = await RuleExecutionEngine.executeRule(
+            parsedRule,
+            currentStakeholder,
+            'forum_123'
+          );
+          
+          const systemMessage: Message = {
+            id: `sys_${Date.now()}`,
+            content: executionResult.systemMessage || 
+              `⚙️ EleuScript Execution Engine\nrule: ${parsedRule.ruleName} → ${parsedRule.ruleTarget}("${parsedRule.targetName}")\n${parsedRule.ruleTarget} "${parsedRule.targetName}" activated by ${currentStakeholder}`,
+            stakeholder: 'system',
+            timestamp: new Date().toISOString(),
+            type: 'system'
+          };
+          
+          onMessageSend(systemMessage);
+        } catch (error) {
+          console.error('Rule execution error:', error);
+          
+          const errorMessage: Message = {
+            id: `err_${Date.now()}`,
+            content: `⚠️ EleuScript Execution Failed\nError: ${error}\nRule: ${parsedRule.ruleName}`,
+            stakeholder: 'system',
+            timestamp: new Date().toISOString(),
+            type: 'system'
+          };
+          
+          onMessageSend(errorMessage);
+        }
       }, 500);
       
     } else {
+      // Regular chat message
       const chatMessage: Message = {
         id: `msg_${Date.now()}`,
         content: input,
@@ -148,6 +144,7 @@ function EleuScriptChatInput({
 
   return (
     <div className="border-t p-4">
+      {/* EleuScript Preview */}
       {isEleuScript && parsedRule && (
         <div className="mb-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
           <div className="flex items-center space-x-2 mb-2">
@@ -158,15 +155,21 @@ function EleuScriptChatInput({
           {parsedRule.isValid ? (
             <div className="text-sm text-purple-700">
               <strong>Rule:</strong> {parsedRule.ruleName} → {parsedRule.ruleTarget}("{parsedRule.targetName}")
+              {Object.keys(parsedRule.parameters || {}).length > 0 && (
+                <div className="mt-1 text-xs">
+                  <strong>Parameters:</strong> {JSON.stringify(parsedRule.parameters)}
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-sm text-red-600">
-              <strong>Syntax Error:</strong> {parsedRule.error}
+              <strong>Syntax Error:</strong> {parsedRule.errors?.join(', ')}
             </div>
           )}
         </div>
       )}
       
+      {/* Input Form */}
       <form onSubmit={handleSubmit} className="flex space-x-2">
         <div className="flex-1 relative">
           <textarea
@@ -207,6 +210,7 @@ function EleuScriptChatInput({
         </button>
       </form>
       
+      {/* Help Text */}
       <div className="mt-2 text-xs text-gray-500">
         {isEleuScript ? (
           <span className="text-purple-600">
@@ -279,10 +283,15 @@ function EleuScriptMessageRenderer({ message, currentStakeholder }: { message: M
           {success ? (
             <div className="text-sm text-green-700">
               <strong>Target:</strong> {message.ruleData.ruleTarget}("{message.ruleData.targetName}")
+              {Object.keys(message.ruleData.parameters || {}).length > 0 && (
+                <div className="mt-1">
+                  <strong>Parameters:</strong> {JSON.stringify(message.ruleData.parameters)}
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-sm text-red-700">
-              <strong>Error:</strong> {message.ruleData?.error}
+              <strong>Error:</strong> {message.ruleData?.errors?.join(', ')}
             </div>
           )}
         </div>
@@ -312,9 +321,10 @@ function EleuScriptMessageRenderer({ message, currentStakeholder }: { message: M
   );
 }
 
+// Main Forum Page Component
 export default function ForumDetailPage() {
   const params = useParams();
-  const forumId = params.forumId as string;
+  const forumId = params?.forumId as string;
   
   const [forum, setForum] = useState<ForumData | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -333,7 +343,6 @@ export default function ForumDetailPage() {
         title: "Emergency Housing Coordination",
         description: "Coordinating emergency housing for Alex Chen through MSD and Kainga Ora",
         parentPolicyId: "emergency_housing_policy",
-        activePolicies: ["emergency_housing_policy"],
         participants: [
           {
             stakeholder: "alex.chen",
@@ -366,7 +375,6 @@ export default function ForumDetailPage() {
             name: "ProcessApplication",
             target: "Service",
             targetName: "EligibilityCheck",
-            conditions: ["homeless_status_verified", "urgent_need_confirmed"],
             status: "executed",
             executedBy: "sarah.williams",
             timestamp: "2025-10-04T10:15:00Z"
@@ -376,7 +384,6 @@ export default function ForumDetailPage() {
             name: "ProvideFinancialSupport",
             target: "Service", 
             targetName: "EmergencyPayment",
-            conditions: ["eligibility_approved"],
             status: "executed",
             executedBy: "system",
             timestamp: "2025-10-04T10:20:00Z"
@@ -386,7 +393,6 @@ export default function ForumDetailPage() {
             name: "ReserveHousing",
             target: "Service",
             targetName: "HousingReservation", 
-            conditions: ["funding_approved"],
             status: "executing",
             executedBy: "mike.thompson",
             timestamp: "2025-10-04T10:25:00Z"
@@ -413,9 +419,7 @@ export default function ForumDetailPage() {
             status: "pending",
             description: "Transport to housing unit arrangement"
           }
-        ],
-        createdAt: "2025-10-04T10:00:00Z",
-        lastActivity: "2025-10-04T10:25:00Z"
+        ]
       };
       
       setForum(mockForum);
@@ -430,7 +434,7 @@ export default function ForumDetailPage() {
         },
         {
           id: "msg_2", 
-          content: "Hi Alex, I'm Sarah from MSD. I can see your emergency housing application has been approved. Let me activate the eligibility check service.",
+          content: "Hi Alex, I'm Sarah from MSD. I can see your emergency housing application has been approved. Try typing an EleuScript rule to expand our coordination capabilities!",
           stakeholder: "sarah.williams",
           timestamp: "2025-10-04T10:05:00Z",
           type: "chat"
@@ -441,13 +445,6 @@ export default function ForumDetailPage() {
           stakeholder: "system", 
           timestamp: "2025-10-04T10:15:00Z",
           type: "system"
-        },
-        {
-          id: "msg_4",
-          content: "Thanks Sarah! I really appreciate the quick response. Is there anything else I need to do?",
-          stakeholder: "alex.chen",
-          timestamp: "2025-10-04T10:16:00Z",
-          type: "chat"
         }
       ];
       
@@ -498,6 +495,7 @@ export default function ForumDetailPage() {
   return (
     <div className="flex-1 flex">
       <div className="flex-1 flex flex-col">
+        {/* Header */}
         <div className="border-b px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -516,6 +514,7 @@ export default function ForumDetailPage() {
           </div>
         </div>
 
+        {/* EleuScript Status */}
         <div className="border-b px-6 py-4 bg-purple-50">
           <div className="flex items-center space-x-2 mb-3">
             <Code className="w-5 h-5 text-purple-600" />
@@ -547,10 +546,11 @@ export default function ForumDetailPage() {
           </div>
           
           <div className="mt-3 text-xs text-purple-600">
-            Type EleuScript rules in chat to expand forum capabilities
+            ✨ EleuScript Ready - Type rules in chat to expand forum capabilities
           </div>
         </div>
 
+        {/* Chat Area */}
         <div className="flex-1 flex flex-col">
           <div className="flex-1 overflow-y-auto p-4">
             {messages.map(message => (
@@ -570,6 +570,7 @@ export default function ForumDetailPage() {
         </div>
       </div>
 
+      {/* Service Status Sidebar */}
       <div className="w-80 border-l bg-gray-50 p-6">
         <div className="flex items-center space-x-2 mb-4">
           <Settings className="w-5 h-5 text-gray-600" />
@@ -590,13 +591,16 @@ export default function ForumDetailPage() {
         
         <div className="mt-6 p-3 bg-purple-100 rounded-lg">
           <div className="text-sm font-medium text-purple-900 mb-1">
-            EleuScript Ready
+            Try EleuScript Rules:
           </div>
-          <div className="text-xs text-purple-700">
-            Create sub-policies to add healthcare, transport, or other services to this coordination space.
+          <div className="text-xs text-purple-700 space-y-1">
+            <div>• rule AddHealthcare -&gt; Policy("HealthcareAccess")</div>
+            <div>• rule ActivateTransport -&gt; Service("Transportation")</div>
+            <div>• rule CreateConsultation -&gt; Forum("Medical")</div>
           </div>
         </div>
 
+        {/* Participants */}
         <div className="mt-6">
           <h4 className="font-medium text-gray-900 mb-3">Participants</h4>
           <div className="space-y-2">
