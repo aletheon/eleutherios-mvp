@@ -1,5 +1,7 @@
+// src/app/layout.tsx
 import { DashboardProvider } from '@/contexts/DashboardContext'
-import './globals.css'  // Make sure this is here
+import { ActivitiesProvider } from '@/contexts/activitiesContext'
+import './globals.css'
 import { AuthProvider } from '@/contexts/AuthContext'
 
 export default function RootLayout({
@@ -17,9 +19,11 @@ export default function RootLayout({
       </head>
       <body>
         <AuthProvider>
-          <DashboardProvider>
-            {children}
-          </DashboardProvider>
+          <ActivitiesProvider>
+            <DashboardProvider>
+              {children}
+            </DashboardProvider>
+          </ActivitiesProvider>
         </AuthProvider>
       </body>
     </html>

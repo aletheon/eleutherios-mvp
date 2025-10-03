@@ -1,7 +1,7 @@
 // src/components/Navigation.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,6 +11,14 @@ export const Navigation = () => {
   const router = useRouter();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [activitiesPanelOpen, setActivitiesPanelOpen] = useState(false);
+  const [lastClickTime, setLastClickTime] = useState(0);
+
+  // Add effect to communicate panel state changes
+  useEffect(() => {
+    // Store the state and dispatch custom event
+    localStorage.setItem('activitiesPanelOpen', activitiesPanelOpen.toString());
+    window.dispatchEvent(new Event('activitiesPanelChange'));
+  }, [activitiesPanelOpen]);
 
   const handleLogout = async () => {
     try {
@@ -19,6 +27,21 @@ export const Navigation = () => {
     } catch (error) {
       console.error('Logout failed:', error);
     }
+  };
+
+  const handleLogoClick = () => {
+    const currentTime = Date.now();
+    const timeDiff = currentTime - lastClickTime;
+    
+    if (timeDiff < 300 && activitiesPanelOpen) {
+      // Double click - close panel
+      setActivitiesPanelOpen(false);
+    } else {
+      // Single click - open panel
+      setActivitiesPanelOpen(true);
+    }
+    
+    setLastClickTime(currentTime);
   };
 
   const getUserInitials = (name: string) => {
@@ -85,11 +108,11 @@ export const Navigation = () => {
           {/* Left side - Logo with activities toggle */}
           <div className="flex items-center">
             <button
-              onClick={() => setActivitiesPanelOpen(!activitiesPanelOpen)}
+              onClick={handleLogoClick}
               className="flex items-center text-white hover:text-blue-200 transition-colors"
             >
-              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center mr-3">
-                <span className="material-icons text-blue-600 text-lg">scatter_plot</span>
+              <div className="w-6 h-6 bg-white rounded-lg flex items-center justify-center mr-3 relative">
+                <span className="material-icons text-blue-600 text-sm absolute">circle</span>
               </div>
               <span className="text-xl font-bold">Eleutherios</span>
             </button>
@@ -214,23 +237,111 @@ export const Navigation = () => {
         </div>
       </div>
 
-      {/* Activities Panel */}
+      {/* Activities Panel - Collapsed Thumbnails */}
+      {!activitiesPanelOpen && (
+        <div className="fixed top-16 left-0 w-16 bg-white shadow-lg border-r border-gray-200 z-40 h-screen">
+          <div className="p-2 space-y-3">
+            {/* Forum Thumbnail */}
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center cursor-pointer hover:bg-blue-200 transition-colors">
+              <span className="material-icons text-blue-600 text-sm">forum</span>
+            </div>
+            
+            {/* Policy Thumbnail */}
+            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center cursor-pointer hover:bg-purple-200 transition-colors">
+              <span className="material-icons text-purple-600 text-sm">account_balance</span>
+            </div>
+            
+            {/* Service Thumbnail */}
+            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center cursor-pointer hover:bg-green-200 transition-colors">
+              <span className="material-icons text-green-600 text-sm">miscellaneous_services</span>
+            </div>
+            
+            {/* Activity Indicator */}
+            <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+              <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Activities Panel - Expanded */}
       {activitiesPanelOpen && (
         <div className="absolute top-16 left-0 w-80 bg-white shadow-lg border-r border-gray-200 z-40 h-screen">
           <div className="p-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Your Activities</h3>
-            <div className="space-y-3">
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <p className="text-sm font-medium text-blue-900">Recent Policy Updates</p>
-                <p className="text-xs text-blue-700">2 new policies available</p>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Your Activities</h3>
+              <button 
+                onClick={() => setActivitiesPanelOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <span className="material-icons text-sm">close</span>
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {/* Recent Forums */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Recent Forums</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 cursor-pointer transition-colors">
+                    <span className="material-icons text-blue-600 mr-3">forum</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-blue-900">Coordination Forum</p>
+                      <p className="text-xs text-blue-700">3 new messages</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 cursor-pointer transition-colors">
+                    <span className="material-icons text-blue-600 mr-3">forum</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-blue-900">Housing Discussion</p>
+                      <p className="text-xs text-blue-700">1 new update</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="p-3 bg-green-50 rounded-lg">
-                <p className="text-sm font-medium text-green-900">Forum Messages</p>
-                <p className="text-xs text-green-700">3 unread messages</p>
+
+              {/* Recent Policies */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Recent Policies</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 cursor-pointer transition-colors">
+                    <span className="material-icons text-purple-600 mr-3">account_balance</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-purple-900">Social Housing Policy</p>
+                      <p className="text-xs text-purple-700">Updated 2 hours ago</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 cursor-pointer transition-colors">
+                    <span className="material-icons text-purple-600 mr-3">account_balance</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-purple-900">Healthcare Access</p>
+                      <p className="text-xs text-purple-700">Draft created</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="p-3 bg-purple-50 rounded-lg">
-                <p className="text-sm font-medium text-purple-900">Service Requests</p>
-                <p className="text-xs text-purple-700">1 pending approval</p>
+
+              {/* Recent Services */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Recent Services</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center p-3 bg-green-50 rounded-lg hover:bg-green-100 cursor-pointer transition-colors">
+                    <span className="material-icons text-green-600 mr-3">miscellaneous_services</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-green-900">Housing Assistance</p>
+                      <p className="text-xs text-green-700">1 pending request</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* CERT Score Summary */}
+              <div className="border-t pt-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Your CERT Score</h4>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-600">Total Score</span>
+                  <span className="text-lg font-bold text-blue-600">0</span>
+                </div>
               </div>
             </div>
           </div>
