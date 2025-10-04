@@ -1,8 +1,37 @@
 # EleuScript Language Specification
 
-EleuScript is the domain-specific language for defining governance policies in the Eleutherios PFSD protocol. It enables human-readable policies that compile to executable governance structures.
+## Current Implementation: Forum Rule Execution
+
+**OPERATIONAL STATUS**: Stakeholders can now type simple EleuScript rules directly into forum chat for immediate execution.
+
+**Production URL**: `https://eleutherios-mvp.vercel.app`
+
+### Live Rule Syntax (Production Ready):
+```eleuscript
+# Sub-policy creation
+rule AddHealthcare -> Policy("HealthcareAccess", stakeholders=["Patient", "Doctor"])
+
+# Service activation  
+rule ActivateTransport -> Service("Transportation", auto_dispatch=true)
+
+# Forum creation
+rule CreateConsultation -> Forum("Medical", stakeholders=["Patient", "Doctor"])
+```
+
+### Execution Context:
+- **Where**: Forum chat input
+- **Who**: Authorized stakeholders with appropriate permissions
+- **Result**: Immediate rule execution with system message feedback
+- **Database**: Sub-policies created, forum capabilities expanded
+
+### Next Phase: 
+The full policy syntax below will be implemented as the system evolves to support complete policy authoring interfaces.
+
+---
 
 ## Language Overview
+
+EleuScript is the domain-specific language for defining governance policies in the Eleutherios PFSD protocol. It enables human-readable policies that compile to executable governance structures.
 
 EleuScript policies define **rules** that instantiate into **forums**, **services**, or references to other **policies**. This creates a governance protocol that coordinates stakeholders across any domain.
 
