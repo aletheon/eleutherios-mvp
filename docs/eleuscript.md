@@ -1,8 +1,10 @@
-# EleuScript Language Specification
+# EleuScript Language Specification - Updated with Autonomous Services
 
-## Current Implementation: Forum Rule Execution
+## Current Implementation: Forum Rule Execution + Autonomous Services
 
 **OPERATIONAL STATUS**: Stakeholders can now type simple EleuScript rules directly into forum chat for immediate execution.
+
+**NEXT PHASE**: Autonomous service creation and validation for programmable marketplace.
 
 **Production URL**: `https://eleutherios-mvp.vercel.app`
 
@@ -18,22 +20,29 @@ rule ActivateTransport -> Service("Transportation", auto_dispatch=true)
 rule CreateConsultation -> Forum("Medical", stakeholders=["Patient", "Doctor"])
 ```
 
-### Execution Context:
-- **Where**: Forum chat input
-- **Who**: Authorized stakeholders with appropriate permissions
-- **Result**: Immediate rule execution with system message feedback
-- **Database**: Sub-policies created, forum capabilities expanded
+### Autonomous Service Syntax (Next Phase):
+```eleuscript
+# Customer purchase requests
+rule pay -> Service("Milkman", $1)
 
-### Next Phase: 
-The full policy syntax below will be implemented as the system evolves to support complete policy authoring interfaces.
+# Service creation with validation
+service LocalMilkman {
+  price = 1.00
+  currency = "NZD"
+  validation_policies = [
+    "rule location_check -> Service('isLocationValid', $customer.location)",
+    "rule delivery_check -> Service('isDeliveryDay', $current_day)"
+  ]
+}
+```
 
 ---
 
 ## Language Overview
 
-EleuScript is the domain-specific language for defining governance policies in the Eleutherios PFSD protocol. It enables human-readable policies that compile to executable governance structures.
+EleuScript is the domain-specific language for defining governance policies in the Eleutherios PFSD protocol. It enables human-readable policies that compile to executable governance structures and autonomous marketplace services.
 
-EleuScript policies define **rules** that instantiate into **forums**, **services**, or references to other **policies**. This creates a governance protocol that coordinates stakeholders across any domain.
+EleuScript policies define **rules** that instantiate into **forums**, **services**, or references to other **policies**. This creates a governance protocol that coordinates stakeholders across any domain and enables programmable commerce.
 
 ### Basic Syntax
 
@@ -46,7 +55,7 @@ policy PolicyName {
 ## Core Concepts
 
 ### 1. Policies
-A policy is a container for governance rules.
+A policy is a container for governance rules and service definitions.
 
 ```eleuscript
 policy SocialHousingPolicy {
@@ -114,6 +123,232 @@ rule TenancyRules -> Policy("StandardTenancyPolicy",
 )
 ```
 
+## Autonomous Services (NEW)
+
+### Service Definitions
+Services can be defined as autonomous entities with validation logic:
+
+```eleuscript
+service ServiceName {
+    // Basic service properties
+    price = amount
+    currency = "NZD"
+    type = "product" | "ai" | "api" | "human"
+    
+    // Validation policies
+    validation_policies = [
+        "rule validation_name -> Service('validation_service', parameters)"
+    ]
+    
+    // Inherited capabilities
+    inherits_policies = [
+        "PolicyName_Version"
+    ]
+    
+    // Autonomy settings
+    autonomy = {
+        auto_accept = true | false
+        auto_reject = true | false
+        require_human_approval = true | false
+    }
+    
+    // AI integration
+    ai_agent = {
+        type = "validation" | "pricing" | "customer_service"
+        model = "model_name"
+        authority = "advisory" | "limited" | "autonomous"
+    }
+}
+```
+
+### Service Examples
+
+#### Simple Product Service
+```eleuscript
+service LocalMilk {
+    price = 1.00
+    currency = "NZD"
+    type = "product"
+    
+    validation_policies = [
+        "rule location_check -> Service('LocationValidator', $customer.location)",
+        "rule delivery_day -> Service('DeliverySchedule', $current_day)"
+    ]
+    
+    autonomy = {
+        auto_accept = true
+        auto_reject = true
+        require_human_approval = false
+    }
+}
+```
+
+#### AI-Powered Service
+```eleuscript
+service DynamicPricingService {
+    base_price = 10.00
+    currency = "NZD"
+    type = "ai"
+    
+    ai_agent = {
+        type = "pricing"
+        model = "gpt-4o"
+        authority = "limited"
+    }
+    
+    validation_policies = [
+        "rule price_calculation -> Service('AI_PricingAgent', {
+            inputs: ['supply_levels', 'demand_patterns'],
+            max_adjustment: '20%',
+            explanation_required: true
+        })"
+    ]
+}
+```
+
+#### Service with Policy Inheritance
+```eleuscript
+service ComprehensiveEcommerce {
+    price = 25.00
+    currency = "NZD"
+    
+    inherits_policies = [
+        "RefundPolicy_30Day",
+        "QualityGuaranteePolicy",
+        "DisputeResolutionPolicy_Community"
+    ]
+    
+    validation_policies = [
+        "rule inventory_check -> Service('InventorySystem', $requested_quantity)",
+        "rule payment_validation -> Service('PaymentValidator', $customer.payment_method)"
+    ]
+}
+```
+
+### Purchase Request Syntax
+Customers can request services using natural language:
+
+```eleuscript
+# Simple purchase
+rule pay -> Service("ServiceName", $amount)
+
+# Purchase with parameters
+rule pay -> Service("CustomService", {
+    amount: $50,
+    quantity: 2,
+    delivery_preference: "express"
+})
+
+# Conditional purchase
+rule pay -> Service("EventTickets", $75) if Availability.remaining > 0
+```
+
+## Validation Policies
+
+### Validation Rule Syntax
+```eleuscript
+validation_policy PolicyName {
+    name = "descriptive_name"
+    rule_expression = "Service('validation_service', parameters)"
+    error_message = "Human readable error explanation"
+    required = true | false
+    parameters = {
+        key: "value"
+    }
+}
+```
+
+### Common Validation Patterns
+
+#### Location Validation
+```eleuscript
+validation_policy LocationValidation {
+    name = "acceptable_location"
+    rule_expression = "Service('LocationValidator', {
+        customer_location: $customer.location,
+        service_radius: 10,
+        unit: 'km'
+    })"
+    error_message = "Sorry, you're outside our delivery area ({{distance}}km away, max {{max_distance}}km)"
+    required = true
+}
+```
+
+#### Time-Based Validation
+```eleuscript
+validation_policy DeliverySchedule {
+    name = "delivery_day_check"
+    rule_expression = "Service('ScheduleValidator', {
+        current_day: $current_day,
+        delivery_days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    })"
+    error_message = "We don't deliver on {{current_day}}. Available: {{available_days}}"
+    required = true
+}
+```
+
+#### Inventory Validation
+```eleuscript
+validation_policy StockCheck {
+    name = "inventory_availability"
+    rule_expression = "Service('InventorySystem', {
+        product_id: $service.id,
+        requested_quantity: $request.quantity
+    })"
+    error_message = "Only {{available_stock}} items remaining, you requested {{requested_quantity}}"
+    required = true
+}
+```
+
+## AI Integration Syntax
+
+### AI Stakeholders
+```eleuscript
+stakeholder AI_Agent {
+    type = "ai"
+    capabilities = ["monitoring", "decision_making", "coordination"]
+    authority_level = "limited" | "autonomous"
+    human_oversight = {
+        required = true | false
+        escalation_threshold = value
+        approval_required = ["action1", "action2"]
+    }
+}
+```
+
+### AI-Powered Rules
+```eleuscript
+rule AI_TrafficOptimization -> Service("AI_TrafficControl", {
+    authority: "automatic_adjustments",
+    constraints: {
+        max_adjustment: "15%",
+        human_override: "always_available"
+    },
+    explanation_required: true,
+    escalation_triggers: ["congestion > critical", "emergency_detected"]
+})
+```
+
+### AI Service Agents
+```eleuscript
+ai_agent ServiceAssistant {
+    type = "customer_service"
+    model = "claude-3.5-sonnet"
+    authority = "advisory"
+    
+    capabilities = [
+        "answer_questions",
+        "process_refunds",
+        "escalate_complex_issues"
+    ]
+    
+    decision_limits = {
+        max_refund_amount = 100.00
+        auto_approve_timeframe = 24h
+    }
+}
+```
+
 ## Data Types
 
 ### Primitive Types
@@ -143,6 +378,21 @@ false       // pets allowed
 }
 ```
 
+### Currency and Monetary Values
+```eleuscript
+// Currency amounts
+$1.00       // Simple amount
+$25.50      // Decimal precision
+amount = 50.00, currency = "NZD"    // Explicit currency
+
+// Multi-party payments
+payment_split = {
+    "provider": 80,
+    "platform": 15,
+    "payment_processor": 5
+}
+```
+
 ### Time Durations
 ```eleuscript
 48h         // 48 hours
@@ -159,187 +409,55 @@ stakeholder KORepresentative    // Kāinga Ora representative
 stakeholder SupportWorker       // Additional support staff
 stakeholder PropertyManager     // Property management
 stakeholder EmergencyContact    // Emergency contact person
+
+// AI and automated stakeholders
+stakeholder AI_QualityAgent     // AI monitoring agent
+stakeholder IoT_Sensor          // IoT device
+stakeholder API_Service         // External API integration
 ```
 
-## Social Housing Policy Examples
+## Marketplace Integration Examples
 
-### Emergency Housing Policy
-
+### Cross-Forum Service Discovery
 ```eleuscript
-policy EmergencyHousingPolicy {
-    version "1.2.0"
-    description "Rapid housing placement for people in crisis"
-    category "emergency_housing"
-    
-    // Define stakeholders
-    stakeholder Applicant
-    stakeholder EmergencyCaseWorker
-    stakeholder KOEmergencyTeam
-    stakeholder SupportWorker
-    
-    // Variables for this policy
-    let maxProcessingTime = 24h
-    let urgencyThreshold = "critical"
-    
-    // Create application forum immediately
-    rule EmergencyApplicationForum -> Forum("URGENT: Emergency Housing - {Applicant.name}",
-        defaultStakeholders = [Applicant, EmergencyCaseWorker, KOEmergencyTeam],
-        permissions = {
-            canPost = [Applicant, EmergencyCaseWorker, KOEmergencyTeam, SupportWorker],
-            canAddMembers = [EmergencyCaseWorker],
-            canEscalate = [EmergencyCaseWorker, KOEmergencyTeam]
-        },
-        urgency = urgencyThreshold,
-        autoEscalate = {
-            timeLimit = maxProcessingTime,
-            escalateTo = [EmergencyHousingManager]
+policy MarketplaceCoordination {
+    rule DiscoverServices -> Service("ServiceDiscovery", {
+        query: $search_terms,
+        location: $user.location,
+        radius: 25,
+        filters: {
+            category: "food_delivery",
+            max_price: 20.00,
+            available_now: true
         }
-    )
+    })
     
-    // Verify eligibility immediately
-    rule EmergencyEligibilityCheck -> Service("MSDEmergencyEligibility",
-        applicantId = Applicant.id,
-        urgencyLevel = urgencyThreshold,
-        fastTrack = true,
-        requiredDocuments = ["identity", "income_verification"],
-        maxWaitTime = 4h
-    ) 
-    
-    // Search for immediate accommodation
-    rule EmergencyAccommodationSearch -> Service("KOEmergencyHousing",
-        applicantProfile = Applicant.profile,
-        region = Applicant.currentLocation,
-        availableTonight = true,
-        accessibility = Applicant.accessibilityNeeds
-    ) requires [EmergencyEligibilityCheck.approved]
-    
-    // Set up temporary support services
-    rule SupportServicesCoordination -> Service("SupportServicesMSD",
-        serviceTypes = ["mental_health", "addiction", "employment"],
-        duration = "temporary",
-        location = EmergencyAccommodationSearch.location
-    ) requires [EmergencyAccommodationSearch.confirmed]
-    
-    // Monitor progress and outcomes
-    rule ProgressTracking -> Forum("Emergency Housing Progress - {Applicant.name}",
-        defaultStakeholders = [EmergencyCaseWorker, SupportWorker],
-        permissions = {
-            canPost = [EmergencyCaseWorker, SupportWorker],
-            canView = [Applicant]
-        },
-        schedule = {
-            checkIns = "daily",
-            duration = 14d
-        }
-    )
+    rule PersonalizedRecommendations -> Service("AI_Recommender", {
+        user_profile: $user.preferences,
+        purchase_history: $user.past_orders,
+        context: $current_situation
+    })
 }
 ```
 
-### Transitional Housing Policy
-
+### Service Marketplace Evolution
 ```eleuscript
-policy TransitionalHousingPolicy {
-    version "1.0.0"
-    description "Medium-term housing with support services"
+policy EmergencyHousingMarketplace {
+    # Start with basic coordination
+    rule EmergencyHousing -> Forum("Emergency Housing Coordination")
     
-    stakeholder Applicant
-    stakeholder CaseWorker  
-    stakeholder KORepresentative
-    stakeholder SupportCoordinator
-    stakeholder PropertyManager
+    # Evolve to include service providers
+    rule AddServiceProviders -> Policy("ServiceProviderNetwork", {
+        stakeholders: ["EmergencyAccommodation", "SupportServices", "TransportProviders"],
+        marketplace_enabled: true
+    })
     
-    // Application and assessment process
-    rule ApplicationForum -> Forum("Transitional Housing Application - {Applicant.name}",
-        defaultStakeholders = [Applicant, CaseWorker, KORepresentative],
-        phases = ["initial_assessment", "housing_match", "placement", "support_setup"]
-    )
-    
-    rule ComprehensiveAssessment -> Service("MSDHousingAssessment",
-        assessmentType = "comprehensive",
-        includeSupports = true,
-        timeframe = 5d
-    )
-    
-    rule HousingMatching -> Service("KOTransitionalMatching",
-        housingType = "transitional",
-        duration = "6_to_18_months",
-        supportLevel = ComprehensiveAssessment.supportLevel,
-        location = Applicant.preferredRegion
-    ) requires [ComprehensiveAssessment.completed]
-    
-    // Support service coordination
-    rule SupportPlan -> Service("SupportPlanningMSD",
-        goals = ComprehensiveAssessment.identifiedNeeds,
-        duration = HousingMatching.expectedStay,
-        providers = ["health", "education", "employment", "budgeting"]
-    ) requires [HousingMatching.confirmed]
-    
-    // Regular review and transition planning
-    rule MonthlyReview -> Forum("Monthly Review - {Applicant.name}",
-        defaultStakeholders = [Applicant, CaseWorker, SupportCoordinator],
-        schedule = "monthly",
-        outcomes = ["continue", "extend", "transition_permanent", "additional_support"]
-    )
-    
-    // Transition to permanent housing
-    rule PermanentHousingTransition -> Policy("PermanentHousingPolicy") 
-        when MonthlyReview.outcome == "transition_permanent"
-}
-```
-
-### Cross-Agency Coordination Policy
-
-```eleuscript
-policy CrossAgencyCoordinationPolicy {
-    version "1.0.0"
-    description "Coordinates multiple agencies for complex cases"
-    
-    stakeholder PrimaryApplicant
-    stakeholder MSDCaseWorker
-    stakeholder KORepresentative  
-    stakeholder HealthServiceCoordinator
-    stakeholder EducationLiaison
-    stakeholder PoliceYouthWorker      // For youth cases
-    stakeholder OrganaCaseWorker       // For Māori/Pacific cases
-    
-    // Central coordination forum
-    rule AgencyCoordinationForum -> Forum("Multi-Agency Case - {PrimaryApplicant.name}",
-        defaultStakeholders = [MSDCaseWorker, KORepresentative, HealthServiceCoordinator],
-        permissions = {
-            canAddAgencies = [MSDCaseWorker],
-            canViewProgress = [PrimaryApplicant],
-            canUpdatePlans = [MSDCaseWorker, KORepresentative]
-        },
-        confidentiality = "high",
-        dataSharing = {
-            level = "case_relevant_only",
-            retention = "case_duration_plus_2_years"
-        }
-    )
-    
-    // Information sharing protocols
-    rule InformationSharing -> Service("SecureDataSharing",
-        participants = [MSDCaseWorker, KORepresentative, HealthServiceCoordinator],
-        dataTypes = ["housing_status", "support_needs", "risk_factors"],
-        compliance = ["privacy_act", "health_information_privacy"],
-        auditTrail = true
-    )
-    
-    // Coordinated service planning
-    rule CoordinatedServicePlan -> Service("MultiAgencyPlanning",
-        primaryAgency = "MSD",
-        participatingAgencies = AgencyCoordinationForum.members,
-        planDuration = 12_months,
-        reviewFrequency = 6_weeks
-    )
-    
-    // Crisis escalation pathway
-    rule CrisisEscalation -> Forum("URGENT: Crisis Response - {PrimaryApplicant.name}",
-        defaultStakeholders = [MSDCaseWorker, KORepresentative, HealthServiceCoordinator],
-        activationTriggers = ["safety_risk", "housing_loss", "health_emergency"],
-        responseTime = 2h,
-        escalationPath = [TeamLeaders, ServiceManagers, RegionalDirectors]
-    )
+    # Enable autonomous service transactions
+    rule EnableMarketplace -> Service("MarketplaceEngine", {
+        payment_processing: true,
+        autonomous_matching: true,
+        quality_assurance: "CERT_scoring"
+    })
 }
 ```
 
@@ -376,35 +494,55 @@ policy AdaptiveHousingPolicy {
 ### Event Handlers
 
 ```eleuscript
-policy ResponsiveHousingPolicy {
-    rule HousingApplication -> Service("KOHousingSearch")
+policy ResponsiveMarketplace {
+    rule ServiceRequest -> Service("ServiceMatcher")
     
     // React to service outcomes
-    on HousingApplication.success {
-        rule SuccessNotification -> Service("NotificationService",
-            recipients = [Applicant, CaseWorker],
-            message = "Housing offer available - please respond within 24h",
+    on ServiceRequest.match_found {
+        rule NotifyCustomer -> Service("NotificationService",
+            recipients = [Customer],
+            message = "Service match found - {ServiceName} available for ${price}",
             priority = "high"
         )
         
-        rule AcceptanceDecisionForum -> Forum("Housing Offer Response - {Applicant.name}",
-            defaultStakeholders = [Applicant, CaseWorker],
-            timeLimit = 24h,
-            outcomes = ["accept", "decline", "request_modification"]
+        rule CreateTransaction -> Forum("Service Transaction - {Customer.name}",
+            defaultStakeholders = [Customer, ServiceProvider],
+            timeLimit = 1h,
+            outcomes = ["accept", "decline", "negotiate"]
         )
     }
     
-    on HousingApplication.declined {
-        rule AppealProcess -> Forum("Housing Decision Appeal - {Applicant.name}",
-            defaultStakeholders = [Applicant, CaseWorker, ReviewOfficer],
-            process = "formal_review",
-            timeframe = 10_business_days
+    on ServiceRequest.no_match {
+        rule CreateRequest -> Forum("Service Request - {Customer.name}",
+            defaultStakeholders = [Customer, ServiceCoordinator],
+            purpose = "find_alternative_solutions",
+            escalation = "broadcast_to_providers"
         )
-        
-        rule AlternativeOptions -> Service("AlternativeHousingSearch",
-            expandedCriteria = true,
-            includePartnerOrgs = true
-        )
+    }
+    
+    # Purchase request handling
+    on PurchaseRequest.received {
+        rule ValidateRequest -> Service("RequestValidator", {
+            customer: $request.customer,
+            service: $request.service,
+            amount: $request.amount
+        })
+    }
+    
+    on ValidationResult.passed {
+        rule ProcessPayment -> Service("PaymentProcessor", {
+            amount: $request.amount,
+            customer: $request.customer,
+            service_provider: $service.owner
+        })
+    }
+    
+    on ValidationResult.failed {
+        rule SendRejection -> Service("ResponseGenerator", {
+            type: "rejection",
+            reason: $validation.error_message,
+            suggestions: $validation.alternatives
+        })
     }
 }
 ```
@@ -412,24 +550,23 @@ policy ResponsiveHousingPolicy {
 ### Loops and Bulk Operations
 
 ```eleuscript
-policy RegionalHousingCoordination {
+policy RegionalMarketplace {
     let regions = ["Auckland", "Wellington", "Christchurch", "Hamilton", "Tauranga"]
     
-    // Create coordination forums for each region
+    // Create regional marketplaces
     for region in regions {
-        rule ("RegionalCoordination_" + region) -> Forum(region + " Housing Coordination",
-            defaultStakeholders = [RegionalManager, KORegionalRep, MSDRegionalRep],
-            purpose = "coordinate_regional_housing_strategy",
-            meetingSchedule = "monthly"
+        rule ("Marketplace_" + region) -> Forum(region + " Service Marketplace",
+            defaultStakeholders = [RegionalCoordinator, ServiceProviders, Customers],
+            purpose = "regional_service_coordination"
         )
     }
     
-    // Set up regional housing services
+    // Set up regional service discovery
     for region in regions {
-        rule ("HousingService_" + region) -> Service("RegionalHousingSearch",
+        rule ("Discovery_" + region) -> Service("RegionalServiceDiscovery",
             region = region,
             providers = getRegionalProviders(region),
-            capacity = getRegionalCapacity(region)
+            categories = getRegionalCategories(region)
         )
     }
 }
@@ -438,35 +575,22 @@ policy RegionalHousingCoordination {
 ### Policy Inheritance
 
 ```eleuscript
-policy SpecializedYouthHousing extends SocialHousingPolicy {
-    // Additional stakeholders for youth cases
-    stakeholder YouthWorker
-    stakeholder GuardianAdvocate
-    stakeholder EducationLiaison
+policy SpecializedMarketplace extends StandardMarketplace {
+    // Additional stakeholders for specialized needs
+    stakeholder SpecialtyProvider
+    stakeholder QualityInspector
     
-    // Override standard eligibility with youth-specific requirements
-    override rule EligibilityCheck -> Service("YouthEligibilityMSD",
-        ageRange = "16_24",
-        guardianConsent = if (Applicant.age < 18) then true else false,
-        educationStatus = required,
-        riskAssessment = "youth_specific"
+    // Override standard service matching
+    override rule ServiceMatching -> Service("SpecializedMatcher",
+        criteria = "specialty_requirements",
+        quality_threshold = "premium",
+        certification_required = true
     )
     
-    // Add youth-specific support services
-    rule YouthSupportServices -> Service("YouthSupportCoordination",
-        services = ["education", "life_skills", "mental_health", "employment_training"],
-        duration = "up_to_2_years",
-        transitionPlanning = true
-    )
-    
-    // Youth-focused forums with appropriate safeguards
-    rule YouthSupportForum -> Forum("Youth Housing Support - {Applicant.name}",
-        defaultStakeholders = [Applicant, YouthWorker, CaseWorker],
-        safeguards = {
-            adultPresent = true,
-            confidentiality = "youth_protection_standards",
-            mandatoryReporting = true
-        }
+    // Add specialized validation
+    rule SpecialtyValidation -> Service("SpecialtyValidator",
+        standards = ["industry_certification", "quality_metrics"],
+        compliance_check = "mandatory"
     )
 }
 ```
@@ -475,38 +599,38 @@ policy SpecializedYouthHousing extends SocialHousingPolicy {
 
 ### Date/Time Functions
 ```eleuscript
-policy TimedHousingPolicy {
-    let applicationDate = now()
-    let reviewDue = addDays(applicationDate, 10)
-    let urgentDeadline = addHours(now(), 24)
+policy TimedMarketplace {
+    let currentTime = now()
+    let businessHours = isBusinessHours(currentTime)
+    let deliveryWindow = addHours(currentTime, 2)
     
-    rule HousingReview -> Forum("Housing Review",
-        scheduledFor = reviewDue,
-        urgentBy = urgentDeadline
+    rule TimeBasedServices -> Service("ServiceMatcher",
+        available_now = businessHours,
+        delivery_by = deliveryWindow
     )
 }
 ```
 
 ### Validation Functions
 ```eleuscript
-policy ValidatedApplication {
-    rule SubmitApplication -> Service("HousingApplicationMSD",
-        applicantEmail = validate_email(Applicant.email),
-        contactPhone = validate_phone(Applicant.phone),
-        incomeAmount = validate_currency(Applicant.weeklyIncome),
-        region = validate_nz_region(Applicant.preferredRegion)
+policy ValidatedMarketplace {
+    rule ValidatedService -> Service("ServiceProvider",
+        contact_email = validate_email(Provider.email),
+        contact_phone = validate_phone(Provider.phone),
+        service_price = validate_currency(Service.price),
+        service_location = validate_nz_region(Service.region)
     )
 }
 ```
 
 ### String Formatting
 ```eleuscript
-policy FormattedCommunication {
-    rule WelcomeForum -> Forum(
-        format("Welcome {}, your housing application #{}", 
-               Applicant.firstName, 
-               Application.referenceNumber),
-        defaultStakeholders = [Applicant, CaseWorker]
+policy PersonalizedMarketplace {
+    rule ServiceOffer -> Service("OfferGenerator",
+        message = format("Hi {}, {} is available for ${} in your area", 
+                        Customer.firstName, 
+                        Service.name,
+                        Service.price)
     )
 }
 ```
@@ -514,43 +638,31 @@ policy FormattedCommunication {
 ## Error Handling
 
 ```eleuscript
-policy RobustHousingPolicy {
-    rule PrimaryHousingSearch -> Service("KOHousingSearch")
+policy RobustMarketplace {
+    rule PrimaryServiceSearch -> Service("PrimaryServiceMatcher")
         onError {
-            // Try alternative housing providers
-            rule BackupHousingSearch -> Service("CommunityHousingSearch")
+            // Try alternative service providers
+            rule BackupServiceSearch -> Service("BackupServiceMatcher")
                 onError {
-                    // Create manual coordination forum if all automated searches fail
-                    rule ManualCoordination -> Forum("Manual Housing Coordination - {Applicant.name}",
-                        defaultStakeholders = [CaseWorker, SupervisorCaseWorker, KORepresentative],
+                    // Create manual coordination if automated matching fails
+                    rule ManualCoordination -> Forum("Manual Service Coordination",
+                        defaultStakeholders = [Customer, ServiceCoordinator],
                         priority = "urgent",
-                        message = "Automated housing search failed - manual intervention required"
+                        message = "Automated service matching failed - manual assistance required"
                     )
                 }
         }
-}
-```
-
-## Variable and Context Management
-
-```eleuscript
-policy ContextAwareHousingPolicy {
-    // Variables can be set from external context during instantiation
-    let applicantId = context.applicantId
-    let urgencyLevel = context.urgencyLevel || "normal"
-    let preferredRegion = context.preferredRegion || "any"
-    
-    // Use variables throughout the policy
-    rule ApplicationForum -> Forum("Housing Application - " + context.applicantName,
-        defaultStakeholders = getStakeholdersForRegion(preferredRegion),
-        priority = urgencyLevel
-    )
-    
-    rule RegionalHousingSearch -> Service("RegionalHousingSearch",
-        region = preferredRegion,
-        urgency = urgencyLevel,
-        applicant = applicantId
-    )
+        
+    rule ProcessPayment -> Service("PaymentProcessor")
+        onError {
+            rule PaymentRecovery -> Service("PaymentRecoveryService")
+                onError {
+                    rule RefundInitiation -> Service("RefundProcessor",
+                        amount = $original_payment,
+                        reason = "payment_processing_failed"
+                    )
+                }
+        }
 }
 ```
 
@@ -558,34 +670,34 @@ policy ContextAwareHousingPolicy {
 
 ### RealMe Identity Verification
 ```eleuscript
-policy VerifiedHousingApplication {
+policy VerifiedMarketplace {
     rule IdentityVerification -> Service("RealMeAuth",
         verificationLevel = "verified",
         requiredAttributes = ["name", "address", "age_verification"],
-        purposes = ["housing_application", "benefit_verification"]
+        purposes = ["service_provision", "payment_verification"]
     )
     
-    rule ApplicationSubmission -> Service("HousingApplicationMSD",
+    rule ServiceAccess -> Service("ServiceProvider",
         identity = IdentityVerification.verifiedIdentity,
         trustLevel = "realme_verified"
     ) requires [IdentityVerification.success]
 }
 ```
 
-### IRD Integration for Income Verification
+### Payment Integration
 ```eleuscript
-policy IncomeVerifiedHousing {
-    rule IncomeVerification -> Service("IRDIncomeVerification",
-        applicantIRD = Applicant.irdNumber,
-        consentProvided = true,
-        period = "last_26_weeks"
+policy NZPaymentMarketplace {
+    rule PaymentProcessing -> Service("StripeNZ",
+        currency = "NZD",
+        payment_methods = ["card", "bank_transfer", "poli"],
+        compliance = ["nz_consumer_protection", "nz_privacy_act"]
     )
     
-    rule EligibilityCalculation -> Service("MSDEligibilityCalculator",
-        income = IncomeVerification.averageWeeklyIncome,
-        dependents = Applicant.dependentCount,
-        region = Applicant.region
-    ) requires [IncomeVerification.completed]
+    rule BusinessPayments -> Service("StripeConnect",
+        platform_fee = 5.0,
+        currency = "NZD",
+        verification = "nz_business_number"
+    )
 }
 ```
 
@@ -598,46 +710,45 @@ EleuScript policies compile to executable instructions that:
 3. **Set up security rules** based on stakeholder permissions
 4. **Configure webhooks** for external service callbacks
 5. **Establish monitoring** for SLA compliance and escalation
+6. **Deploy autonomous service validators** for marketplace transactions
+7. **Configure AI agents** for intelligent service operations
 
 ### Example Compilation Output
 
 ```typescript
-// Compiled from SocialHousingPolicy
-export const SocialHousingPolicyExecutor = {
+// Compiled from AutonomousMarketplacePolicy
+export const AutonomousMarketplacePolicyExecutor = {
   async instantiate(context: PolicyContext): Promise<InstantiationResult> {
-    // 1. Create application forum
+    // 1. Create marketplace forum
     const forumId = await createForum({
-      name: `Housing Application - ${context.applicantName}`,
-      stakeholders: [
-        { userId: context.applicantId, role: 'Applicant' },
-        { userId: context.caseWorkerId, role: 'CaseWorker' },
-        { userId: context.koRepId, role: 'KORepresentative' }
-      ],
+      name: `${context.regionName} Marketplace`,
+      stakeholders: context.stakeholders,
       permissions: compiledPermissions,
-      policyId: this.policyId,
-      ruleId: 'HousingApplicationForum'
+      policyId: this.policyId
     });
     
-    // 2. Execute eligibility check service
-    const eligibilityResult = await executeService({
-      serviceId: 'MSDEligibilityCheck',
-      parameters: {
-        applicantId: context.applicantId,
-        urgencyLevel: 'high'
-      }
-    });
+    // 2. Deploy autonomous services
+    const services = await Promise.all(
+      context.services.map(service => deployAutonomousService({
+        serviceConfig: service,
+        validationPolicies: service.validationPolicies,
+        paymentIntegration: 'stripe',
+        forumId
+      }))
+    );
     
-    // 3. Set up monitoring and escalation
-    await setupEscalation({
+    // 3. Configure service discovery
+    await configureServiceDiscovery({
       forumId,
-      timeLimit: 48 * 60 * 60 * 1000, // 48 hours in ms
-      escalationPath: ['SupervisorCaseWorker']
+      services: services.map(s => s.id),
+      searchCapabilities: ['location', 'category', 'price', 'ai_recommendations']
     });
     
     return {
       instantiationId: generateId(),
       forumsCreated: [forumId],
-      servicesExecuted: [eligibilityResult.executionId],
+      servicesDeployed: services.map(s => s.id),
+      autonomousValidationEnabled: true,
       status: 'active'
     };
   }
@@ -649,76 +760,111 @@ export const SocialHousingPolicyExecutor = {
 ### NZ Social Services
 ```eleuscript
 import "std/nz_social_services" as NZSocial
+import "std/nz_marketplace" as NZMarket
 
-policy StreamlinedHousing extends NZSocial.StandardHousingPolicy {
+policy SocialServicesMarketplace extends NZSocial.StandardHousingPolicy {
     // Automatically includes:
     // - MSD eligibility checking
     // - KO housing search integration  
     // - Standard application workflows
-    // - Compliance with Housing Act requirements
+    // - Marketplace service providers
+    // - Payment processing capabilities
+    
+    rule ServiceProviderNetwork -> NZMarket.ServiceDiscovery({
+        categories: ["emergency_accommodation", "support_services", "transport"],
+        region: $applicant.region,
+        quality_threshold: "certified"
+    })
 }
 ```
 
-### NZ Government Services
+### Autonomous Service Library
 ```eleuscript
-import "std/nz_government" as NZGov
+import "std/autonomous_services" as AutoServices
 
-policy ComprehensiveSupport {
-    rule IdentityCheck -> NZGov.RealMe(level = "verified")
-    rule IncomeCheck -> NZGov.IRD(purpose = "benefit_verification")
-    rule HealthCheck -> NZGov.HealthRecords(consent = true)
+service LocalDelivery extends AutoServices.LocationBasedService {
+    // Inherits:
+    // - Location validation
+    // - Distance calculations
+    // - Regional service boundaries
+    // - Delivery scheduling
+    
+    validation_policies = [
+        AutoServices.LocationValidator,
+        AutoServices.DeliveryScheduler,
+        "rule custom_validation -> Service('BusinessSpecificValidator')"
+    ]
 }
 ```
 
 ## Best Practices
 
-### 1. Clear Stakeholder Roles
+### 1. Clear Service Definitions
 ```eleuscript
-// Good: Specific, meaningful roles
-stakeholder EmergencyCaseWorker
-stakeholder KOEmergencyTeam  
-stakeholder SupportWorker
+// Good: Specific validation and clear business logic
+service LocalGroceryDelivery {
+    price = 15.00
+    currency = "NZD"
+    validation_policies = [
+        "rule delivery_area -> Service('LocationValidator', max_distance=10)",
+        "rule business_hours -> Service('ScheduleValidator', hours='9am-6pm')",
+        "rule minimum_order -> Service('OrderValidator', min_amount=30)"
+    ]
+}
 
-// Avoid: Generic or unclear roles
-stakeholder User1
-stakeholder Helper
+// Avoid: Vague or missing validation
+service GenericService {
+    price = 10.00
+}
 ```
 
-### 2. Descriptive Rule Names
+### 2. Appropriate Autonomy Levels
 ```eleuscript
-// Good: Clear purpose and context
-rule EmergencyHousingApplicationForum
-rule UrgentEligibilityVerification
-rule CrisisResponseCoordination
+// Good: Balanced autonomy with human oversight
+service ExpensiveConsultation {
+    price = 500.00
+    autonomy = {
+        auto_accept = false
+        auto_reject = true
+        require_human_approval = true
+    }
+}
 
-// Avoid: Generic names
-rule Forum1
-rule Check
-rule Process
+// Good: Full autonomy for simple, low-risk services
+service DigitalDownload {
+    price = 5.00
+    autonomy = {
+        auto_accept = true
+        auto_reject = true
+        require_human_approval = false
+    }
+}
 ```
 
-### 3. Appropriate Error Handling
+### 3. Comprehensive Error Handling
 ```eleuscript
-// Always provide fallback options
-rule PrimaryService -> Service("MainProvider")
+// Always provide fallback options for service failures
+rule ServiceRequest -> Service("PrimaryProvider")
     onError {
         rule BackupService -> Service("BackupProvider")
             onError {
-                rule ManualProcess -> Forum("Manual Intervention Required")
+                rule ManualAssistance -> Forum("Customer Service", 
+                    message = "Automated service failed - human assistance provided"
+                )
             }
     }
 ```
 
-### 4. Time-bound Processes
+### 4. Clear Validation Messages
 ```eleuscript
-// Set clear timeframes and escalation
-rule HousingReview -> Forum("Housing Application Review",
-    timeLimit = 48h,
-    autoEscalate = {
-        timeLimit = 24h,
-        escalateTo = [Supervisor]
-    }
-)
+validation_policy DeliveryArea {
+    error_message = "Sorry, we only deliver within {{max_distance}}km of {{store_location}}. You're {{customer_distance}}km away. Try our partner stores: {{alternative_stores}}"
+}
+
+// Avoid generic error messages
+validation_policy BadExample {
+    error_message = "Invalid request"
+}
 ```
 
-This EleuScript specification provides the complete language definition for creating governance policies that coordinate complex multi-stakeholder processes like social housing placement, ensuring vulnerable people get the support they need through clear, executable protocols.
+This EleuScript specification provides the complete language definition for creating governance policies that coordinate complex multi-stakeholder processes AND autonomous marketplace services, enabling programmable society coordination through natural language business logic.

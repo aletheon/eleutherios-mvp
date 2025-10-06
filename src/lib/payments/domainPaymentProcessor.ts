@@ -1,9 +1,4 @@
 // lib/payments/domainPaymentProcessor.ts
-import Stripe from 'stripe';
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
-});
 
 export interface DomainPayment {
   domain: 'healthcare' | 'housing' | 'food' | 'education' | 'utilities' | 'transport' | 'other';
@@ -13,7 +8,7 @@ export interface DomainPayment {
   payerId: string;
   providerId: string;
   facilitatorId?: string; // For multi-party coordination
-  description: string;
+  description?: string;
   metadata: {
     forumId: string;
     policyId: string;
@@ -23,384 +18,259 @@ export interface DomainPayment {
   };
 }
 
-export interface PaymentSplit {
-  recipientId: string;
-  recipientType: 'provider' | 'facilitator' | 'platform';
-  amount: number;
-  description: string;
+export interface PaymentResult {
+  success: boolean;
+  paymentIntentId?: string;
+  message: string;
+  error?: string;
+  amount?: number;
+  currency?: string;
 }
 
 export class DomainPaymentProcessor {
-  
-  /**
-   * Create payment for any domain service with flexible multi-party splits
-   */
-  static async createDomainPayment(
-    payment: DomainPayment,
-    splits: PaymentSplit[]
-  ): Promise<Stripe.PaymentIntent> {
-    
-    const totalAmount = payment.amount;
-    const platformFeeRate = this.getPlatformFeeRate(payment.domain);
-    const platformFee = Math.round(totalAmount * platformFeeRate);
-    
+  // Remove direct Stripe dependency to avoid import errors
+  // Payment processing will be handled through API calls instead
+
+  constructor() {
+    console.log('DomainPaymentProcessor initialized without direct Stripe dependency');
+  }
+
+  async processDomainPayment(payment: DomainPayment): Promise<PaymentResult> {
     try {
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount: totalAmount * 100, // Stripe uses cents
-        currency: payment.currency.toLowerCase(),
-        description: `${payment.domain}: ${payment.description}`,
-        metadata: {
-          ...payment.metadata,
-          payerId: payment.payerId,
-          providerId: payment.providerId,
-          ...(payment.facilitatorId && { facilitatorId: payment.facilitatorId }),
-          totalSplits: splits.length.toString()
+      console.log('Processing domain payment:', payment);
+
+      // Use fetch to call our Stripe API endpoint instead of direct Stripe import
+      const response = await fetch('/api/services/stripe-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        automatic_payment_methods: {
-          enabled: true,
-        },
-        transfer_group: `${payment.domain}_${payment.metadata.forumId}_${Date.now()}`,
+        body: JSON.stringify({
+          customerId: payment.payerId,
+          businessId: payment.providerId,
+          amount: payment.amount,
+          currency: payment.currency,
+          description: payment.description || `${payment.domain} service payment`,
+          metadata: payment.metadata
+        })
       });
 
-      return paymentIntent;
+      if (!response.ok) {
+        throw new Error(`Payment API request failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        return {
+          success: true,
+          paymentIntentId: result.data?.paymentIntentId,
+          message: result.message,
+          amount: payment.amount,
+          currency: payment.currency
+        };
+      } else {
+        return {
+          success: false,
+          message: 'Payment processing failed',
+          error: result.error || result.message
+        };
+      }
+
     } catch (error) {
-      console.error(`${payment.domain} payment creation failed:`, error);
-      throw new Error(`Payment processing failed: ${error.message}`);
+      console.error('Domain payment processing failed:', error);
+      return {
+        success: false,
+        message: 'Payment processing failed',
+        error: error instanceof Error ? error.message : String(error)
+      };
     }
   }
 
-  /**
-   * Process payment for any service domain
-   */
-  static async processServicePayment(
-    domain: string,
-    serviceType: string,
+  async createHealthcarePayment(
     amount: number,
-    currency: string,
-    payerId: string,
+    patientId: string,
     providerId: string,
+    serviceType: string,
     forumId: string,
-    policyId: string,
-    additionalMetadata: Record<string, any> = {}
-  ): Promise<Stripe.PaymentIntent> {
-    
+    policyId: string
+  ): Promise<PaymentResult> {
     const payment: DomainPayment = {
-      domain: domain as any,
+      domain: 'healthcare',
       serviceType,
       amount,
-      currency: currency as any,
-      payerId,
+      currency: 'NZD',
+      payerId: patientId,
       providerId,
-      description: `${serviceType} - ${domain}`,
+      description: `Healthcare payment: ${serviceType}`,
       metadata: {
         forumId,
         policyId,
-        domain,
+        domain: 'healthcare',
         serviceType,
-        ...additionalMetadata
+        patientId,
+        providerId
       }
     };
 
-    const splits = this.generatePaymentSplits(domain, serviceType, amount, providerId);
-    return await this.createDomainPayment(payment, splits);
+    return await this.processDomainPayment(payment);
   }
 
-  /**
-   * Generate payment splits based on domain and service type
-   */
-  private static generatePaymentSplits(
-    domain: string, 
-    serviceType: string, 
-    amount: number, 
-    providerId: string
-  ): PaymentSplit[] {
-    
-    const splits: PaymentSplit[] = [];
-    const platformFeeRate = this.getPlatformFeeRate(domain);
-    const platformFee = Math.round(amount * platformFeeRate);
-    const providerAmount = amount - platformFee;
-
-    // Provider gets the majority
-    splits.push({
-      recipientId: providerId,
-      recipientType: 'provider',
-      amount: providerAmount,
-      description: `${domain} ${serviceType} service`
-    });
-
-    // Platform fee
-    if (platformFee > 0) {
-      splits.push({
-        recipientId: 'platform',
-        recipientType: 'platform',
-        amount: platformFee,
-        description: 'Platform coordination fee'
-      });
-    }
-
-    return splits;
-  }
-
-  /**
-   * Get platform fee rate by domain
-   */
-  private static getPlatformFeeRate(domain: string): number {
-    const feeRates: Record<string, number> = {
-      'healthcare': 0.05,   // 5% for healthcare coordination
-      'housing': 0.03,      // 3% for housing coordination  
-      'food': 0.02,         // 2% for food distribution
-      'education': 0.04,    // 4% for education services
-      'utilities': 0.01,    // 1% for utility coordination
-      'transport': 0.03,    // 3% for transport services
-      'other': 0.029        // Default Stripe rate
-    };
-    return feeRates[domain] || feeRates['other'];
-  }
-
-  /**
-   * Handle successful payment webhook for any domain
-   */
-  static async handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
-    const { metadata } = paymentIntent;
-    const { forumId, policyId, domain, serviceType } = metadata;
-
-    // Update forum with payment confirmation
-    await this.updateForumPaymentStatus(forumId, paymentIntent.id, 'completed');
-
-    // Execute domain-specific follow-up actions
-    await this.executePostPaymentActions(domain, serviceType, metadata);
-  }
-
-  /**
-   * Execute domain-specific actions after successful payment
-   */
-  private static async executePostPaymentActions(
-    domain: string,
+  async createHousingPayment(
+    amount: number,
+    tenantId: string,
+    landlordId: string,
     serviceType: string,
-    metadata: Record<string, string>
-  ) {
-    const { forumId, policyId } = metadata;
-
-    switch (domain) {
-      case 'healthcare':
-        if (serviceType === 'consultation') {
-          await this.triggerHealthcareWorkflow(metadata);
-        } else if (serviceType === 'prescription') {
-          await this.markPrescriptionPaid(metadata);
-        }
-        break;
-
-      case 'housing':
-        if (serviceType === 'rent') {
-          await this.confirmHousingPayment(metadata);
-        } else if (serviceType === 'deposit') {
-          await this.activateHousingPlacement(metadata);
-        }
-        break;
-
-      case 'food':
-        if (serviceType === 'groceries') {
-          await this.scheduleGroceryDelivery(metadata);
-        } else if (serviceType === 'meal_plan') {
-          await this.activateMealPlan(metadata);
-        }
-        break;
-
-      case 'education':
-        if (serviceType === 'tuition') {
-          await this.confirmEnrollment(metadata);
-        } else if (serviceType === 'materials') {
-          await this.provideEducationMaterials(metadata);
-        }
-        break;
-
-      case 'utilities':
-        if (serviceType === 'electricity') {
-          await this.maintainPowerConnection(metadata);
-        } else if (serviceType === 'water') {
-          await this.maintainWaterConnection(metadata);
-        }
-        break;
-
-      case 'transport':
-        if (serviceType === 'public_transport') {
-          await this.activateTransportPass(metadata);
-        } else if (serviceType === 'taxi_voucher') {
-          await this.provideTaxiVoucher(metadata);
-        }
-        break;
-
-      default:
-        console.log(`Post-payment actions not defined for ${domain}/${serviceType}`);
-    }
-  }
-
-  /**
-   * Update forum payment status in real-time
-   */
-  private static async updateForumPaymentStatus(
-    forumId: string, 
-    paymentIntentId: string, 
-    status: 'pending' | 'completed' | 'failed'
-  ) {
-    console.log(`Payment ${paymentIntentId} ${status} for forum ${forumId}`);
-    // Implementation would update Firestore forum document
-  }
-
-  // Domain-specific post-payment actions
-  private static async triggerHealthcareWorkflow(metadata: Record<string, string>) {
-    console.log('Triggering healthcare workflow:', metadata);
-  }
-
-  private static async markPrescriptionPaid(metadata: Record<string, string>) {
-    console.log('Prescription paid:', metadata);
-  }
-
-  private static async confirmHousingPayment(metadata: Record<string, string>) {
-    console.log('Housing payment confirmed:', metadata);
-  }
-
-  private static async activateHousingPlacement(metadata: Record<string, string>) {
-    console.log('Housing placement activated:', metadata);
-  }
-
-  private static async scheduleGroceryDelivery(metadata: Record<string, string>) {
-    console.log('Grocery delivery scheduled:', metadata);
-  }
-
-  private static async activateMealPlan(metadata: Record<string, string>) {
-    console.log('Meal plan activated:', metadata);
-  }
-
-  private static async confirmEnrollment(metadata: Record<string, string>) {
-    console.log('Education enrollment confirmed:', metadata);
-  }
-
-  private static async provideEducationMaterials(metadata: Record<string, string>) {
-    console.log('Education materials provided:', metadata);
-  }
-
-  private static async maintainPowerConnection(metadata: Record<string, string>) {
-    console.log('Power connection maintained:', metadata);
-  }
-
-  private static async maintainWaterConnection(metadata: Record<string, string>) {
-    console.log('Water connection maintained:', metadata);
-  }
-
-  private static async activateTransportPass(metadata: Record<string, string>) {
-    console.log('Transport pass activated:', metadata);
-  }
-
-  private static async provideTaxiVoucher(metadata: Record<string, string>) {
-    console.log('Taxi voucher provided:', metadata);
-  }
-
-  /**
-   * Create test accounts for any domain providers
-   */
-  static async createDomainProviderAccounts(domain: string) {
-    const accountConfigs = this.getDomainAccountConfigs(domain);
-    const accounts: Record<string, Stripe.Account> = {};
-
-    for (const [providerType, config] of Object.entries(accountConfigs)) {
-      accounts[providerType] = await stripe.accounts.create({
-        type: 'express',
-        country: 'NZ',
-        email: config.email,
-        business_type: config.businessType,
-        ...(config.businessType === 'individual' && {
-          individual: {
-            first_name: config.firstName,
-            last_name: config.lastName,
-            email: config.email,
-          }
-        }),
-        ...(config.businessType === 'company' && {
-          company: {
-            name: config.companyName,
-          }
-        }),
-        capabilities: {
-          card_payments: { requested: true },
-          transfers: { requested: true },
-        },
-      });
-    }
-
-    return accounts;
-  }
-
-  /**
-   * Get provider account configurations by domain
-   */
-  private static getDomainAccountConfigs(domain: string) {
-    const configs: Record<string, Record<string, any>> = {
-      healthcare: {
-        doctor: {
-          email: 'doctor.test@eleutherios.health',
-          businessType: 'individual',
-          firstName: 'Dr. Sarah',
-          lastName: 'Johnson'
-        },
-        pharmacy: {
-          email: 'pharmacy.test@eleutherios.health', 
-          businessType: 'company',
-          companyName: 'Test Pharmacy Ltd'
-        }
-      },
-      housing: {
-        landlord: {
-          email: 'landlord.test@eleutherios.housing',
-          businessType: 'individual',
-          firstName: 'John',
-          lastName: 'Property'
-        },
-        property_manager: {
-          email: 'manager.test@eleutherios.housing',
-          businessType: 'company', 
-          companyName: 'Property Management Co'
-        }
-      },
-      food: {
-        grocery_store: {
-          email: 'grocery.test@eleutherios.food',
-          businessType: 'company',
-          companyName: 'Community Grocery'
-        },
-        meal_provider: {
-          email: 'meals.test@eleutherios.food',
-          businessType: 'company',
-          companyName: 'Healthy Meals Ltd'
-        }
-      },
-      education: {
-        institution: {
-          email: 'edu.test@eleutherios.education',
-          businessType: 'company',
-          companyName: 'Learning Institute'
-        },
-        tutor: {
-          email: 'tutor.test@eleutherios.education',
-          businessType: 'individual',
-          firstName: 'Jane',
-          lastName: 'Teacher'
-        }
-      },
-      utilities: {
-        power_company: {
-          email: 'power.test@eleutherios.utilities',
-          businessType: 'company',
-          companyName: 'Power Co Ltd'
-        },
-        water_company: {
-          email: 'water.test@eleutherios.utilities',
-          businessType: 'company',
-          companyName: 'Water Services Ltd'
-        }
+    forumId: string,
+    policyId: string
+  ): Promise<PaymentResult> {
+    const payment: DomainPayment = {
+      domain: 'housing',
+      serviceType,
+      amount,
+      currency: 'NZD',
+      payerId: tenantId,
+      providerId: landlordId,
+      description: `Housing payment: ${serviceType}`,
+      metadata: {
+        forumId,
+        policyId,
+        domain: 'housing',
+        serviceType,
+        tenantId,
+        landlordId
       }
     };
 
-    return configs[domain] || {};
+    return await this.processDomainPayment(payment);
+  }
+
+  async createFoodPayment(
+    amount: number,
+    customerId: string,
+    providerId: string,
+    serviceType: string,
+    forumId: string,
+    policyId: string
+  ): Promise<PaymentResult> {
+    const payment: DomainPayment = {
+      domain: 'food',
+      serviceType,
+      amount,
+      currency: 'NZD',
+      payerId: customerId,
+      providerId,
+      description: `Food service payment: ${serviceType}`,
+      metadata: {
+        forumId,
+        policyId,
+        domain: 'food',
+        serviceType,
+        customerId,
+        providerId
+      }
+    };
+
+    return await this.processDomainPayment(payment);
+  }
+
+  async refundPayment(
+    paymentIntentId: string,
+    amount?: number,
+    reason?: string
+  ): Promise<PaymentResult> {
+    try {
+      // Call refund API endpoint
+      const response = await fetch('/api/services/stripe-refund', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          paymentIntentId,
+          amount,
+          reason: reason || 'Requested by customer'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Refund API request failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result;
+
+    } catch (error) {
+      console.error('Refund processing failed:', error);
+      return {
+        success: false,
+        message: 'Refund processing failed',
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  }
+
+  async getPaymentStatus(paymentIntentId: string): Promise<{
+    status: string;
+    amount: number;
+    currency: string;
+    description?: string;
+  } | null> {
+    try {
+      const response = await fetch(`/api/services/stripe-status/${paymentIntentId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Status API request failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result.success ? result.data : null;
+
+    } catch (error) {
+      console.error('Payment status check failed:', error);
+      return null;
+    }
+  }
+
+  // Utility methods for domain-specific payment logic
+  calculateHealthcareFee(serviceType: string, duration?: number): number {
+    const baseFees: Record<string, number> = {
+      'consultation': 75,
+      'prescription': 25,
+      'specialist': 150,
+      'emergency': 200
+    };
+
+    const baseFee = baseFees[serviceType] || 50;
+    return duration ? baseFee + (duration * 2) : baseFee; // $2/minute for extended consultations
+  }
+
+  calculateHousingFee(serviceType: string, amount: number): number {
+    const fees: Record<string, number> = {
+      'application': 25,
+      'inspection': 150,
+      'deposit': amount, // Full amount for deposits
+      'rent': amount,    // Full amount for rent
+      'bond': amount     // Full amount for bond
+    };
+
+    return fees[serviceType] || amount;
+  }
+
+  validatePaymentAmount(domain: string, serviceType: string, amount: number): boolean {
+    // Basic validation rules by domain
+    const limits: Record<string, { min: number; max: number }> = {
+      healthcare: { min: 5, max: 1000 },
+      housing: { min: 10, max: 5000 },
+      food: { min: 1, max: 500 },
+      education: { min: 10, max: 2000 },
+      utilities: { min: 5, max: 1000 },
+      transport: { min: 1, max: 200 }
+    };
+
+    const limit = limits[domain] || { min: 1, max: 10000 };
+    return amount >= limit.min && amount <= limit.max;
   }
 }
+
+export const domainPaymentProcessor = new DomainPaymentProcessor();
