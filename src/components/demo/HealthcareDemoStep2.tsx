@@ -145,30 +145,36 @@ export default function DoctorTypingPharmacyRule() {
         </div>
       </div>
 
-      {/* Message Input with EleuScript */}
+      {/* Message Input with Fixed Stakeholder Indicator */}
       <div className="border-t p-4">
-        <div className="flex gap-2">
-          <div className="flex-1 relative">
-            <input
-              type="text"
-              value={currentInput}
-              readOnly
-              className="w-full p-3 border border-purple-300 rounded-lg bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
-            />
-            {/* Purple highlighting overlay */}
-            <div className="absolute inset-0 flex items-center px-3 pointer-events-none">
-              <span className="text-transparent">rule add pharmacy -&gt; Policy("PrescriptionFulfillment", stakeholders=["Patient", "Doctor", "</span>
-              <span className="bg-purple-200 text-purple-800 font-semibold">Pharmacist</span>
-              <span className="text-transparent">"])</span>
-            </div>
+        {/* Stakeholder Indicator - Now Above Input */}
+        <div className="mb-2 flex items-center gap-2">
+          <span className="text-sm text-gray-600">Typing as:</span>
+          <div className="flex items-center gap-2 bg-blue-50 px-2 py-1 rounded-lg border border-blue-200">
+            <span className="text-sm">👩‍⚕️</span>
+            <span className="text-sm font-medium text-blue-900">Dr. Sarah Chen</span>
+            <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">General Practitioner</span>
           </div>
-          <button className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 flex items-center gap-2">
+        </div>
+
+        {/* Input Field - Clean Without Premature Highlighting */}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={currentInput}
+            readOnly
+            className="flex-1 p-3 border border-purple-300 rounded-lg bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm"
+          />
+          <button className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 flex items-center gap-2 font-medium">
             <span>⚡</span>
             Execute Rule
           </button>
         </div>
-        <div className="text-xs text-purple-600 mt-2 font-medium">
-          ⚡ EleuScript Rule Detected: Press Execute to create PrescriptionFulfillment policy
+
+        {/* Rule Detection Hint */}
+        <div className="text-xs text-purple-600 mt-2 font-medium flex items-center gap-1">
+          <span>⚡</span>
+          <span>EleuScript Rule Detected: Press Execute to create PrescriptionFulfillment policy</span>
         </div>
       </div>
 
@@ -193,3 +199,5 @@ export default function DoctorTypingPharmacyRule() {
     </div>
   );
 }
+
+export { DoctorTypingPharmacyRule as HealthcareDemoStep2 };
