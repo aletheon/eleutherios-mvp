@@ -11,6 +11,13 @@ interface Policy {
   status: string;
   createdAt: string;
   authorId?: string;
+  rules?: Array<{
+    ruleName: string;
+    forumTitle: string;
+    stakeholders: string[];
+    description?: string;
+  }>;
+  eleuscript?: string;
 }
 
 export default function PoliciesPage() {
@@ -33,40 +40,49 @@ export default function PoliciesPage() {
   ];
 
   useEffect(() => {
-    // Simulate loading policies - replace with real Firebase call
-    setTimeout(() => {
-      setPolicies([
-        {
-          id: '1',
-          title: 'Emergency Housing Policy',
-          description: 'Policies for emergency housing coordination and tenant rights',
-          category: 'Housing',
-          status: 'active',
-          createdAt: '2024-01-15',
-          authorId: 'user1'
-        },
-        {
-          id: '2',
-          title: 'Healthcare Access Policy',
-          description: 'Patient care protocols and medical decision support',
-          category: 'Healthcare',
-          status: 'draft',
-          createdAt: '2024-01-10',
-          authorId: 'user2'
-        },
-        {
-          id: '3',
-          title: 'Food Security Policy',
-          description: 'Community food distribution and nutrition support',
-          category: 'Food Security',
-          status: 'active',
-          createdAt: '2024-01-05',
-          authorId: 'user3'
-        }
-      ]);
-      setLoadingPolicies(false);
-    }, 1000);
+    fetchPolicies();
   }, []);
+
+  const fetchPolicies = async () => {
+    try {
+      setLoadingPolicies(true);
+      // Fetch all policies from Firebase Realtime Database
+      const response = await fetch(
+        'https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/policies.json'
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data) {
+          const policiesArray: Policy[] = Object.keys(data).map(key => ({
+            id: key,
+            title: data[key].title || 'Untitled Policy',
+            description: data[key].description || '',
+            category: data[key].category || 'General',
+            status: data[key].status || 'draft',
+            createdAt: data[key].createdAt || new Date().toISOString(),
+            authorId: data[key].creatorId || data[key].authorId,
+            rules: data[key].rules || [],
+            eleuscript: data[key].eleuscript || ''
+          }));
+          
+          // Sort by creation date (newest first)
+          policiesArray.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          setPolicies(policiesArray);
+        } else {
+          setPolicies([]);
+        }
+      } else {
+        console.error('Failed to fetch policies');
+        setPolicies([]);
+      }
+    } catch (error) {
+      console.error('Error fetching policies:', error);
+      setPolicies([]);
+    } finally {
+      setLoadingPolicies(false);
+    }
+  };
 
   const handleLogoClick = () => {
     setIsActivitiesExpanded(!isActivitiesExpanded);
@@ -95,7 +111,11 @@ export default function PoliciesPage() {
       case 'housing': return 'bg-green-100 text-green-800';
       case 'healthcare': return 'bg-red-100 text-red-800';
       case 'food security': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-blue-100 text-blue-800';
+      case 'tenancy': return 'bg-blue-100 text-blue-800';
+      case 'support': return 'bg-purple-100 text-purple-800';
+      case 'health': return 'bg-pink-100 text-pink-800';
+      case 'employment': return 'bg-indigo-100 text-indigo-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -106,6 +126,12 @@ export default function PoliciesPage() {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  // Helper function to get unique stakeholders from all rules
+  const getUniqueStakeholders = (rules: Policy['rules']) => {
+    if (!rules || rules.length === 0) return [];
+    return Array.from(new Set(rules.flatMap(rule => rule.stakeholders || [])));
   };
 
   return (
@@ -250,13 +276,16 @@ export default function PoliciesPage() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Policies</h1>
               <p className="text-gray-600 mt-2">
-                Policies define rules that can be instantiated into Forums, connected to Services, or reference other Policies.
+                Governance policies with EleuScript rules that can be instantiated into Forums, connected to Services, or reference other Policies.
               </p>
             </div>
-            <button className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 flex items-center space-x-2">
+            <Link 
+              href="/policies/create"
+              className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 flex items-center space-x-2"
+            >
               <span className="material-icons text-lg">add</span>
-              <span>Add Policy</span>
-            </button>
+              <span>Create Policy</span>
+            </Link>
           </div>
 
           {/* Policies List */}
@@ -286,11 +315,14 @@ export default function PoliciesPage() {
                 <div className="text-6xl mb-4">📋</div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No policies found</h3>
                 <p className="text-gray-600 mb-6">
-                  Get started by creating your first policy to define governance rules.
+                  Get started by creating your first policy with EleuScript rules to define governance coordination.
                 </p>
-                <button className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700">
+                <Link 
+                  href="/policies/create"
+                  className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
+                >
                   Create Your First Policy
-                </button>
+                </Link>
               </div>
             ) : (
               <div className="divide-y divide-gray-200">
@@ -312,20 +344,97 @@ export default function PoliciesPage() {
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadgeColor(policy.status)}`}>
                             {policy.status}
                           </span>
+                          
+                          {/* EleuScript indicator */}
+                          {policy.rules && policy.rules.length > 0 && (
+                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                              {policy.rules.length} rule{policy.rules.length !== 1 ? 's' : ''}
+                            </span>
+                          )}
                         </div>
                         
                         {policy.description && (
                           <p className="text-gray-600 mb-3">{policy.description}</p>
+                        )}
+
+                        {/* EleuScript Rules Summary */}
+                        {policy.rules && policy.rules.length > 0 && (
+                          (() => {
+                            // Filter out empty rules
+                            const validRules = policy.rules.filter(rule => 
+                              rule.ruleName && rule.ruleName.trim() !== '' && 
+                              rule.forumTitle && rule.forumTitle.trim() !== ''
+                            );
+                            
+                            return validRules.length > 0 ? (
+                              <div className="mb-3">
+                                <h4 className="text-sm font-medium text-gray-700 mb-2">Forum Rules:</h4>
+                                <div className="space-y-1">
+                                  {validRules.slice(0, 2).map((rule, index) => (
+                                    <div key={index} className="text-sm text-gray-600">
+                                      <span className="font-medium text-purple-600">{rule.ruleName}</span>
+                                      <span className="mx-2">→</span>
+                                      <span>"{rule.forumTitle}"</span>
+                                      {rule.stakeholders && rule.stakeholders.length > 0 && (
+                                        <span className="ml-2 text-gray-500">
+                                          ({rule.stakeholders.length} stakeholder{rule.stakeholders.length !== 1 ? 's' : ''})
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
+                                  {validRules.length > 2 && (
+                                    <div className="text-sm text-gray-500">
+                                      ... and {validRules.length - 2} more rule{validRules.length - 2 !== 1 ? 's' : ''}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ) : null;
+                          })()
+                        )}
+
+                        {/* Stakeholder Summary */}
+                        {policy.rules && getUniqueStakeholders(policy.rules).length > 0 && (
+                          <div className="mb-3">
+                            <h4 className="text-sm font-medium text-gray-700 mb-2">Stakeholder Types:</h4>
+                            <div className="flex flex-wrap gap-1">
+                              {getUniqueStakeholders(policy.rules).slice(0, 6).map((stakeholder, index) => (
+                                <span
+                                  key={index}
+                                  className="inline-block px-2 py-1 rounded text-xs bg-blue-50 text-blue-700"
+                                >
+                                  {stakeholder}
+                                </span>
+                              ))}
+                              {getUniqueStakeholders(policy.rules).length > 6 && (
+                                <span className="inline-block px-2 py-1 rounded text-xs bg-gray-50 text-gray-700">
+                                  +{getUniqueStakeholders(policy.rules).length - 6} more
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         )}
                         
                         <div className="flex items-center text-sm text-gray-500 space-x-4">
                           <span>Created {new Date(policy.createdAt).toLocaleDateString()}</span>
                           <span>•</span>
                           <span>ID: {policy.id}</span>
+                          {policy.eleuscript && (
+                            <>
+                              <span>•</span>
+                              <span className="text-purple-600">EleuScript Ready</span>
+                            </>
+                          )}
                         </div>
                       </div>
                       
-                      <div className="ml-4">
+                      <div className="ml-4 flex items-center space-x-2">
+                        {/* Quick action buttons */}
+                        {policy.eleuscript && (
+                          <div className="text-purple-600" title="Has EleuScript rules">
+                            <span className="material-icons text-lg">code</span>
+                          </div>
+                        )}
                         <span className="material-icons text-gray-400">chevron_right</span>
                       </div>
                     </div>
