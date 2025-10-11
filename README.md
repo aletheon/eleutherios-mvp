@@ -47,7 +47,7 @@ Eleutherios unifies analogue and digital stakeholders (people, AI, IoT, APIs, or
 - An analogue or digital agent (human, API, IoT, AI)
 - Services may be free or paid (via Stripe, PayPal, etc.)
 - Attributes include Price, Size, Color, Quantity (extensible)
-- Services connect to Policies and instantiate behaviour
+- Services consume Policies to inherit their behaviour
 
 ### Data = Storage
 - The storage layer — all policy, forum, and service activity
@@ -345,4 +345,4 @@ Contact: [rob.kara@gmail.com](mailto:rob.kara@gmail.com)
 
 ---
 
-**Status**: Complete policy creation system with EleuScript generation, real-time preview, export functionality, and database integration. Ready for service registration development and enhanced forum integratio
+**Status**: Complete policy creation system with EleuScript generation, real-time preview, export functionality, and database integration. Ready for service registration development and enhanced forum integration.
