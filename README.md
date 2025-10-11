@@ -223,7 +223,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 Governance of the repo is transparent — see [GOVERNANCE.md](GOVERNANCE.md).
 
-This project will be licensed under an open-source license (to be finalised — likely Apache 2.0 or AGPL).
+This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENSE) file for details.
 
 ## 🌱 Mission
 
