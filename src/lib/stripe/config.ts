@@ -1,15 +1,26 @@
-// lib/stripe/config.ts - Alternative approach
+// lib/stripe/config.ts - Vercel deployment safe
 import Stripe from 'stripe';
 
-// Server-side Stripe instance without explicit API version
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+// Create Stripe instance only when needed, not at module load
+let stripeInstance: Stripe | null = null;
+
+export const getStripe = (): Stripe => {
+  if (!stripeInstance) {
+    const secretKey = process.env.STRIPE_SECRET_KEY;
+    
+    if (!secretKey) {
+      throw new Error('STRIPE_SECRET_KEY environment variable is not set');
+    }
+    
+    stripeInstance = new Stripe(secretKey);
+  }
+  
+  return stripeInstance;
+};
 
 // Client-side Stripe configuration
 export const stripeConfig = {
-  publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
+  get publishableKey() {
+    return process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+  }
 };
-
-// Or if you need to specify version, try this format:
-// export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-//   apiVersion: '2024-04-10' as any, // Type assertion to bypass strict typing
-// });

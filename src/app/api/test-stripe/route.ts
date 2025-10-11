@@ -1,9 +1,12 @@
-// app/api/test-stripe/route.ts
+// app/api/test-stripe/route.ts - Vercel deployment safe
 import { NextResponse } from 'next/server';
-import { stripe } from '../../../lib/stripe/config';
+import { getStripe } from '../../../lib/stripe/config';
 
 export async function GET() {
   try {
+    // Get Stripe instance at runtime, not at module load
+    const stripe = getStripe();
+    
     // Test Stripe connection by creating a test payment intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: 500, // $5.00 in cents

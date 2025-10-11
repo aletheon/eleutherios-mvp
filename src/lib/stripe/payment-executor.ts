@@ -1,5 +1,5 @@
-// lib/stripe/payment-executor.ts - TypeScript Safe Version
-import { stripe } from './config';
+// lib/stripe/payment-executor.ts - Vercel deployment safe
+import { getStripe } from './config';
 import type { PaymentRule } from '@/app/types/eleuscript';
 
 export interface PaymentExecutionResult {
@@ -16,6 +16,7 @@ export class PaymentExecutor {
   // Execute a payment rule - creates real Stripe Payment Intent
   static async executePaymentRule(rule: PaymentRule): Promise<PaymentExecutionResult> {
     try {
+      const stripe = getStripe(); // Get Stripe instance at runtime
       const amountInCents = Math.round(rule.amount * 100);
 
       // Create payment intent with Stripe
@@ -140,6 +141,7 @@ export class PaymentExecutor {
     error?: string;
   }> {
     try {
+      const stripe = getStripe(); // Get Stripe instance at runtime
       const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
       
       return {
