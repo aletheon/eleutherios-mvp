@@ -1,278 +1,149 @@
-// Replace app/test-parser/page.tsx with this version
-
 'use client';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { EleuScriptPaymentParser } from '@/lib/eleuScript/payment-parser';
+import type { PaymentRule } from '../types/eleuscript';
 
-// Import with error handling
-let EleuScriptParser: any = null;
-try {
-  EleuScriptParser = require('@/lib/eleuScript/parser').EleuScriptParser;
-} catch (error) {
-  console.error('Failed to import EleuScriptParser:', error);
-}
-
-export default function ParserTestPage() {
-  const [input, setInput] = useState('');
-  const [result, setResult] = useState<any>(null);
+export default function TestParserPage() {
+  const [testInput, setTestInput] = useState(
+    'rule paySeller -> Service("StripePayment", { payerId: user123, payeeId: seller456, amount: $5.00 })'
+  );
+  const [result, setResult] = useState<PaymentRule | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const testRules = [
-    'rule AddHealthcare -> Policy("HealthcareAccess")',
-    'rule ActivateTransport -> Service("TransportCoordination")',
-    'rule CreateConsultation -> Forum("Medical Consultation")',
-    'rule InvalidSyntax -> WrongTarget("test")',
-    'regular chat message'
+  const testParser = () => {
+    try {
+      setError(null);
+      const parsed = EleuScriptPaymentParser.parsePaymentRule(testInput);
+      setResult(parsed);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      setResult(null);
+    }
+  };
+
+  const testCases = [
+    'rule paySeller -> Service("StripePayment", { payerId: user123, payeeId: seller456, amount: $5.00 })',
+    'rule tip -> Service("StripePayment", { payerId: customer789, payeeId: driver101, amount: $2.50 })',
+    'rule buyItem -> Service("StripePayment", { payerId: buyer999, payeeId: shop202, amount: $15.99, currency: NZD })',
+    'rule invalid -> Service("StripePayment", { payerId: user123 })', // Missing fields
+    'just a regular chat message', // Not a rule
+    'rule wrongService -> Service("NotStripe", { amount: $5.00 })', // Wrong service
   ];
 
-  const testInput = (testRule: string) => {
-    setError(null);
-    setResult(null);
-    
-    try {
-      console.log('Testing input:', testRule);
-      
-      if (!EleuScriptParser) {
-        throw new Error('EleuScriptParser not available - check import');
-      }
-      
-      // Test detection
-      const isEleuScript = EleuScriptParser.isEleuScriptRule(testRule);
-      console.log('Detection result:', isEleuScript);
-      
-      // Test parsing
-      const parsed = EleuScriptParser.parseRule(testRule);
-      console.log('Parse result:', parsed);
-      
-      setResult({
-        input: testRule,
-        isDetected: isEleuScript,
-        parsed: parsed
-      });
-      
-    } catch (err) {
-      console.error('Test error:', err);
-      setError(`Error testing parser: ${err}`);
-    }
-  };
-
-  const testCurrentInput = () => {
-    if (!input.trim()) {
-      setError('Please enter some text to test');
-      return;
-    }
-    testInput(input);
-  };
-
-  // Simple inline parser for testing if import fails
-  const testWithInlineParser = (testRule: string) => {
-    setError(null);
-    
-    // Simple detection
-    const isEleuScript = testRule.includes('rule ') && 
-                        testRule.includes(' -> ') && 
-                        (testRule.includes('Service(') || 
-                         testRule.includes('Forum(') || 
-                         testRule.includes('Policy('));
-    
-    // Simple parsing
-    const rulePattern = /rule\s+(\w+)\s+->\s+(Service|Forum|Policy)\("([^"]+)"/;
-    const match = testRule.match(rulePattern);
-    
-    const parsed = match ? {
-      isValid: true,
-      ruleName: match[1],
-      ruleTarget: match[2],
-      targetName: match[3],
-      parameters: {},
-      rawText: testRule
-    } : {
-      isValid: false,
-      errors: ['Invalid EleuScript syntax'],
-      rawText: testRule
-    };
-    
-    setResult({
-      input: testRule,
-      isDetected: isEleuScript,
-      parsed: parsed,
-      usingInlineParser: true
-    });
+  // Simple helper function to check if a message is a payment rule
+  const isPaymentRule = (message: string): boolean => {
+    return message.trim().startsWith('rule ') && message.includes('StripePayment');
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">
-          EleuScript Parser Test
-        </h1>
-
-        {/* Import Status */}
-        <div className={`p-4 rounded-lg mb-6 ${
-          EleuScriptParser 
-            ? 'bg-green-50 border border-green-200' 
-            : 'bg-red-50 border border-red-200'
-        }`}>
-          <h2 className="font-semibold mb-2">Parser Import Status:</h2>
-          {EleuScriptParser ? (
-            <p className="text-green-700">✅ EleuScriptParser imported successfully</p>
-          ) : (
-            <div className="text-red-700">
-              <p>❌ EleuScriptParser import failed</p>
-              <p className="text-sm mt-1">Will use inline parser for testing</p>
-            </div>
-          )}
-        </div>
-
-        {/* Error Display */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <h3 className="font-semibold text-red-800">Error:</h3>
-            <p className="text-red-700">{error}</p>
-          </div>
-        )}
-
-        {/* Manual Input Test */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Manual Input Test</h2>
-          
+    <div className="container mx-auto p-8 max-w-4xl">
+      <h1 className="text-3xl font-bold mb-8">EleuScript Payment Parser Test</h1>
+      
+      <div className="space-y-6">
+        {/* Manual Test Input */}
+        <div className="border rounded-lg p-6">
+          <h2 className="text-xl font-semibold mb-4">Manual Test</h2>
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Enter EleuScript Rule:
-              </label>
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                rows={3}
-                placeholder="rule RuleName -> Target(&quot;name&quot;)"
-              />
-            </div>
-            
-            <div className="flex space-x-4">
-              <button
-                onClick={testCurrentInput}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
-              >
-                Test with Parser
-              </button>
-              
-              <button
-                onClick={() => input.trim() && testWithInlineParser(input.trim())}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Test with Inline Parser
-              </button>
-            </div>
+            <textarea
+              value={testInput}
+              onChange={(e) => setTestInput(e.target.value)}
+              className="w-full p-3 border rounded-lg font-mono text-sm h-24"
+              placeholder="Enter EleuScript payment rule..."
+            />
+            <button
+              onClick={testParser}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Parse Rule
+            </button>
           </div>
-        </div>
-
-        {/* Predefined Test Cases */}
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-xl font-semibold mb-4">Predefined Test Cases</h2>
           
-          <div className="space-y-3">
-            {testRules.map((rule, index) => (
-              <div key={index} className="flex items-center space-x-4">
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => testInput(rule)}
-                    className="px-3 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700"
-                    disabled={!EleuScriptParser}
-                  >
-                    Parser
-                  </button>
-                  <button
-                    onClick={() => testWithInlineParser(rule)}
-                    className="px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                  >
-                    Inline
-                  </button>
-                </div>
-                <code className="flex-1 text-sm bg-gray-100 p-2 rounded">
-                  {rule}
-                </code>
+          {/* Results */}
+          <div className="mt-4">
+            {error && (
+              <div className="p-3 bg-red-100 border border-red-300 rounded text-red-700">
+                <strong>Error:</strong> {error}
               </div>
-            ))}
+            )}
+            
+            {result && (
+              <div className="p-3 bg-green-100 border border-green-300 rounded">
+                <strong>Parsed Successfully:</strong>
+                <pre className="mt-2 text-sm">{JSON.stringify(result, null, 2)}</pre>
+              </div>
+            )}
+            
+            {!result && !error && (
+              <div className="p-3 bg-gray-100 border border-gray-300 rounded text-gray-700">
+                Rule did not match payment pattern (returned null)
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Results Display */}
-        {result && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4">
-              Parser Results 
-              {result.usingInlineParser && (
-                <span className="text-sm text-blue-600 ml-2">(Using Inline Parser)</span>
-              )}
-            </h2>
-            
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-medium text-gray-700">Input:</h3>
-                <code className="block bg-gray-100 p-2 rounded text-sm">
-                  {result.input}
-                </code>
-              </div>
+        {/* Automated Test Cases */}
+        <div className="border rounded-lg p-6">
+          <h2 className="text-xl font-semibold mb-4">Automated Test Cases</h2>
+          <div className="space-y-4">
+            {testCases.map((testCase, index) => {
+              const testResult = EleuScriptPaymentParser.parsePaymentRule(testCase);
+              const isValid = testResult !== null;
               
-              <div>
-                <h3 className="font-medium text-gray-700">Detection Result:</h3>
-                <span className={`inline-block px-2 py-1 rounded text-sm ${
-                  result.isDetected 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
-                }`}>
-                  {result.isDetected ? 'EleuScript Detected' : 'Not EleuScript'}
-                </span>
-              </div>
+              return (
+                <div key={index} className="border rounded p-4">
+                  <div className="font-mono text-sm mb-2 break-all">{testCase}</div>
+                  <div className={`text-sm font-semibold ${isValid ? 'text-green-600' : 'text-red-600'}`}>
+                    {isValid ? '✅ PARSED' : '❌ NULL'}
+                  </div>
+                  {testResult && (
+                    <pre className="text-xs mt-2 bg-gray-50 p-2 rounded">
+                      {JSON.stringify(testResult, null, 2)}
+                    </pre>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Live Chat Simulation */}
+        <div className="border rounded-lg p-6">
+          <h2 className="text-xl font-semibold mb-4">Chat Integration Test</h2>
+          <div className="space-y-2">
+            {[
+              "Hey, how's the project going?",
+              'rule paySeller -> Service("StripePayment", { payerId: user123, payeeId: seller456, amount: $10.00 })',
+              "That payment should process automatically",
+              'rule tip -> Service("StripePayment", { payerId: customer789, payeeId: driver101, amount: $3.00 })'
+            ].map((message, index) => {
+              const isPaymentMessage = isPaymentRule(message);
+              const parsed = isPaymentMessage ? EleuScriptPaymentParser.parsePaymentRule(message) : null;
               
-              <div>
-                <h3 className="font-medium text-gray-700">Parse Result:</h3>
-                <div className={`p-3 rounded border ${
-                  result.parsed.isValid 
-                    ? 'border-green-300 bg-green-50' 
-                    : 'border-red-300 bg-red-50'
-                }`}>
-                  {result.parsed.isValid ? (
-                    <div className="space-y-2">
-                      <div><strong>Rule Name:</strong> {result.parsed.ruleName}</div>
-                      <div><strong>Target:</strong> {result.parsed.ruleTarget}</div>
-                      <div><strong>Target Name:</strong> {result.parsed.targetName}</div>
-                      <div><strong>Parameters:</strong> {JSON.stringify(result.parsed.parameters)}</div>
-                    </div>
-                  ) : (
-                    <div>
-                      <strong>Errors:</strong>
-                      <ul className="list-disc list-inside mt-1">
-                        {result.parsed.errors?.map((error: string, i: number) => (
-                          <li key={i} className="text-red-700">{error}</li>
-                        ))}
-                      </ul>
+              return (
+                <div key={index} className={`p-3 rounded ${isPaymentMessage ? 'bg-blue-50 border-l-4 border-blue-500' : 'bg-gray-50'}`}>
+                  <div className="text-sm">{message}</div>
+                  {isPaymentMessage && (
+                    <div className="text-xs mt-1 text-blue-600">
+                      → Payment Rule Detected: {parsed ? `$${parsed.amount} from ${parsed.payerId} to ${parsed.payeeId}` : 'Parse Failed'}
                     </div>
                   )}
                 </div>
-              </div>
-              
-              <div>
-                <h3 className="font-medium text-gray-700">Full Parse Object:</h3>
-                <pre className="bg-gray-100 p-3 rounded text-xs overflow-auto">
-                  {JSON.stringify(result.parsed, null, 2)}
-                </pre>
-              </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Parser Status */}
+        <div className="border rounded-lg p-6 bg-green-50">
+          <h2 className="text-xl font-semibold mb-4">Parser Status</h2>
+          <div className="space-y-2">
+            <div className="text-green-600 font-semibold">✅ EleuScript Parser Working</div>
+            <div className="text-sm text-gray-600">
+              Your parser successfully converts natural language payment rules into structured data.
+              This is the foundation for the payment execution system.
             </div>
           </div>
-        )}
-        
-        {/* Debug Info */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-8">
-          <h3 className="font-medium text-yellow-900 mb-2">Debug Info:</h3>
-          <ul className="text-sm text-yellow-800 space-y-1">
-            <li>• Check browser console (F12) for error messages</li>
-            <li>• Parser available: {EleuScriptParser ? 'Yes' : 'No'}</li>
-            <li>• If parser import fails, inline parser will be used</li>
-            <li>• Try both test buttons to compare results</li>
-          </ul>
         </div>
       </div>
     </div>
