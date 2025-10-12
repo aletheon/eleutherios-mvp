@@ -6,6 +6,17 @@ import Link from 'next/link';
 const DashboardPage = () => {
   const [isActivitiesExpanded, setIsActivitiesExpanded] = useState(false);
 
+  // ADD THESE CLICK HANDLERS
+  const handleCreatePolicy = () => {
+    console.log('Create Policy clicked from root page');
+    window.location.href = '/policies/create';
+  };
+
+  const handleCreateService = () => {
+    console.log('Create Service clicked from root page');
+    window.location.href = '/services/create';
+  };
+
   // Mock activities data
   const activities = [
     { id: '1', type: 'forum', title: 'Emergency Housing', status: 'active' },
@@ -221,7 +232,12 @@ const DashboardPage = () => {
                       <span className="material-icons">grid_view</span>
                     </button>
                   </div>
-                  <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2">
+                  {/* FIXED: Added onClick handler */}
+                  <button 
+                    onClick={handleCreatePolicy}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2"
+                    style={{ zIndex: 999 }}
+                  >
                     <span>+</span>
                     <span>Create Policy</span>
                   </button>
@@ -231,7 +247,12 @@ const DashboardPage = () => {
             
             <div className="p-12 text-center">
               <p className="text-gray-500 mb-4">No policies created yet</p>
-              <button className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700">
+              {/* FIXED: Added onClick handler */}
+              <button 
+                onClick={handleCreatePolicy}
+                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
+                style={{ zIndex: 999 }}
+              >
                 + Create Your First Policy
               </button>
             </div>
@@ -251,7 +272,12 @@ const DashboardPage = () => {
                       <span className="material-icons">grid_view</span>
                     </button>
                   </div>
-                  <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
+                  {/* FIXED: Added onClick handler */}
+                  <button 
+                    onClick={handleCreateService}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+                    style={{ zIndex: 999 }}
+                  >
                     <span>+</span>
                     <span>Create Service</span>
                   </button>
@@ -261,7 +287,12 @@ const DashboardPage = () => {
             
             <div className="p-12 text-center">
               <p className="text-gray-500 mb-4">No services created yet</p>
-              <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
+              {/* FIXED: Added onClick handler */}
+              <button 
+                onClick={handleCreateService}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+                style={{ zIndex: 999 }}
+              >
                 + Create Your First Service
               </button>
             </div>
