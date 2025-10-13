@@ -1,132 +1,149 @@
-# EleuScript Language Specification - Updated with Autonomous Services
+# EleuScript Language Specification - Comprehensive
 
-## Current Implementation: Forum Rule Execution + Autonomous Services
+EleuScript is the domain-specific language (DSL) of Eleutherios that enables natural language governance rules to compile into executable coordination workflows and autonomous marketplace services.
 
-**OPERATIONAL STATUS**: Stakeholders can now type simple EleuScript rules directly into forum chat for immediate execution.
+## Current Implementation Status
 
+**OPERATIONAL**: Stakeholders can type EleuScript rules directly into forum chat for immediate execution.
 **NEXT PHASE**: Autonomous service creation and validation for programmable marketplace.
-
 **Production URL**: `https://eleutherios-mvp.vercel.app`
-
-### Live Rule Syntax (Production Ready):
-```eleuscript
-# Sub-policy creation
-rule AddHealthcare -> Policy("HealthcareAccess", stakeholders=["Patient", "Doctor"])
-
-# Service activation  
-rule ActivateTransport -> Service("Transportation", auto_dispatch=true)
-
-# Forum creation
-rule CreateConsultation -> Forum("Medical", stakeholders=["Patient", "Doctor"])
-```
-
-### Autonomous Service Syntax (Next Phase):
-```eleuscript
-# Customer purchase requests
-rule pay -> Service("Milkman", $1)
-
-# Service creation with validation
-service LocalMilkman {
-  price = 1.00
-  currency = "NZD"
-  validation_policies = [
-    "rule location_check -> Service('isLocationValid', $customer.location)",
-    "rule delivery_check -> Service('isDeliveryDay', $current_day)"
-  ]
-}
-```
-
----
 
 ## Language Overview
 
-EleuScript is the domain-specific language for defining governance policies in the Eleutherios PFSD protocol. It enables human-readable policies that compile to executable governance structures and autonomous marketplace services.
-
-EleuScript policies define **rules** that instantiate into **forums**, **services**, or references to other **policies**. This creates a governance protocol that coordinates stakeholders across any domain and enables programmable commerce.
+EleuScript's base object is a `policy`, which defines `rules`. Rules instantiate into **forums**, **services**, or references to other **policies**. This creates a governance protocol that coordinates stakeholders across any domain and enables programmable commerce through the Policy-Forum-Service-Data (PFSD) model.
 
 ### Basic Syntax
 
 ```eleuscript
 policy PolicyName {
-    rule RuleName -> Target(parameters)
+  rule RuleName -> Target(parameters)
 }
 ```
 
-## Core Concepts
+## Core Rule Types
 
-### 1. Policies
-A policy is a container for governance rules and service definitions.
-
-```eleuscript
-policy SocialHousingPolicy {
-    version "1.0.0"
-    description "Coordinates housing placement for vulnerable individuals"
-    author "ministry_housing"
-    
-    // Rules define what happens when policy is instantiated
-    rule ApplicationForum -> Forum("Housing Application", ...)
-    rule EligibilityCheck -> Service("MSDEligibilityService", ...)
-}
-```
-
-### 2. Rules
-Rules define specific governance behaviors. There are three types:
-
-#### Forum Rules
-Create spaces for stakeholder dialogue and decision-making.
+### Forum Rules
+Create coordination spaces for multi-stakeholder collaboration.
 
 ```eleuscript
-rule HousingApplicationForum -> Forum("Housing Application - {applicantName}",
-    defaultStakeholders = [Applicant, CaseWorker, KORepresentative],
-    permissions = {
-        canPost = [Applicant, CaseWorker, KORepresentative],
-        canAddMembers = [CaseWorker],
-        canManageFiles = [CaseWorker, KORepresentative]
-    },
-    priority = "high",
-    autoEscalate = {
-        timeLimit = 48h,
-        escalateTo = [SupervisorCaseWorker]
-    }
+rule CreateConsultation -> Forum("Patient Care", 
+  stakeholders=["Patient", "Doctor", "Pharmacist"]
+)
+
+rule EmergencyCoordination -> Forum("Crisis Response",
+  stakeholders=["Person", "Caseworker", "Emergency Services"],
+  priority="urgent",
+  autoNotify=true,
+  autoEscalate={
+    timeLimit=48h,
+    escalateTo=["SupervisorCaseWorker"]
+  }
 )
 ```
 
-#### Service Rules
-Integrate external services for processing, verification, payments, etc.
+### Service Rules
+Define access to and interaction with services, including revolutionary visibility controls.
 
+#### Public Service Access
 ```eleuscript
-rule EligibilityVerification -> Service("MSDEligibilityCheck",
-    applicantId = Applicant.id,
-    checkTypes = ["income", "citizenship", "housing_register"],
-    urgencyLevel = "high",
-    webhook = "https://api.eleutherios.app/webhooks/msd"
-)
-
-rule HousingSearch -> Service("KOHousingSearch", 
-    region = Applicant.preferredRegion,
-    bedrooms = Applicant.bedroomNeeds,
-    accessibility = Applicant.accessibilityNeeds,
-    maxRent = Applicant.maxAffordableRent
-)
+rule FindTransport -> Service("TransportDirectory", {
+  "visibility": "public",
+  "category": "transportation",
+  "searchable_by": "all"
+})
 ```
 
-#### Policy Reference Rules
-Reference other policies to create governance hierarchies.
+#### Private Service Access
+```eleuscript
+rule AccessMedication -> Service("MedicationDirectory", {
+  "visibility": "private",
+  "authorized_roles": ["Pharmacist", "Doctor"],
+  "requires_license": true,
+  "audit_level": "full"
+})
+```
+
+#### Restricted Service Access
+```eleuscript
+rule AccessControlledSubstance -> Service("ControlledMedicationDirectory", {
+  "visibility": "restricted",
+  "authorized_roles": ["Doctor"],
+  "additional_requirements": ["DEA_License", "Patient_Consent"],
+  "approval_chain": ["Supervisor", "Pharmacist"],
+  "audit_level": "maximum"
+})
+```
+
+### Shopping Cart Governance Rules
+Enable authorized multi-stakeholder service coordination.
+
+#### Basic Cart Access
+```eleuscript
+rule AddToPatientCart -> Service("CartManagement", {
+  "permission": "can_add_to_stakeholder_cart",
+  "requiredRole": "Pharmacist",
+  "targetStakeholder": "Patient",
+  "auditTrail": true
+})
+```
+
+#### Context-Aware Cart Management
+```eleuscript
+rule PharmacistMedicationAdd -> Service("AddToCart", {
+  "permission": "can_add_to_stakeholder_cart",
+  "requiredRole": "Pharmacist", 
+  "targetStakeholder": "Patient",
+  "requires_forum_context": true,
+  "service_visibility": "private",
+  "approval_required": true,
+  "audit_level": "full",
+  "compliance_flags": ["prescription_required", "HIPAA"]
+})
+```
+
+#### Emergency Cart Access
+```eleuscript
+rule EmergencyMedicationAdd -> Service("EmergencyCartAdd", {
+  "permission": "emergency_add_to_cart",
+  "requiredRole": "Emergency Doctor",
+  "targetStakeholder": "Patient",
+  "bypass_approval": true,
+  "requires_justification": true,
+  "audit_level": "maximum",
+  "notify_stakeholders": ["Patient", "Primary Doctor"]
+})
+```
+
+### Payment Rules
+Handle multi-party payment processing with governance transparency.
 
 ```eleuscript
-rule TenancyRules -> Policy("StandardTenancyPolicy",
-    version = "2.1.0",
-    adaptations = {
-        "supportServices" = true,
-        "emergencyContacts" = [CaseWorker, SupportWorker]
-    }
-)
+rule ProcessCoordinatedPayment -> Service("MultiPartyPayment", {
+  "payer": "Patient",
+  "revenue_splits": {
+    "pharmacy": 80,
+    "platform": 15,
+    "compliance": 5
+  },
+  "requires_approval": true,
+  "audit_trail": true
+})
+```
+
+### Policy Reference Rules
+Enable policy composition and inheritance.
+
+```eleuscript
+rule InheritMemoryGovernance -> Policy("AIMemoryGovernance", {
+  "apply_to_user": true,
+  "override_permissions": ["data_retention"]
+})
 ```
 
 ## Autonomous Services (NEW)
 
 ### Service Definitions
-Services can be defined as autonomous entities with validation logic:
+Services can be defined as autonomous entities with validation logic and governance integration:
 
 ```eleuscript
 service ServiceName {
@@ -134,13 +151,14 @@ service ServiceName {
     price = amount
     currency = "NZD"
     type = "product" | "ai" | "api" | "human"
+    visibility = "public" | "private" | "restricted"
     
     // Validation policies
     validation_policies = [
         "rule validation_name -> Service('validation_service', parameters)"
     ]
     
-    // Inherited capabilities
+    // Inherited governance capabilities
     inherits_policies = [
         "PolicyName_Version"
     ]
@@ -169,6 +187,7 @@ service LocalMilk {
     price = 1.00
     currency = "NZD"
     type = "product"
+    visibility = "public"
     
     validation_policies = [
         "rule location_check -> Service('LocationValidator', $customer.location)",
@@ -183,16 +202,41 @@ service LocalMilk {
 }
 ```
 
+#### Private Healthcare Service
+```eleuscript
+service PrescriptionMedication {
+    price = 25.00
+    currency = "NZD"
+    type = "product"
+    visibility = "private"
+    authorized_roles = ["Pharmacist", "Doctor"]
+    
+    validation_policies = [
+        "rule prescription_check -> Service('PrescriptionValidator', $prescription)",
+        "rule license_verification -> Service('LicenseCheck', $provider.license)"
+    ]
+    
+    autonomy = {
+        auto_accept = false
+        auto_reject = false
+        require_human_approval = true
+    }
+    
+    compliance_requirements = ["FDA_Approved", "Prescription_Required"]
+}
+```
+
 #### AI-Powered Service
 ```eleuscript
 service DynamicPricingService {
     base_price = 10.00
     currency = "NZD"
     type = "ai"
+    visibility = "public"
     
     ai_agent = {
         type = "pricing"
-        model = "gpt-4o"
+        model = "gpt-4"
         authority = "limited"
     }
     
@@ -202,25 +246,6 @@ service DynamicPricingService {
             max_adjustment: '20%',
             explanation_required: true
         })"
-    ]
-}
-```
-
-#### Service with Policy Inheritance
-```eleuscript
-service ComprehensiveEcommerce {
-    price = 25.00
-    currency = "NZD"
-    
-    inherits_policies = [
-        "RefundPolicy_30Day",
-        "QualityGuaranteePolicy",
-        "DisputeResolutionPolicy_Community"
-    ]
-    
-    validation_policies = [
-        "rule inventory_check -> Service('InventorySystem', $requested_quantity)",
-        "rule payment_validation -> Service('PaymentValidator', $customer.payment_method)"
     ]
 }
 ```
@@ -241,6 +266,49 @@ rule pay -> Service("CustomService", {
 
 # Conditional purchase
 rule pay -> Service("EventTickets", $75) if Availability.remaining > 0
+```
+
+## Service Visibility Specification
+
+### Visibility Levels
+
+#### Public Services
+- Searchable and discoverable by any authenticated user
+- Suitable for general coordination services
+- No role restrictions
+
+```eleuscript
+rule PublicTransport -> Service("RideShare", {
+  "visibility": "public",
+  "category": "transportation"
+})
+```
+
+#### Private Services  
+- Only accessible to specific roles
+- Requires role validation
+- Often requires professional licensing
+
+```eleuscript
+rule PrivateMedication -> Service("PrescriptionDrugs", {
+  "visibility": "private",
+  "authorized_roles": ["Pharmacist", "Doctor"],
+  "requires_license": true
+})
+```
+
+#### Restricted Services
+- Role-based access plus additional policy requirements
+- Multiple authorization layers
+- Enhanced audit requirements
+
+```eleuscript
+rule RestrictedNarcotics -> Service("ControlledSubstances", {
+  "visibility": "restricted",
+  "authorized_roles": ["Doctor"],
+  "additional_requirements": ["DEA_License", "Patient_History_Check"],
+  "audit_level": "maximum"
+})
 ```
 
 ## Validation Policies
@@ -287,17 +355,110 @@ validation_policy DeliverySchedule {
 }
 ```
 
-#### Inventory Validation
+#### Healthcare Compliance Validation
 ```eleuscript
-validation_policy StockCheck {
-    name = "inventory_availability"
-    rule_expression = "Service('InventorySystem', {
-        product_id: $service.id,
-        requested_quantity: $request.quantity
+validation_policy PrescriptionValidation {
+    name = "prescription_required"
+    rule_expression = "Service('PrescriptionValidator', {
+        medication_id: $service.id,
+        prescriber: $prescription.doctor,
+        patient: $request.patient
     })"
-    error_message = "Only {{available_stock}} items remaining, you requested {{requested_quantity}}"
+    error_message = "Valid prescription required for {{medication_name}}"
     required = true
 }
+```
+
+## Advanced Features
+
+### Conditional Logic
+```eleuscript
+rule ConditionalMedication -> Service("MedicationDirectory", {
+  "condition": "patient.age >= 18",
+  "visibility": "private",
+  "authorized_roles": ["Doctor", "Pharmacist"]
+})
+
+rule PediatricMedication -> Service("PediatricMedicationDirectory", {
+  "condition": "patient.age < 18",
+  "visibility": "restricted", 
+  "authorized_roles": ["Pediatrician", "Pediatric Pharmacist"],
+  "requires_parental_consent": true
+})
+```
+
+### Event Handlers
+```eleuscript
+policy ResponsiveMarketplace {
+    rule ServiceRequest -> Service("ServiceMatcher")
+    
+    // React to service outcomes
+    on ServiceRequest.match_found {
+        rule NotifyCustomer -> Service("NotificationService",
+            recipients = [Customer],
+            message = "Service match found - {ServiceName} available for ${price}",
+            priority = "high"
+        )
+        
+        rule CreateTransaction -> Forum("Service Transaction - {Customer.name}",
+            defaultStakeholders = [Customer, ServiceProvider],
+            timeLimit = 1h,
+            outcomes = ["accept", "decline", "negotiate"]
+        )
+    }
+    
+    on ServiceRequest.no_match {
+        rule CreateRequest -> Forum("Service Request - {Customer.name}",
+            defaultStakeholders = [Customer, ServiceCoordinator],
+            purpose = "find_alternative_solutions"
+        )
+    }
+}
+```
+
+### Loops and Bulk Operations
+```eleuscript
+policy RegionalMarketplace {
+    let regions = ["Auckland", "Wellington", "Christchurch", "Hamilton", "Tauranga"]
+    
+    // Create regional marketplaces
+    for region in regions {
+        rule ("Marketplace_" + region) -> Forum(region + " Service Marketplace",
+            defaultStakeholders = [RegionalCoordinator, ServiceProviders, Customers]
+        )
+    }
+    
+    // Set up regional service discovery
+    for region in regions {
+        rule ("Discovery_" + region) -> Service("RegionalServiceDiscovery",
+            region = region,
+            providers = getRegionalProviders(region)
+        )
+    }
+}
+```
+
+### Dynamic Stakeholder Assignment
+```eleuscript
+rule AssignSpecialist -> Forum("Specialized Care", {
+  "stakeholders": ["Patient", "Primary Doctor"],
+  "dynamic_assignment": {
+    "condition": "diagnosis.category == 'cardiology'",
+    "add_stakeholder": "Cardiologist"
+  }
+})
+```
+
+### Time-Based Rules
+```eleuscript
+rule ScheduledFollowUp -> Forum("Follow-Up Appointment", {
+  "stakeholders": ["Patient", "Doctor"],
+  "schedule": {
+    "delay": "7days",
+    "repeat": "weekly",
+    "max_occurrences": 4
+  }
+})
 ```
 
 ## AI Integration Syntax
@@ -314,19 +475,6 @@ stakeholder AI_Agent {
         approval_required = ["action1", "action2"]
     }
 }
-```
-
-### AI-Powered Rules
-```eleuscript
-rule AI_TrafficOptimization -> Service("AI_TrafficControl", {
-    authority: "automatic_adjustments",
-    constraints: {
-        max_adjustment: "15%",
-        human_override: "always_available"
-    },
-    explanation_required: true,
-    escalation_triggers: ["congestion > critical", "emergency_detected"]
-})
 ```
 
 ### AI Service Agents
@@ -346,6 +494,89 @@ ai_agent ServiceAssistant {
         max_refund_amount = 100.00
         auto_approve_timeframe = 24h
     }
+}
+```
+
+## Governance Patterns
+
+### Healthcare Coordination Pattern
+```eleuscript
+policy HealthcareCoordination {
+  // Create multi-stakeholder forum
+  rule CreateConsultation -> Forum("Patient Care", 
+    stakeholders=["Patient", "Doctor", "Pharmacist"]
+  )
+  
+  // Enable private medication access
+  rule MedicationAccess -> Service("MedicationDirectory", {
+    "visibility": "private",
+    "authorized_roles": ["Pharmacist", "Doctor"]
+  })
+  
+  // Allow authorized cart management
+  rule PharmacistCartAccess -> Service("AddToCart", {
+    "permission": "can_add_to_stakeholder_cart",
+    "requiredRole": "Pharmacist",
+    "targetStakeholder": "Patient"
+  })
+  
+  // Process payment with splits
+  rule PaymentProcessing -> Service("MultiPartyPayment", {
+    "revenue_splits": {"pharmacy": 80, "platform": 20}
+  })
+}
+```
+
+### AI Memory Governance Pattern
+```eleuscript
+policy AIMemoryGovernance {
+  // Multi-stakeholder memory decisions
+  rule MemoryPreferences -> Forum("Memory Coordination", 
+    stakeholders=["User", "AI System", "Privacy Officer"]
+  )
+  
+  // Data retention service
+  rule DataRetention -> Service("MemoryManagement", {
+    "duration": "30days",
+    "conditions": ["user_consent", "legal_compliance"],
+    "visibility": "restricted",
+    "authorized_roles": ["Privacy Officer", "User"]
+  })
+  
+  // Cross-platform memory export
+  rule MemoryPortability -> Service("DataExport", {
+    "format": "standardized",
+    "encryption": true,
+    "user_controlled": true
+  })
+}
+```
+
+### Emergency Housing Pattern
+```eleuscript
+policy EmergencyHousing {
+  // Create urgent coordination forum
+  rule EmergencyIntake -> Forum("Crisis Housing", {
+    "stakeholders": ["Person", "Caseworker", "Housing Officer"],
+    "priority": "urgent",
+    "response_time": "2hours"
+  })
+  
+  // Enable emergency service additions
+  rule EmergencyAccommodation -> Service("AddToCart", {
+    "permission": "emergency_add_to_cart",
+    "requiredRole": "Housing Officer",
+    "targetStakeholder": "Person",
+    "bypass_approval": true,
+    "audit_level": "maximum"
+  })
+  
+  // Government payment processing
+  rule GovernmentPayment -> Service("GovernmentPayment", {
+    "payer": "MSD",
+    "approval_required": false,
+    "emergency_authorization": true
+  })
 }
 ```
 
@@ -405,445 +636,44 @@ payment_split = {
 ```eleuscript
 stakeholder Applicant           // The person needing housing
 stakeholder CaseWorker          // MSD case worker
-stakeholder KORepresentative    // Kāinga Ora representative  
-stakeholder SupportWorker       // Additional support staff
-stakeholder PropertyManager     // Property management
-stakeholder EmergencyContact    // Emergency contact person
-
-// AI and automated stakeholders
+stakeholder Doctor              // Healthcare provider
+stakeholder Pharmacist          // Medication specialist
 stakeholder AI_QualityAgent     // AI monitoring agent
 stakeholder IoT_Sensor          // IoT device
-stakeholder API_Service         // External API integration
-```
-
-## Marketplace Integration Examples
-
-### Cross-Forum Service Discovery
-```eleuscript
-policy MarketplaceCoordination {
-    rule DiscoverServices -> Service("ServiceDiscovery", {
-        query: $search_terms,
-        location: $user.location,
-        radius: 25,
-        filters: {
-            category: "food_delivery",
-            max_price: 20.00,
-            available_now: true
-        }
-    })
-    
-    rule PersonalizedRecommendations -> Service("AI_Recommender", {
-        user_profile: $user.preferences,
-        purchase_history: $user.past_orders,
-        context: $current_situation
-    })
-}
-```
-
-### Service Marketplace Evolution
-```eleuscript
-policy EmergencyHousingMarketplace {
-    # Start with basic coordination
-    rule EmergencyHousing -> Forum("Emergency Housing Coordination")
-    
-    # Evolve to include service providers
-    rule AddServiceProviders -> Policy("ServiceProviderNetwork", {
-        stakeholders: ["EmergencyAccommodation", "SupportServices", "TransportProviders"],
-        marketplace_enabled: true
-    })
-    
-    # Enable autonomous service transactions
-    rule EnableMarketplace -> Service("MarketplaceEngine", {
-        payment_processing: true,
-        autonomous_matching: true,
-        quality_assurance: "CERT_scoring"
-    })
-}
-```
-
-## Advanced Features
-
-### Conditional Logic
-
-```eleuscript
-policy AdaptiveHousingPolicy {
-    stakeholder Applicant
-    stakeholder CaseWorker
-    
-    // Conditional service selection based on applicant needs
-    rule HousingService -> Service(
-        if (Applicant.age < 25) then "YouthHousingService"
-        else if (Applicant.hasChildren) then "FamilyHousingService"  
-        else "GeneralHousingService",
-        
-        urgency = if (Applicant.currentSituation == "sleeping_rough") then "critical" else "high"
-    )
-    
-    // Different forums based on complexity
-    rule SupportForum -> Forum(
-        if (Applicant.complexNeeds) then "Multi-Disciplinary Team - {Applicant.name}"
-        else "Standard Support - {Applicant.name}",
-        
-        defaultStakeholders = if (Applicant.complexNeeds) 
-            then [Applicant, CaseWorker, SpecialistWorker, HealthWorker]
-            else [Applicant, CaseWorker]
-    )
-}
-```
-
-### Event Handlers
-
-```eleuscript
-policy ResponsiveMarketplace {
-    rule ServiceRequest -> Service("ServiceMatcher")
-    
-    // React to service outcomes
-    on ServiceRequest.match_found {
-        rule NotifyCustomer -> Service("NotificationService",
-            recipients = [Customer],
-            message = "Service match found - {ServiceName} available for ${price}",
-            priority = "high"
-        )
-        
-        rule CreateTransaction -> Forum("Service Transaction - {Customer.name}",
-            defaultStakeholders = [Customer, ServiceProvider],
-            timeLimit = 1h,
-            outcomes = ["accept", "decline", "negotiate"]
-        )
-    }
-    
-    on ServiceRequest.no_match {
-        rule CreateRequest -> Forum("Service Request - {Customer.name}",
-            defaultStakeholders = [Customer, ServiceCoordinator],
-            purpose = "find_alternative_solutions",
-            escalation = "broadcast_to_providers"
-        )
-    }
-    
-    # Purchase request handling
-    on PurchaseRequest.received {
-        rule ValidateRequest -> Service("RequestValidator", {
-            customer: $request.customer,
-            service: $request.service,
-            amount: $request.amount
-        })
-    }
-    
-    on ValidationResult.passed {
-        rule ProcessPayment -> Service("PaymentProcessor", {
-            amount: $request.amount,
-            customer: $request.customer,
-            service_provider: $service.owner
-        })
-    }
-    
-    on ValidationResult.failed {
-        rule SendRejection -> Service("ResponseGenerator", {
-            type: "rejection",
-            reason: $validation.error_message,
-            suggestions: $validation.alternatives
-        })
-    }
-}
-```
-
-### Loops and Bulk Operations
-
-```eleuscript
-policy RegionalMarketplace {
-    let regions = ["Auckland", "Wellington", "Christchurch", "Hamilton", "Tauranga"]
-    
-    // Create regional marketplaces
-    for region in regions {
-        rule ("Marketplace_" + region) -> Forum(region + " Service Marketplace",
-            defaultStakeholders = [RegionalCoordinator, ServiceProviders, Customers],
-            purpose = "regional_service_coordination"
-        )
-    }
-    
-    // Set up regional service discovery
-    for region in regions {
-        rule ("Discovery_" + region) -> Service("RegionalServiceDiscovery",
-            region = region,
-            providers = getRegionalProviders(region),
-            categories = getRegionalCategories(region)
-        )
-    }
-}
-```
-
-### Policy Inheritance
-
-```eleuscript
-policy SpecializedMarketplace extends StandardMarketplace {
-    // Additional stakeholders for specialized needs
-    stakeholder SpecialtyProvider
-    stakeholder QualityInspector
-    
-    // Override standard service matching
-    override rule ServiceMatching -> Service("SpecializedMatcher",
-        criteria = "specialty_requirements",
-        quality_threshold = "premium",
-        certification_required = true
-    )
-    
-    // Add specialized validation
-    rule SpecialtyValidation -> Service("SpecialtyValidator",
-        standards = ["industry_certification", "quality_metrics"],
-        compliance_check = "mandatory"
-    )
-}
 ```
 
 ## Built-in Functions
 
 ### Date/Time Functions
 ```eleuscript
-policy TimedMarketplace {
-    let currentTime = now()
-    let businessHours = isBusinessHours(currentTime)
-    let deliveryWindow = addHours(currentTime, 2)
-    
-    rule TimeBasedServices -> Service("ServiceMatcher",
-        available_now = businessHours,
-        delivery_by = deliveryWindow
-    )
-}
+let currentTime = now()
+let businessHours = isBusinessHours(currentTime)
+let deliveryWindow = addHours(currentTime, 2)
 ```
 
 ### Validation Functions
 ```eleuscript
-policy ValidatedMarketplace {
-    rule ValidatedService -> Service("ServiceProvider",
-        contact_email = validate_email(Provider.email),
-        contact_phone = validate_phone(Provider.phone),
-        service_price = validate_currency(Service.price),
-        service_location = validate_nz_region(Service.region)
-    )
-}
+rule ValidatedService -> Service("ServiceProvider",
+    contact_email = validate_email(Provider.email),
+    contact_phone = validate_phone(Provider.phone),
+    service_price = validate_currency(Service.price)
+)
 ```
 
 ### String Formatting
 ```eleuscript
-policy PersonalizedMarketplace {
-    rule ServiceOffer -> Service("OfferGenerator",
-        message = format("Hi {}, {} is available for ${} in your area", 
-                        Customer.firstName, 
-                        Service.name,
-                        Service.price)
-    )
-}
+rule ServiceOffer -> Service("OfferGenerator",
+    message = format("Hi {}, {} is available for ${}", 
+                    Customer.firstName, 
+                    Service.name,
+                    Service.price)
+)
 ```
 
 ## Error Handling
 
+### Comprehensive Error Handling
 ```eleuscript
-policy RobustMarketplace {
-    rule PrimaryServiceSearch -> Service("PrimaryServiceMatcher")
-        onError {
-            // Try alternative service providers
-            rule BackupServiceSearch -> Service("BackupServiceMatcher")
-                onError {
-                    // Create manual coordination if automated matching fails
-                    rule ManualCoordination -> Forum("Manual Service Coordination",
-                        defaultStakeholders = [Customer, ServiceCoordinator],
-                        priority = "urgent",
-                        message = "Automated service matching failed - manual assistance required"
-                    )
-                }
-        }
-        
-    rule ProcessPayment -> Service("PaymentProcessor")
-        onError {
-            rule PaymentRecovery -> Service("PaymentRecoveryService")
-                onError {
-                    rule RefundInitiation -> Service("RefundProcessor",
-                        amount = $original_payment,
-                        reason = "payment_processing_failed"
-                    )
-                }
-        }
-}
-```
-
-## Integration with New Zealand Systems
-
-### RealMe Identity Verification
-```eleuscript
-policy VerifiedMarketplace {
-    rule IdentityVerification -> Service("RealMeAuth",
-        verificationLevel = "verified",
-        requiredAttributes = ["name", "address", "age_verification"],
-        purposes = ["service_provision", "payment_verification"]
-    )
-    
-    rule ServiceAccess -> Service("ServiceProvider",
-        identity = IdentityVerification.verifiedIdentity,
-        trustLevel = "realme_verified"
-    ) requires [IdentityVerification.success]
-}
-```
-
-### Payment Integration
-```eleuscript
-policy NZPaymentMarketplace {
-    rule PaymentProcessing -> Service("StripeNZ",
-        currency = "NZD",
-        payment_methods = ["card", "bank_transfer", "poli"],
-        compliance = ["nz_consumer_protection", "nz_privacy_act"]
-    )
-    
-    rule BusinessPayments -> Service("StripeConnect",
-        platform_fee = 5.0,
-        currency = "NZD",
-        verification = "nz_business_number"
-    )
-}
-```
-
-## Compilation and Execution
-
-EleuScript policies compile to executable instructions that:
-
-1. **Create Firestore documents** for forums, services, and tracking
-2. **Generate Cloud Functions** for service integrations
-3. **Set up security rules** based on stakeholder permissions
-4. **Configure webhooks** for external service callbacks
-5. **Establish monitoring** for SLA compliance and escalation
-6. **Deploy autonomous service validators** for marketplace transactions
-7. **Configure AI agents** for intelligent service operations
-
-### Example Compilation Output
-
-```typescript
-// Compiled from AutonomousMarketplacePolicy
-export const AutonomousMarketplacePolicyExecutor = {
-  async instantiate(context: PolicyContext): Promise<InstantiationResult> {
-    // 1. Create marketplace forum
-    const forumId = await createForum({
-      name: `${context.regionName} Marketplace`,
-      stakeholders: context.stakeholders,
-      permissions: compiledPermissions,
-      policyId: this.policyId
-    });
-    
-    // 2. Deploy autonomous services
-    const services = await Promise.all(
-      context.services.map(service => deployAutonomousService({
-        serviceConfig: service,
-        validationPolicies: service.validationPolicies,
-        paymentIntegration: 'stripe',
-        forumId
-      }))
-    );
-    
-    // 3. Configure service discovery
-    await configureServiceDiscovery({
-      forumId,
-      services: services.map(s => s.id),
-      searchCapabilities: ['location', 'category', 'price', 'ai_recommendations']
-    });
-    
-    return {
-      instantiationId: generateId(),
-      forumsCreated: [forumId],
-      servicesDeployed: services.map(s => s.id),
-      autonomousValidationEnabled: true,
-      status: 'active'
-    };
-  }
-};
-```
-
-## Standard Library
-
-### NZ Social Services
-```eleuscript
-import "std/nz_social_services" as NZSocial
-import "std/nz_marketplace" as NZMarket
-
-policy SocialServicesMarketplace extends NZSocial.StandardHousingPolicy {
-    // Automatically includes:
-    // - MSD eligibility checking
-    // - KO housing search integration  
-    // - Standard application workflows
-    // - Marketplace service providers
-    // - Payment processing capabilities
-    
-    rule ServiceProviderNetwork -> NZMarket.ServiceDiscovery({
-        categories: ["emergency_accommodation", "support_services", "transport"],
-        region: $applicant.region,
-        quality_threshold: "certified"
-    })
-}
-```
-
-### Autonomous Service Library
-```eleuscript
-import "std/autonomous_services" as AutoServices
-
-service LocalDelivery extends AutoServices.LocationBasedService {
-    // Inherits:
-    // - Location validation
-    // - Distance calculations
-    // - Regional service boundaries
-    // - Delivery scheduling
-    
-    validation_policies = [
-        AutoServices.LocationValidator,
-        AutoServices.DeliveryScheduler,
-        "rule custom_validation -> Service('BusinessSpecificValidator')"
-    ]
-}
-```
-
-## Best Practices
-
-### 1. Clear Service Definitions
-```eleuscript
-// Good: Specific validation and clear business logic
-service LocalGroceryDelivery {
-    price = 15.00
-    currency = "NZD"
-    validation_policies = [
-        "rule delivery_area -> Service('LocationValidator', max_distance=10)",
-        "rule business_hours -> Service('ScheduleValidator', hours='9am-6pm')",
-        "rule minimum_order -> Service('OrderValidator', min_amount=30)"
-    ]
-}
-
-// Avoid: Vague or missing validation
-service GenericService {
-    price = 10.00
-}
-```
-
-### 2. Appropriate Autonomy Levels
-```eleuscript
-// Good: Balanced autonomy with human oversight
-service ExpensiveConsultation {
-    price = 500.00
-    autonomy = {
-        auto_accept = false
-        auto_reject = true
-        require_human_approval = true
-    }
-}
-
-// Good: Full autonomy for simple, low-risk services
-service DigitalDownload {
-    price = 5.00
-    autonomy = {
-        auto_accept = true
-        auto_reject = true
-        require_human_approval = false
-    }
-}
-```
-
-### 3. Comprehensive Error Handling
-```eleuscript
-// Always provide fallback options for service failures
 rule ServiceRequest -> Service("PrimaryProvider")
     onError {
         rule BackupService -> Service("BackupProvider")
@@ -855,16 +685,156 @@ rule ServiceRequest -> Service("PrimaryProvider")
     }
 ```
 
-### 4. Clear Validation Messages
+### Rule Validation Errors
 ```eleuscript
-validation_policy DeliveryArea {
-    error_message = "Sorry, we only deliver within {{max_distance}}km of {{store_location}}. You're {{customer_distance}}km away. Try our partner stores: {{alternative_stores}}"
-}
+// Invalid - missing required parameters
+rule BadRule -> Service("MedicationDirectory")
 
-// Avoid generic error messages
-validation_policy BadExample {
-    error_message = "Invalid request"
+// Valid - includes required visibility settings
+rule GoodRule -> Service("MedicationDirectory", {
+  "visibility": "private",
+  "authorized_roles": ["Pharmacist"]
+})
+```
+
+## Governance Validation
+
+### Permission Validation
+All EleuScript rules are validated against user permissions and forum contexts:
+
+```eleuscript
+rule ValidatedCartAdd -> Service("AddToCart", {
+  "validate_permission": true,
+  "required_forum_role": "authorized_stakeholder",
+  "policy_compliance": "healthcare_coordination"
+})
+```
+
+### Audit Requirements
+All governance actions generate comprehensive audit trails:
+
+```eleuscript
+rule AuditedMedicationAccess -> Service("MedicationDirectory", {
+  "audit_level": "full",
+  "log_searches": true,
+  "compliance_reporting": ["HIPAA", "FDA"]
+})
+```
+
+### Compliance Integration
+Rules can enforce regulatory compliance automatically:
+
+```eleuscript
+rule HIPAACompliantSharing -> Service("PatientDataAccess", {
+  "compliance_requirements": ["HIPAA"],
+  "requires_patient_consent": true,
+  "data_minimization": true,
+  "audit_trail": true
+})
+```
+
+## Integration with External Systems
+
+### RealMe Identity Verification
+```eleuscript
+rule IdentityVerification -> Service("RealMeAuth",
+    verificationLevel = "verified",
+    requiredAttributes = ["name", "address", "age_verification"]
+)
+```
+
+### Payment Integration
+```eleuscript
+rule PaymentProcessing -> Service("StripeNZ",
+    currency = "NZD",
+    payment_methods = ["card", "bank_transfer", "poli"],
+    compliance = ["nz_consumer_protection", "nz_privacy_act"]
+)
+```
+
+## Best Practices
+
+### 1. Clear Service Definitions
+```eleuscript
+// Good: Specific validation and clear business logic
+service LocalGroceryDelivery {
+    price = 15.00
+    currency = "NZD"
+    visibility = "public"
+    validation_policies = [
+        "rule delivery_area -> Service('LocationValidator', max_distance=10)",
+        "rule business_hours -> Service('ScheduleValidator', hours='9am-6pm')"
+    ]
 }
 ```
 
-This EleuScript specification provides the complete language definition for creating governance policies that coordinate complex multi-stakeholder processes AND autonomous marketplace services, enabling programmable society coordination through natural language business logic.
+### 2. Appropriate Autonomy Levels
+```eleuscript
+// Good: Full autonomy for simple, low-risk services
+service DigitalDownload {
+    price = 5.00
+    autonomy = {
+        auto_accept = true
+        auto_reject = true
+        require_human_approval = false
+    }
+}
+
+// Good: Human approval for high-value services
+service ExpensiveConsultation {
+    price = 500.00
+    autonomy = {
+        auto_accept = false
+        require_human_approval = true
+    }
+}
+```
+
+### 3. Clear Validation Messages
+```eleuscript
+validation_policy DeliveryArea {
+    error_message = "Sorry, we only deliver within {{max_distance}}km of {{store_location}}. You're {{customer_distance}}km away."
+}
+```
+
+## Compilation and Execution
+
+EleuScript policies compile to executable instructions that:
+
+1. **Create Firestore documents** for forums, services, and tracking
+2. **Generate Cloud Functions** for service integrations  
+3. **Set up security rules** based on stakeholder permissions
+4. **Configure webhooks** for external service callbacks
+5. **Deploy autonomous service validators** for marketplace transactions
+6. **Configure AI agents** for intelligent service operations
+
+### Example Compilation Output
+
+```typescript
+export const HealthcareCoordinationExecutor = {
+  async instantiate(context: PolicyContext): Promise<InstantiationResult> {
+    // Create coordination forum
+    const forumId = await createForum({
+      name: `Patient Care - ${context.patientName}`,
+      stakeholders: context.stakeholders,
+      permissions: compiledPermissions
+    });
+    
+    // Deploy service validators
+    await deployServiceValidators({
+      medicationAccess: {
+        visibility: 'private',
+        authorizedRoles: ['Pharmacist', 'Doctor']
+      }
+    });
+    
+    return {
+      forumsCreated: [forumId],
+      servicesConfigured: ['MedicationDirectory', 'CartManagement'],
+      status: 'active'
+    };
+  }
+};
+```
+
+EleuScript enables sophisticated governance coordination and autonomous marketplace services while maintaining simplicity for non-technical users through the form-based policy creation interface. The language combines natural language governance rules with programmable commerce capabilities, creating a comprehensive platform for multi-stakeholder coordination.
