@@ -218,10 +218,10 @@ export default function ForumsPage() {
                 Forums are instantiated from Policies and provide real-time coordination spaces where stakeholders can collaborate and make decisions.
               </p>
             </div>
-            <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
+            <Link href="/forums/create" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
               <span className="material-icons text-lg">add</span>
               <span>Create Forum</span>
-            </button>
+            </Link>
           </div>
 
           {/* Forums List */}
