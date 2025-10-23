@@ -159,11 +159,11 @@ const DashboardPage = () => {
       </div>
 
       {/* Full Width Navigation Background */}
-      <div className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-purple-600 to-blue-600 z-[100]"></div>
+      <div className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-purple-600 to-blue-600 z-30"></div>
 
       {/* Home Icon - Left Edge */}
       <div
-        className={`fixed top-0 h-16 z-[110] transition-all duration-300 flex items-center ${
+        className={`fixed top-0 h-16 z-40 transition-all duration-300 flex items-center ${
           isActivitiesExpanded ? 'left-80 w-20' : 'left-16 w-20'
         }`}
       >
@@ -175,7 +175,7 @@ const DashboardPage = () => {
 
       {/* Main Navigation Bar */}
       <nav
-        className={`fixed top-0 right-0 h-16 z-[110] transition-all duration-300 ${
+        className={`fixed top-0 right-0 h-16 z-40 transition-all duration-300 ${
           isActivitiesExpanded ? 'left-96' : 'left-36'
         }`}
       >
