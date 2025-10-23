@@ -364,10 +364,10 @@ export default function ServicesPage() {
                 Services represent the functional components that deliver value within the PFSD model. They can be connected to Policies and instantiate behavior.
               </p>
             </div>
-            <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
+            <Link href="/services/create" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
               <span className="material-icons text-lg">add</span>
               <span>Create Service</span>
-            </button>
+            </Link>
           </div>
 
           {/* Services Grid */}
