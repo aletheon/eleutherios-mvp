@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 interface ServiceFormData {
@@ -170,11 +170,19 @@ export default function CreateServicePage() {
         createdBy: user.uid
       };
 
-      // Save to Firestore
+      // Save service to Firestore
       const serviceRef = doc(db, 'services', serviceId);
       await setDoc(serviceRef, serviceData);
 
+      // Update user's activities to include this service
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        'activities.services': arrayUnion(serviceId),
+        updatedAt: new Date().toISOString()
+      });
+
       console.log('✓ Service created:', serviceId);
+      console.log('✓ Added to user activities');
       setSuccess(true);
 
       // Redirect after success
