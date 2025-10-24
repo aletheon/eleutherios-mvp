@@ -9,11 +9,11 @@ import { CheckCircle, Briefcase, FileText, Search } from 'lucide-react';
 
 interface Policy {
   id: string;
-  title: string;
-  description: string;
-  category: string;
-  tags: string[];
-  visibility: string;
+  title?: string;
+  description?: string;
+  category?: string;
+  tags?: string[];
+  visibility?: string;
 }
 
 export default function OnboardingPage() {
@@ -76,7 +76,7 @@ export default function OnboardingPage() {
   };
 
   const filteredPolicies = availablePolicies.filter(policy =>
-    policy.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    policy.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     policy.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     policy.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     policy.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -240,14 +240,14 @@ export default function OnboardingPage() {
                       <div className="flex-1">
                         <div className="flex items-center space-x-2">
                           <h3 className="text-lg font-semibold text-gray-900">
-                            {policy.title}
+                            {policy.title || 'Untitled Policy'}
                           </h3>
                           {selectedPolicies.includes(policy.id) && (
                             <CheckCircle className="w-5 h-5 text-purple-600" />
                           )}
                         </div>
                         <p className="text-gray-600 mt-1 text-sm">
-                          {policy.description}
+                          {policy.description || 'No description available'}
                         </p>
                         {policy.tags && policy.tags.length > 0 && (
                           <div className="flex flex-wrap gap-2 mt-2">
