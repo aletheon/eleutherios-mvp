@@ -15,6 +15,7 @@ interface ServiceFormData {
   currency: string;
   stock: string;
   unit: string;
+  selectedPolicies: string[];
   metadata: {
     dosageForm?: string;
     strength?: string;
@@ -26,12 +27,23 @@ interface ServiceFormData {
   };
 }
 
+interface Policy {
+  id: string;
+  title: string;
+  description?: string;
+  category: string;
+  status: string;
+  createdAt: string;
+}
+
 export default function CreateServicePage() {
   const [isActivitiesExpanded, setIsActivitiesExpanded] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [loadingPolicies, setLoadingPolicies] = useState(true);
   const { user, logout } = useAuth();
   const router = useRouter();
 
@@ -43,6 +55,7 @@ export default function CreateServicePage() {
     currency: 'NZD',
     stock: '',
     unit: 'tablets',
+    selectedPolicies: [],
     metadata: {
       dosageForm: '',
       strength: '',
@@ -77,6 +90,10 @@ export default function CreateServicePage() {
   };
 
   useEffect(() => {
+    fetchPolicies();
+  }, []);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       if (isUserMenuOpen && !target.closest('.user-menu-container')) {
@@ -87,6 +104,43 @@ export default function CreateServicePage() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isUserMenuOpen]);
+
+  const fetchPolicies = async () => {
+    try {
+      setLoadingPolicies(true);
+      const response = await fetch(
+        'https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/policies.json'
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data) {
+          const policiesArray: Policy[] = Object.keys(data).map(key => ({
+            id: key,
+            title: data[key].title || 'Untitled Policy',
+            description: data[key].description || '',
+            category: data[key].category || 'General',
+            status: data[key].status || 'draft',
+            createdAt: data[key].createdAt || new Date().toISOString()
+          }));
+
+          // Sort by creation date (newest first)
+          policiesArray.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          setPolicies(policiesArray);
+        } else {
+          setPolicies([]);
+        }
+      } else {
+        console.error('Failed to fetch policies');
+        setPolicies([]);
+      }
+    } catch (error) {
+      console.error('Error fetching policies:', error);
+      setPolicies([]);
+    } finally {
+      setLoadingPolicies(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -106,6 +160,15 @@ export default function CreateServicePage() {
         [name]: value
       }));
     }
+  };
+
+  const handlePolicyToggle = (policyId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      selectedPolicies: prev.selectedPolicies.includes(policyId)
+        ? prev.selectedPolicies.filter(id => id !== policyId)
+        : [...prev.selectedPolicies, policyId]
+    }));
   };
 
   const validateForm = (): boolean => {
@@ -156,6 +219,7 @@ export default function CreateServicePage() {
         providerId: user.uid,
         providerRole: user.profile?.role || 'healthcare-provider',
         providerOrganization: user.profile?.organization || '',
+        policies: formData.selectedPolicies,
         metadata: formData.metadata,
         status: 'active',
         createdAt: new Date().toISOString(),
@@ -570,43 +634,78 @@ export default function CreateServicePage() {
                     />
                   </div>
 
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      name="metadata.requiresPrescription"
-                      checked={formData.metadata.requiresPrescription}
-                      onChange={handleInputChange}
-                      className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label className="text-sm font-medium text-gray-700">
-                      Requires Prescription
-                    </label>
-                  </div>
                 </div>
               </div>
             )}
 
-            {/* Provider Info */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Provider Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-                <div>
-                  <span className="font-medium">Provider:</span> {user?.profile?.name}
+            {/* Policy Consumption */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Policy Consumption</h2>
+              <p className="text-sm text-gray-600 mb-4">
+                Select one or more policies that stakeholders or end users can consume through this service.
+              </p>
+
+              {loadingPolicies ? (
+                <div className="space-y-2">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="border border-gray-200 rounded-lg p-4 animate-pulse">
+                      <div className="h-5 bg-gray-200 rounded w-1/3 mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                    </div>
+                  ))}
                 </div>
-                <div>
-                  <span className="font-medium">Role:</span> {user?.profile?.role}
+              ) : policies.length === 0 ? (
+                <div className="border border-gray-200 rounded-lg p-6 text-center">
+                  <span className="material-icons text-gray-400 text-4xl mb-2">account_balance</span>
+                  <p className="text-gray-600">No policies available. Create a policy first to link it to this service.</p>
                 </div>
-                {user?.profile?.organization && (
-                  <div>
-                    <span className="font-medium">Organization:</span> {user.profile.organization}
-                  </div>
-                )}
-                {user?.profile?.licenseNumber && (
-                  <div>
-                    <span className="font-medium">License:</span> {user.profile.licenseNumber}
-                  </div>
-                )}
-              </div>
+              ) : (
+                <div className="space-y-2 max-h-80 overflow-y-auto border border-gray-200 rounded-lg p-4">
+                  {policies.map((policy) => (
+                    <div
+                      key={policy.id}
+                      className={`border rounded-lg p-4 cursor-pointer transition-colors ${
+                        formData.selectedPolicies.includes(policy.id)
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                      onClick={() => handlePolicyToggle(policy.id)}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <input
+                          type="checkbox"
+                          checked={formData.selectedPolicies.includes(policy.id)}
+                          onChange={() => handlePolicyToggle(policy.id)}
+                          className="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <h3 className="font-medium text-gray-900">{policy.title}</h3>
+                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                              {policy.category}
+                            </span>
+                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                              {policy.status}
+                            </span>
+                          </div>
+                          {policy.description && (
+                            <p className="text-sm text-gray-600">{policy.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {formData.selectedPolicies.length > 0 && (
+                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <span className="font-medium">{formData.selectedPolicies.length}</span> {formData.selectedPolicies.length === 1 ? 'policy' : 'policies'} selected
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Submit Button */}
