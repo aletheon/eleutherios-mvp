@@ -68,7 +68,7 @@ export default function LoginPage() {
 
     try {
       await login(formData.email, formData.password);
-      router.push('/dashboard');
+      router.push('/');
     } catch (error) {
       // Error is handled by the AuthContext
       console.error('Login failed:', error);
