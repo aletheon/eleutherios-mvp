@@ -1,356 +1,304 @@
 'use client';
 
-import React, { useState } from 'react';
-import { CheckCircle, Home, Heart, Utensils, ArrowRight, Users } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import { collection, getDocs, query, where, doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { CheckCircle, Briefcase, FileText, Search } from 'lucide-react';
 
-export default function HomelessPersonOnboarding() {
-  const [step, setStep] = useState(1);
-  const [personName, setPersonName] = useState('');
-  const [serviceCreated, setServiceCreated] = useState(false);
-  const [policiesConsumed, setPoliciesConsumed] = useState<string[]>([]);
-  const [forumsCreated, setForumsCreated] = useState<string[]>([]);
+interface Policy {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  tags: string[];
+  visibility: string;
+}
 
-  const publicPolicies = [
-    {
-      id: 'policy-emergency-housing',
-      title: 'Emergency Social Housing',
-      description: 'Immediate access to emergency housing through MSD and Kāinga Ora coordination',
-      icon: Home,
-      color: 'bg-blue-500',
-      benefits: [
-        'Immediate eligibility assessment (24 hours)',
-        'Financial support for accommodation',
-        'Emergency housing placement',
-        'Coordination forum with MSD & KO',
-        'Digital tenancy agreement',
-        'Wraparound support services'
-      ]
-    },
-    {
-      id: 'policy-emergency-healthcare',
-      title: 'Emergency Healthcare Access',
-      description: 'Free healthcare, dental care, mental health support, and prescriptions',
-      icon: Heart,
-      color: 'bg-red-500',
-      benefits: [
-        'Free primary healthcare & GP visits',
-        'Emergency dental care',
-        'Mental health & addiction support',
-        'Subsidized prescriptions ($5/item)',
-        'Healthcare coordination forum'
-      ]
-    },
-    {
-      id: 'policy-food-security',
-      title: 'Food Security & Nutrition',
-      description: 'Access to food banks, community meals, and food grants',
-      icon: Utensils,
-      color: 'bg-green-500',
-      benefits: [
-        'Weekly food bank access',
-        'Daily community meals (2 per day)',
-        'Food grants up to $200',
-        'Nutrition support coordination'
-      ]
+export default function OnboardingPage() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const [step, setStep] = useState<'choice' | 'policies' | 'service'>('choice');
+  const [availablePolicies, setAvailablePolicies] = useState<Policy[]>([]);
+  const [selectedPolicies, setSelectedPolicies] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    loadAvailablePolicies();
+  }, []);
+
+  const loadAvailablePolicies = async () => {
+    try {
+      const policiesRef = collection(db, 'policies');
+      const q = query(policiesRef, where('visibility', '==', 'public'), where('status', '==', 'active'));
+      const snapshot = await getDocs(q);
+
+      const policies: Policy[] = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Policy));
+
+      setAvailablePolicies(policies);
+    } catch (error) {
+      console.error('Error loading policies:', error);
     }
-  ];
+  };
 
-  const handleCreateService = () => {
-    if (!personName.trim()) {
-      alert('Please enter your name');
+  const handleConsumePolicies = async () => {
+    if (!user || selectedPolicies.length === 0) {
+      alert('Please select at least one policy');
       return;
     }
-    
-    setServiceCreated(true);
-    setStep(2);
-  };
 
-  const handleConsumePolicy = (policyId: string, policyTitle: string) => {
-    if (!policiesConsumed.includes(policyId)) {
-      setPoliciesConsumed([...policiesConsumed, policyId]);
-      
-      const forumName = `${policyTitle} - ${personName}`;
-      setForumsCreated([...forumsCreated, forumName]);
+    setLoading(true);
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, {
+        consumedPolicies: arrayUnion(...selectedPolicies),
+        'activities.policies': arrayUnion(...selectedPolicies),
+        updatedAt: new Date().toISOString()
+      });
+
+      // Redirect to home
+      router.push('/');
+    } catch (error) {
+      console.error('Error consuming policies:', error);
+      alert('Failed to consume policies. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleConsumeAll = () => {
-    const allPolicyIds = publicPolicies.map(p => p.id);
-    setPoliciesConsumed(allPolicyIds);
-    
-    const allForums = publicPolicies.map(p => `${p.title} - ${personName}`);
-    setForumsCreated(allForums);
-    
-    setStep(3);
+  const handleSkip = () => {
+    router.push('/');
+  };
+
+  const filteredPolicies = availablePolicies.filter(policy =>
+    policy.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    policy.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    policy.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    policy.tags?.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const togglePolicySelection = (policyId: string) => {
+    setSelectedPolicies(prev =>
+      prev.includes(policyId)
+        ? prev.filter(id => id !== policyId)
+        : [...prev, policyId]
+    );
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 p-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto w-full">
+        {/* Header */}
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Basic Human Rights Access Portal
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            Welcome to Eleutherios!
           </h1>
-          <p className="text-xl text-gray-600">
-            Immediate access to housing, healthcare, and food through the PFSD Protocol
+          <p className="mt-4 text-xl text-gray-600">
+            Let's get you started
           </p>
         </div>
 
-        <div className="flex items-center justify-center mb-12">
-          <div className="flex items-center space-x-4">
-            <div className={`flex items-center justify-center w-12 h-12 rounded-full ${step >= 1 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>
-              1
+        {/* Choice Step */}
+        {step === 'choice' && (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+                How would you like to get started?
+              </h2>
+              <p className="text-gray-600">
+                You can select policies to consume or create a service to represent yourself or your business
+              </p>
             </div>
-            <div className={`w-24 h-1 ${step >= 2 ? 'bg-blue-600' : 'bg-gray-300'}`} />
-            <div className={`flex items-center justify-center w-12 h-12 rounded-full ${step >= 2 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>
-              2
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Select/Consume Policies */}
+              <button
+                onClick={() => setStep('policies')}
+                className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-all border-2 border-transparent hover:border-purple-500 text-left group"
+              >
+                <div className="flex items-start space-x-4">
+                  <div className="bg-purple-100 p-3 rounded-lg group-hover:bg-purple-200 transition">
+                    <FileText className="w-8 h-8 text-purple-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      Browse & Consume Policies
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      Select from existing policies like orthopaedic policy, orthodontist policy, and more.
+                      If none exist, you can create your own.
+                    </p>
+                    <ul className="text-sm text-gray-500 space-y-1">
+                      <li>• Access existing policies</li>
+                      <li>• Create custom policies</li>
+                      <li>• Participate in governance</li>
+                    </ul>
+                  </div>
+                </div>
+              </button>
+
+              {/* Create Service */}
+              <button
+                onClick={() => router.push('/services/create')}
+                className="bg-white rounded-xl shadow-lg p-8 hover:shadow-xl transition-all border-2 border-transparent hover:border-blue-500 text-left group"
+              >
+                <div className="flex items-start space-x-4">
+                  <div className="bg-blue-100 p-3 rounded-lg group-hover:bg-blue-200 transition">
+                    <Briefcase className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      Create a Service
+                    </h3>
+                    <p className="text-gray-600 mb-4">
+                      Create a service to represent yourself or your business. You can consume policies and charge fees.
+                    </p>
+                    <ul className="text-sm text-gray-500 space-y-1">
+                      <li>• Represent your business</li>
+                      <li>• Consume policies</li>
+                      <li>• Charge fees for services</li>
+                    </ul>
+                  </div>
+                </div>
+              </button>
             </div>
-            <div className={`w-24 h-1 ${step >= 3 ? 'bg-blue-600' : 'bg-gray-300'}`} />
-            <div className={`flex items-center justify-center w-12 h-12 rounded-full ${step >= 3 ? 'bg-blue-600 text-white' : 'bg-gray-300'}`}>
-              3
+
+            <div className="text-center mt-8">
+              <button
+                onClick={handleSkip}
+                className="text-gray-500 hover:text-gray-700 text-sm font-medium"
+              >
+                Skip for now
+              </button>
             </div>
           </div>
-        </div>
+        )}
 
-        {step === 1 && (
-          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-2xl mx-auto">
-            <h2 className="text-3xl font-bold text-gray-900 mb-6">
-              Step 1: Create Your Service Request
-            </h2>
-            <p className="text-gray-600 mb-8">
-              In the PFSD protocol, you are a "Service" that consumes policies. 
-              By creating your service, you can immediately access public policies 
-              that guarantee your basic human rights.
-            </p>
+        {/* Policies Step */}
+        {step === 'policies' && (
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="mb-6">
+              <button
+                onClick={() => setStep('choice')}
+                className="text-purple-600 hover:text-purple-700 text-sm font-medium mb-4"
+              >
+                ← Back to choices
+              </button>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+                Browse Available Policies
+              </h2>
+              <p className="text-gray-600">
+                Select one or more policies that best suit your needs
+              </p>
+            </div>
 
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Your Name
-                </label>
+            {/* Search */}
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
-                  value={personName}
-                  onChange={(e) => setPersonName(e.target.value)}
-                  placeholder="Enter your name"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Search policies by name, category, or tags..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-900 mb-2">What happens next?</h3>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Your service will be registered in the system</li>
-                  <li>• You can consume public policies for housing, healthcare, and food</li>
-                  <li>• Coordination forums will be automatically created</li>
-                  <li>• MSD, KO, and healthcare providers will be notified</li>
-                  <li>• You'll gain immediate access to support services</li>
-                </ul>
-              </div>
-
-              <button
-                onClick={handleCreateService}
-                className="w-full bg-blue-600 text-white py-4 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2"
-              >
-                Create My Service Request
-                <ArrowRight size={20} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {step === 2 && (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full mb-4">
-                <CheckCircle size={20} />
-                Service Created: {personName}
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Step 2: Consume Public Policies
-              </h2>
-              <p className="text-gray-600 max-w-2xl mx-auto mb-4">
-                These policies are publicly available and guarantee your basic human rights.
-                Click on each policy to consume it and gain immediate access.
-              </p>
-              <button
-                onClick={handleConsumeAll}
-                className="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition"
-              >
-                Consume All Policies (Recommended)
-              </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {publicPolicies.map((policy) => {
-                const Icon = policy.icon;
-                const isConsumed = policiesConsumed.includes(policy.id);
-                
-                return (
+            {/* Policies List */}
+            <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
+              {filteredPolicies.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-500 mb-4">
+                    {searchQuery ? 'No policies found matching your search.' : 'No policies available yet.'}
+                  </p>
+                  <button
+                    onClick={() => router.push('/policies/create')}
+                    className="text-purple-600 hover:text-purple-700 font-medium"
+                  >
+                    Create your own policy →
+                  </button>
+                </div>
+              ) : (
+                filteredPolicies.map((policy) => (
                   <div
                     key={policy.id}
-                    className={`bg-white rounded-xl shadow-lg overflow-hidden transition ${
-                      isConsumed ? 'ring-4 ring-green-400' : ''
+                    onClick={() => togglePolicySelection(policy.id)}
+                    className={`p-4 border-2 rounded-lg cursor-pointer transition ${
+                      selectedPolicies.includes(policy.id)
+                        ? 'border-purple-500 bg-purple-50'
+                        : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <div className={`${policy.color} p-6 text-white`}>
-                      <Icon size={48} className="mb-4" />
-                      <h3 className="text-xl font-bold mb-2">{policy.title}</h3>
-                      <p className="text-sm opacity-90">{policy.description}</p>
-                    </div>
-                    
-                    <div className="p-6">
-                      <h4 className="font-semibold text-gray-900 mb-3">Benefits:</h4>
-                      <ul className="space-y-2 mb-6">
-                        {policy.benefits.map((benefit, idx) => (
-                          <li key={idx} className="flex items-start gap-2 text-sm text-gray-600">
-                            <CheckCircle size={16} className="text-green-500 flex-shrink-0 mt-0.5" />
-                            {benefit}
-                          </li>
-                        ))}
-                      </ul>
-                      
-                      <button
-                        onClick={() => handleConsumePolicy(policy.id, policy.title)}
-                        disabled={isConsumed}
-                        className={`w-full py-3 rounded-lg font-semibold transition ${
-                          isConsumed
-                            ? 'bg-green-100 text-green-800 cursor-not-allowed'
-                            : 'bg-gray-900 text-white hover:bg-gray-800'
-                        }`}
-                      >
-                        {isConsumed ? (
-                          <span className="flex items-center justify-center gap-2">
-                            <CheckCircle size={20} />
-                            Policy Consumed
-                          </span>
-                        ) : (
-                          'Consume Policy'
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {policy.title}
+                          </h3>
+                          {selectedPolicies.includes(policy.id) && (
+                            <CheckCircle className="w-5 h-5 text-purple-600" />
+                          )}
+                        </div>
+                        <p className="text-gray-600 mt-1 text-sm">
+                          {policy.description}
+                        </p>
+                        {policy.tags && policy.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {policy.tags.map((tag, idx) => (
+                              <span
+                                key={idx}
+                                className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
                         )}
-                      </button>
+                      </div>
                     </div>
                   </div>
-                );
-              })}
+                ))
+              )}
             </div>
 
-            {policiesConsumed.length > 0 && (
-              <div className="text-center mt-8">
+            {/* Actions */}
+            <div className="flex items-center justify-between pt-6 border-t">
+              <div className="text-sm text-gray-600">
+                {selectedPolicies.length > 0 && (
+                  <span>{selectedPolicies.length} policy/policies selected</span>
+                )}
+              </div>
+              <div className="flex space-x-4">
                 <button
-                  onClick={() => setStep(3)}
-                  className="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-blue-700 transition flex items-center justify-center gap-2 mx-auto"
+                  onClick={() => router.push('/policies/create')}
+                  className="px-6 py-2 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition"
                 >
-                  Continue to Your Coordination Forums
-                  <ArrowRight size={20} />
+                  Create New Policy
+                </button>
+                <button
+                  onClick={handleConsumePolicies}
+                  disabled={selectedPolicies.length === 0 || loading}
+                  className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Processing...' : 'Consume Selected'}
                 </button>
               </div>
-            )}
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-6 py-3 rounded-full mb-4">
-                <CheckCircle size={24} />
-                <span className="font-semibold">All Policies Consumed Successfully!</span>
-              </div>
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">
-                Your Active Coordination Forums
-              </h2>
-              <p className="text-gray-600 max-w-2xl mx-auto">
-                Forums have been automatically created for each policy. You can now coordinate 
-                with MSD case workers, KO housing officers, healthcare providers, and support services.
-              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {forumsCreated.map((forum, idx) => {
-                const policy = publicPolicies[idx];
-                if (!policy) return null;
-                
-                const Icon = policy.icon;
-                
-                return (
-                  <div key={forum} className="bg-white rounded-xl shadow-lg p-6">
-                    <div className={`${policy.color} w-16 h-16 rounded-full flex items-center justify-center mb-4`}>
-                      <Icon size={32} className="text-white" />
-                    </div>
-                    
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">{forum}</h3>
-                    
-                    <div className="space-y-3 mb-6">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Users size={16} />
-                        <span>Active Stakeholders:</span>
-                      </div>
-                      <div className="pl-6 space-y-1 text-sm">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full" />
-                          <span>You ({personName})</span>
-                        </div>
-                        {policy.id === 'policy-emergency-housing' && (
-                          <>
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-green-500 rounded-full" />
-                              <span>Sarah Jones (MSD Case Worker)</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-green-500 rounded-full" />
-                              <span>Mike Wilson (KO Housing Officer)</span>
-                            </div>
-                          </>
-                        )}
-                        {policy.id === 'policy-emergency-healthcare' && (
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full" />
-                            <span>Dr. Anjali Patel (Healthcare Provider)</span>
-                          </div>
-                        )}
-                        {policy.id === 'policy-food-security' && (
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full" />
-                            <span>Sarah Jones (MSD Case Worker)</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <a 
-                      href="/forums/coordination"
-                      className="block w-full bg-gray-900 text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition text-center"
-                    >
-                      Enter Forum
-                    </a>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl shadow-xl p-8 text-white text-center mt-12">
-              <h3 className="text-2xl font-bold mb-4">
-                Congratulations! You now have access to:
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                <div className="bg-white/10 rounded-lg p-4">
-                  <Home size={32} className="mx-auto mb-2" />
-                  <h4 className="font-semibold mb-1">Emergency Housing</h4>
-                  <p className="text-sm opacity-90">Immediate placement & support</p>
-                </div>
-                <div className="bg-white/10 rounded-lg p-4">
-                  <Heart size={32} className="mx-auto mb-2" />
-                  <h4 className="font-semibold mb-1">Healthcare Access</h4>
-                  <p className="text-sm opacity-90">Free medical & dental care</p>
-                </div>
-                <div className="bg-white/10 rounded-lg p-4">
-                  <Utensils size={32} className="mx-auto mb-2" />
-                  <h4 className="font-semibold mb-1">Food Security</h4>
-                  <p className="text-sm opacity-90">Daily meals & food support</p>
-                </div>
-              </div>
-              <p className="mt-6 text-lg">
-                All coordination is happening in real-time with government agencies and support services.
-              </p>
+            <div className="text-center mt-4">
+              <button
+                onClick={handleSkip}
+                className="text-gray-500 hover:text-gray-700 text-sm font-medium"
+              >
+                Skip for now
+              </button>
             </div>
           </div>
         )}

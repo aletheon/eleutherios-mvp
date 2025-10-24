@@ -52,13 +52,10 @@ export interface CartItem {
 interface User extends FirebaseUser {
   profile?: {
     name: string;
-    role: 'person' | 'patient' | 'doctor' | 'pharmacist' | 'caseworker' | 'housing-officer' | 'healthcare-provider' | 'admin';
-    organization?: string;
     bio?: string;
     location?: string;
     website?: string;
-    licenseNumber?: string; // For doctors and pharmacists
-    verified?: boolean; // For professional verification
+    verified?: boolean;
     certScore: {
       cooperation: number;
       engagement: number;
@@ -70,8 +67,8 @@ interface User extends FirebaseUser {
       forums: string[];
       services: string[];
     };
-    shoppingCart?: CartItem[]; // Governance-enabled shopping cart
-    defaultPolicies?: string[]; // Default policies assigned on registration
+    shoppingCart?: CartItem[];
+    consumedPolicies?: string[]; // Policies the user has consumed
     createdAt: string;
     updatedAt: string;
   };
@@ -124,7 +121,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Create default profile if it doesn't exist
         const defaultProfile: User['profile'] = {
           name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-          role: 'person',
           bio: '',
           location: '',
           website: '',
@@ -141,7 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             services: []
           },
           shoppingCart: [],
-          defaultPolicies: [],
+          consumedPolicies: [],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
@@ -159,80 +155,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Create default healthcare policy for patients
-  const createDefaultHealthcarePolicy = async (userId: string) => {
-    const defaultPolicy = {
-      id: `policy-emergency-healthcare-${userId}`,
-      userId: userId,
-      title: 'Emergency Healthcare Access Framework',
-      description: 'Your personal healthcare coordination policy. Enables doctors and pharmacists to coordinate your care.',
-      category: 'healthcare',
-      version: '1.0',
-      status: 'active',
-      visibility: 'public',
-      rules: [
-        {
-          id: 'rule-primary-healthcare',
-          kind: 'service',
-          name: 'Primary Healthcare Enrollment',
-          description: 'Free primary healthcare enrollment',
-          config: {
-            type: 'healthcare',
-            provider: 'Public Health',
-            cost: 0,
-            currency: 'NZD'
-          }
-        },
-        {
-          id: 'rule-emergency-dental',
-          kind: 'service',
-          name: 'Emergency Dental Care',
-          description: 'Emergency dental services',
-          config: {
-            type: 'dental',
-            provider: 'Public Dental',
-            cost: 0,
-            currency: 'NZD'
-          }
-        },
-        {
-          id: 'rule-mental-health',
-          kind: 'service',
-          name: 'Mental Health Support',
-          description: 'Access to mental health services',
-          config: {
-            type: 'mental-health',
-            provider: 'Mental Health Services',
-            cost: 0,
-            currency: 'NZD'
-          }
-        },
-        {
-          id: 'rule-prescription-subsidy',
-          kind: 'service',
-          name: 'Prescription Subsidy',
-          description: 'Subsidized prescription medications',
-          config: {
-            type: 'pharmacy',
-            provider: 'Pharmac',
-            cost: 5,
-            currency: 'NZD',
-            note: '$5 per item'
-          }
-        }
-      ],
-      stakeholders: ['Patient', 'Doctor', 'Pharmacist'],
-      tags: ['healthcare', 'emergency', 'coordination'],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      createdBy: userId
-    };
-
-    const policyRef = doc(db, 'policies', defaultPolicy.id);
-    await setDoc(policyRef, defaultPolicy);
-
-    return defaultPolicy.id;
-  };
 
   // Register new user
   const register = async (email: string, password: string, profileData: Partial<User['profile']>) => {
@@ -248,28 +170,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         displayName: profileData.name || email.split('@')[0]
       });
 
-      // Create default healthcare policy for patients
-      let defaultPolicyId: string | null = null;
-      if (profileData.role === 'patient') {
-        try {
-          defaultPolicyId = await createDefaultHealthcarePolicy(firebaseUser.uid);
-          console.log('✓ Created default healthcare policy:', defaultPolicyId);
-        } catch (policyError) {
-          console.error('Failed to create default policy:', policyError);
-          // Continue with registration even if policy creation fails
-        }
-      }
-
       // Create Firestore profile
       const userProfile: User['profile'] = {
         name: profileData.name || firebaseUser.displayName || email.split('@')[0],
-        role: profileData.role || 'person',
-        organization: profileData.organization || '',
         bio: profileData.bio || '',
         location: profileData.location || '',
         website: profileData.website || '',
-        licenseNumber: profileData.licenseNumber || '',
-        verified: profileData.verified || false,
+        verified: false,
         certScore: {
           cooperation: 0,
           engagement: 0,
@@ -277,12 +184,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           trust: 0
         },
         activities: {
-          policies: defaultPolicyId ? [defaultPolicyId] : [],
+          policies: [],
           forums: [],
           services: []
         },
         shoppingCart: [],
-        defaultPolicies: defaultPolicyId ? [defaultPolicyId] : (profileData.defaultPolicies || []),
+        consumedPolicies: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
