@@ -19,6 +19,7 @@ const Navigation: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
   const [isActivitiesExpanded, setIsActivitiesExpanded] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [activities, setActivities] = useState<Activity[]>([]);
 
   // Load activities panel state from localStorage
@@ -60,12 +61,25 @@ const Navigation: React.FC = () => {
   // Save activities panel state to localStorage
   useEffect(() => {
     localStorage.setItem('activitiesExpanded', JSON.stringify(isActivitiesExpanded));
-    
+
     // Dispatch custom event for other components
     window.dispatchEvent(new CustomEvent('activitiesPanelToggle', {
       detail: { expanded: isActivitiesExpanded }
     }));
   }, [isActivitiesExpanded]);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (isUserMenuOpen && !target.closest('.user-menu-container')) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isUserMenuOpen]);
 
   const handleLogoClick = () => {
     setIsActivitiesExpanded(!isActivitiesExpanded);
@@ -78,6 +92,15 @@ const Navigation: React.FC = () => {
   const handleLogout = () => {
     logout();
     router.push('/login');
+  };
+
+  const getUserInitials = () => {
+    if (!user?.profile?.name) return '?';
+    const names = user.profile.name.split(' ');
+    if (names.length >= 2) {
+      return names[0][0] + names[names.length - 1][0];
+    }
+    return names[0][0];
   };
 
   const getActivityIcon = (type: string) => {
@@ -267,12 +290,88 @@ const Navigation: React.FC = () => {
             </button>
 
             {user ? (
-              <div className="relative">
-                <button className="flex items-center space-x-2 text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors">
+              <div className="relative user-menu-container">
+                <button
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center space-x-2 text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
+                >
                   <span className="material-icons text-2xl">account_circle</span>
-                  <span className="text-sm font-medium hidden md:block">{user.displayName || user.email}</span>
+                  <span className="text-sm font-medium uppercase">{getUserInitials()}</span>
+                  <span className="material-icons text-lg">
+                    {isUserMenuOpen ? 'expand_less' : 'expand_more'}
+                  </span>
                 </button>
-                {/* Add dropdown menu here if needed */}
+
+                {/* Dropdown Menu */}
+                {isUserMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-2xl border border-gray-200 py-2 z-[200]" style={{ boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)' }}>
+                    {/* User Info Header */}
+                    <div className="px-4 py-3 border-b border-gray-200">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {user?.profile?.name || 'User'}
+                      </p>
+                      <p className="text-xs text-gray-500">{user?.email}</p>
+                    </div>
+
+                    {/* Menu Items */}
+                    <div className="py-1">
+                      <Link
+                        href="/profile"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <span className="material-icons text-lg mr-3">person</span>
+                        Profile
+                      </Link>
+
+                      <Link
+                        href="/policies"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <span className="material-icons text-lg mr-3">account_balance</span>
+                        My Policies ({user?.profile?.activities?.policies?.length || 0})
+                      </Link>
+
+                      <Link
+                        href="/services"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <span className="material-icons text-lg mr-3">build</span>
+                        My Services ({user?.profile?.activities?.services?.length || 0})
+                      </Link>
+
+                      <Link
+                        href="/forums"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <span className="material-icons text-lg mr-3">forum</span>
+                        My Forums ({user?.profile?.activities?.forums?.length || 0})
+                      </Link>
+
+                      <Link
+                        href="/cart"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <span className="material-icons text-lg mr-3">shopping_cart</span>
+                        Shopping Cart ({user?.profile?.shoppingCart?.length || 0})
+                      </Link>
+
+                      <div className="border-t border-gray-200 my-1"></div>
+
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                      >
+                        <span className="material-icons text-lg mr-3">logout</span>
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center space-x-2">
