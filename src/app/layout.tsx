@@ -1,9 +1,6 @@
 // src/app/layout.tsx
-import { DashboardProvider } from '@/contexts/DashboardContext'
-import { ActivitiesProvider } from '@/contexts/ActivitiesContext'
-import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { Providers } from '@/components/Providers'
 import './globals.css'
-import { AuthProvider } from '@/contexts/AuthContext'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -25,15 +22,9 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <ErrorBoundary>
-          <AuthProvider>
-            <ActivitiesProvider>
-              <DashboardProvider>
-                {children}
-              </DashboardProvider>
-            </ActivitiesProvider>
-          </AuthProvider>
-        </ErrorBoundary>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   )
