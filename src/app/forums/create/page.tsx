@@ -181,18 +181,6 @@ export default function CreateForumPage() {
           </p>
         </div>
 
-        {/* Role Check */}
-        {user && user.profile?.role !== 'doctor' && user.profile?.role !== 'admin' && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-            <p className="text-yellow-800 text-sm">
-              ⚠️ Only doctors can create consultation forums. Your role: {user.profile?.role || 'unknown'}
-            </p>
-            <Link href="/forums" className="text-yellow-900 font-medium hover:underline text-sm">
-              ← Back to Forums
-            </Link>
-          </div>
-        )}
-
         {/* Form */}
         <div className="bg-white rounded-lg shadow-xl p-8">
           {error && (

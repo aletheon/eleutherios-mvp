@@ -233,9 +233,6 @@ const DashboardPage = () => {
                       {user?.profile?.name || 'User'}
                     </p>
                     <p className="text-xs text-gray-500">{user?.email}</p>
-                    <p className="text-xs text-purple-600 mt-1 capitalize">
-                      Role: {user?.profile?.role || 'unknown'}
-                    </p>
                   </div>
 
                   {/* Menu Items */}

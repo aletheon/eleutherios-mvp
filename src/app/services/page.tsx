@@ -270,9 +270,6 @@ export default function ServicesPage() {
                       {user?.profile?.name || 'User'}
                     </p>
                     <p className="text-xs text-gray-500">{user?.email}</p>
-                    <p className="text-xs text-purple-600 mt-1 capitalize">
-                      Role: {user?.profile?.role || 'unknown'}
-                    </p>
                   </div>
 
                   {/* Menu Items */}
@@ -372,15 +369,13 @@ export default function ServicesPage() {
               <p className="text-gray-600 mb-6">
                 Be the first to create a service! Healthcare providers can create medications and services for patients.
               </p>
-              {['doctor', 'pharmacist', 'healthcare-provider'].includes(user?.profile?.role || '') && (
-                <Link
-                  href="/services/create"
-                  className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
-                >
-                  <span className="material-icons">add</span>
-                  <span>Create First Service</span>
-                </Link>
-              )}
+              <Link
+                href="/services/create"
+                className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+              >
+                <span className="material-icons">add</span>
+                <span>Create First Service</span>
+              </Link>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">

@@ -237,7 +237,6 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ servic
                   <div className="px-4 py-3 border-b border-gray-200">
                     <p className="text-sm font-semibold text-gray-900">{user?.profile?.name || 'User'}</p>
                     <p className="text-xs text-gray-500">{user?.email}</p>
-                    <p className="text-xs text-purple-600 mt-1 capitalize">Role: {user?.profile?.role || 'unknown'}</p>
                   </div>
                   <div className="py-1">
                     <Link href="/profile" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setIsUserMenuOpen(false)}>
