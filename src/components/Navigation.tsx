@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,17 +18,20 @@ const Navigation: React.FC = () => {
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [isActivitiesExpanded, setIsActivitiesExpanded] = useState(false);
+  const [panelWidth, setPanelWidth] = useState(0); // 0 = closed, max = 320
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartX = useRef(0);
+  const dragStartWidth = useRef(0);
 
   // Load activities panel state from localStorage
   useEffect(() => {
-    const savedState = localStorage.getItem('activitiesExpanded');
-    if (savedState) {
-      setIsActivitiesExpanded(JSON.parse(savedState));
+    const savedWidth = localStorage.getItem('activitiesPanelWidth');
+    if (savedWidth) {
+      setPanelWidth(parseInt(savedWidth, 10));
     }
-    
+
     // Load mock activities (replace with real data)
     setActivities([
       {
@@ -60,13 +63,13 @@ const Navigation: React.FC = () => {
 
   // Save activities panel state to localStorage
   useEffect(() => {
-    localStorage.setItem('activitiesExpanded', JSON.stringify(isActivitiesExpanded));
+    localStorage.setItem('activitiesPanelWidth', panelWidth.toString());
 
     // Dispatch custom event for other components
     window.dispatchEvent(new CustomEvent('activitiesPanelToggle', {
-      detail: { expanded: isActivitiesExpanded }
+      detail: { width: panelWidth }
     }));
-  }, [isActivitiesExpanded]);
+  }, [panelWidth]);
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -82,12 +85,41 @@ const Navigation: React.FC = () => {
   }, [isUserMenuOpen]);
 
   const handleLogoClick = () => {
-    setIsActivitiesExpanded(!isActivitiesExpanded);
+    // Toggle between closed (0) and open (280)
+    setPanelWidth(panelWidth === 0 ? 280 : 0);
   };
 
-  const handleLogoDoubleClick = () => {
-    setIsActivitiesExpanded(false);
+  const handleDragStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    dragStartX.current = e.clientX;
+    dragStartWidth.current = panelWidth;
   };
+
+  const handleDragMove = (e: MouseEvent) => {
+    if (!isDragging) return;
+
+    const delta = e.clientX - dragStartX.current;
+    const newWidth = Math.max(0, Math.min(320, dragStartWidth.current + delta));
+    setPanelWidth(newWidth);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  // Add drag event listeners
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleDragMove);
+      document.addEventListener('mouseup', handleDragEnd);
+      return () => {
+        document.removeEventListener('mousemove', handleDragMove);
+        document.removeEventListener('mouseup', handleDragEnd);
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDragging]);
 
   const handleLogout = () => {
     logout();
@@ -137,95 +169,33 @@ const Navigation: React.FC = () => {
 
   return (
     <>
-      {/* Activities Panel */}
-      <div 
-        className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
-          isActivitiesExpanded ? 'w-80' : 'w-16'
-        }`}
-      >
-        {/* Logo/Toggle Area */}
-        <div 
-          className="h-16 flex items-center justify-center cursor-pointer hover:bg-gray-50 border-b border-gray-200"
-          onClick={handleLogoClick}
-          onDoubleClick={handleLogoDoubleClick}
-        >
-          {isActivitiesExpanded ? (
-            <div className="flex items-center space-x-2 px-4">
-              <div className="relative w-6 h-6">
-                <div className="absolute inset-0 bg-white rounded border border-gray-300 flex items-center justify-center">
-                  <div className="w-3.5 h-3.5 bg-blue-600 rounded-full"></div>
-                </div>
-              </div>
-              <span className="font-semibold text-gray-800">Eleutherios</span>
-            </div>
-          ) : (
+      {/* Main Navigation Bar - Full Width */}
+      <nav className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-purple-600 to-blue-600 z-50">
+        <div className="h-full flex items-center justify-between px-6">
+          {/* Left Side - Logo/Toggle Button */}
+          <button
+            onClick={handleLogoClick}
+            className="flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors text-white/80 hover:text-white hover:bg-white/10"
+          >
             <div className="relative w-6 h-6">
               <div className="absolute inset-0 bg-white rounded border border-gray-300 flex items-center justify-center">
                 <div className="w-3.5 h-3.5 bg-blue-600 rounded-full"></div>
               </div>
             </div>
-          )}
-        </div>
+            <span className="font-semibold text-white">Eleutherios</span>
+            <span className="material-icons text-lg">
+              {panelWidth > 0 ? 'keyboard_arrow_left' : 'keyboard_arrow_right'}
+            </span>
+          </button>
 
-        {/* Activities Content */}
-        <div className="flex-1 overflow-y-auto">
-          {isActivitiesExpanded ? (
-            <div className="p-4">
-              <h3 className="text-sm font-semibold text-gray-600 mb-3">Recent Activities</h3>
-              <div className="space-y-3">
-                {activities.map((activity) => (
-                  <div key={activity.id} className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 cursor-pointer">
-                    <div className="flex items-start space-x-3">
-                      <div className="text-lg">{getActivityIcon(activity.type)}</div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2">
-                          <h4 className="text-sm font-medium text-gray-900 truncate">
-                            {activity.title}
-                          </h4>
-                          <div className={`w-2 h-2 rounded-full ${getStatusColor(activity.status)}`}></div>
-                        </div>
-                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                          {activity.description}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          {activity.timestamp}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="py-4">
-              {activities.slice(0, 3).map((activity, index) => (
-                <div key={activity.id} className="flex justify-center py-2">
-                  <div className="relative">
-                    <div className="text-lg">{getActivityIcon(activity.type)}</div>
-                    <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${getStatusColor(activity.status)}`}></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Main Navigation Bar */}
-      <nav 
-        className={`fixed top-0 right-0 h-16 bg-gradient-to-r from-purple-600 to-blue-600 z-40 transition-all duration-300 ${
-          isActivitiesExpanded ? 'left-80' : 'left-16'
-        }`}
-      >
-        <div className="h-full flex items-center justify-between px-6">
           {/* Center Navigation Icons */}
           <div className="flex-1 flex justify-center">
             <div className="flex items-center space-x-8">
-              <Link 
-                href="/" 
+              <Link
+                href="/"
                 className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
-                  isActiveRoute('/') 
-                    ? 'bg-white/20 text-white' 
+                  isActiveRoute('/')
+                    ? 'bg-white/20 text-white'
                     : 'text-white/80 hover:text-white hover:bg-white/10'
                 }`}
               >
@@ -393,11 +363,79 @@ const Navigation: React.FC = () => {
         </div>
       </nav>
 
+      {/* Activities Panel - Below Navigation */}
+      {panelWidth > 0 && (
+        <div
+          className="fixed left-0 top-16 bg-white border-r border-gray-200 z-40 transition-all"
+          style={{
+            width: `${panelWidth}px`,
+            height: 'calc(100vh - 4rem)',
+            transitionDuration: isDragging ? '0ms' : '300ms'
+          }}
+        >
+          {/* Activities Content */}
+          <div className="h-full overflow-y-auto">
+            {panelWidth > 150 ? (
+              <div className="p-4">
+                <h3 className="text-sm font-semibold text-gray-600 mb-3">Recent Activities</h3>
+                <div className="space-y-3">
+                  {activities.map((activity) => (
+                    <div key={activity.id} className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 cursor-pointer">
+                      <div className="flex items-start space-x-3">
+                        <div className="text-lg">{getActivityIcon(activity.type)}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2">
+                            <h4 className="text-sm font-medium text-gray-900 truncate">
+                              {activity.title}
+                            </h4>
+                            <div className={`w-2 h-2 rounded-full ${getStatusColor(activity.status)}`}></div>
+                          </div>
+                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                            {activity.description}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {activity.timestamp}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="py-4">
+                {activities.slice(0, 3).map((activity) => (
+                  <div key={activity.id} className="flex justify-center py-2">
+                    <div className="relative">
+                      <div className="text-lg">{getActivityIcon(activity.type)}</div>
+                      <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${getStatusColor(activity.status)}`}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Drag Handle */}
+          <div
+            className="absolute top-0 right-0 w-1 h-full bg-gray-300 hover:bg-blue-500 cursor-col-resize transition-colors"
+            onMouseDown={handleDragStart}
+            style={{ cursor: isDragging ? 'col-resize' : 'col-resize' }}
+          >
+            <div className="absolute top-1/2 -translate-y-1/2 right-0 w-3 h-12 bg-gray-400 hover:bg-blue-600 rounded-l-lg flex items-center justify-center">
+              <div className="w-0.5 h-6 bg-white rounded"></div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Content Spacer */}
-      <div 
-        className={`transition-all duration-300 ${
-          isActivitiesExpanded ? 'ml-80' : 'ml-16'
-        } pt-16`}
+      <div
+        className="transition-all pt-16"
+        style={{
+          marginLeft: `${panelWidth}px`,
+          transitionDuration: isDragging ? '0ms' : '300ms'
+        }}
       >
         {/* This ensures content doesn't overlap with navigation */}
       </div>
