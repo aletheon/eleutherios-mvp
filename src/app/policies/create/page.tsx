@@ -2,12 +2,14 @@
 'use client';
 
 import React from 'react';
-import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
+import Navigation from '@/components/Navigation';
 
 export default function CreatePolicyPage() {
   return (
-    <DashboardLayout>
+    <>
+      <Navigation />
+      <main className="ml-16 pt-16 p-6 min-h-screen bg-gray-50">
       {/* Back to Policies Link */}
       <div className="mb-6">
         <Link href="/policies" className="text-blue-600 hover:text-blue-700 flex items-center">
@@ -158,6 +160,7 @@ export default function CreatePolicyPage() {
           </button>
         </div>
       </div>
-    </DashboardLayout>
+    </main>
+    </>
   );
 }

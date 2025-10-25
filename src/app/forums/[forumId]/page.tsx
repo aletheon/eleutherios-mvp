@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import { Users, Settings, ChevronRight, Code, Zap, Clock, CheckCircle, XCircle, Send, AlertCircle } from 'lucide-react';
 import { EleuScriptParser, RuleExecutionEngine } from '@/lib/eleuScript/parser';
+import Navigation from '@/components/Navigation';
 
 // Interface definitions
 interface PolicyRule {
@@ -493,7 +494,9 @@ export default function ForumDetailPage() {
   }
 
   return (
-    <div className="flex-1 flex">
+    <>
+      <Navigation />
+      <div className="flex-1 flex ml-16 pt-16">
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <div className="border-b px-6 py-4">
@@ -615,5 +618,6 @@ export default function ForumDetailPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

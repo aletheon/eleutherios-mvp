@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import Navigation from '@/components/Navigation';
 
 interface Service {
   id: string;
@@ -38,12 +39,10 @@ interface Service {
 export default function ServiceDetailPage({ params }: { params: Promise<{ serviceId: string }> }) {
   const router = useRouter();
   const resolvedParams = use(params);
-  const [isActivitiesExpanded, setIsActivitiesExpanded] = useState(false);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchService();
@@ -73,40 +72,6 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ servic
       setLoading(false);
     }
   };
-
-  const handleLogoClick = () => {
-    setIsActivitiesExpanded(!isActivitiesExpanded);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      router.push('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
-  };
-
-  const getUserInitials = () => {
-    if (!user?.profile?.name) return '?';
-    const names = user.profile.name.split(' ');
-    if (names.length >= 2) {
-      return names[0][0] + names[names.length - 1][0];
-    }
-    return names[0][0];
-  };
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (isUserMenuOpen && !target.closest('.user-menu-container')) {
-        setIsUserMenuOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isUserMenuOpen]);
 
   const getCategoryIcon = (category: string) => {
     switch (category.toLowerCase()) {
@@ -141,8 +106,8 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ servic
   if (loading) {
     return (
       <>
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Navigation />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center ml-16 pt-16">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Loading service...</p>
@@ -155,8 +120,8 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ servic
   if (error || !service) {
     return (
       <>
-        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Navigation />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center ml-16 pt-16">
           <div className="text-center">
             <div className="text-6xl mb-4">❌</div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Service Not Found</h1>
@@ -170,104 +135,12 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ servic
     );
   }
 
+  const cartItems = user?.profile?.shoppingCart || [];
+
   return (
     <>
-      {/* Material Icons Font */}
-      <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-
-      {/* Activities Panel */}
-      <div className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 z-50 transition-all duration-300 ${isActivitiesExpanded ? 'w-80' : 'w-16'}`}>
-        <div className="h-16 flex items-center justify-center cursor-pointer hover:bg-gray-50 border-b border-gray-200" onClick={handleLogoClick}></div>
-      </div>
-
-      {/* Navigation Background */}
-      <div className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-purple-600 to-blue-600 z-30"></div>
-
-      {/* Home Icon */}
-      <div className={`fixed top-0 h-16 z-40 transition-all duration-300 flex items-center ${isActivitiesExpanded ? 'left-80 w-20' : 'left-16 w-20'}`}>
-        <Link href="/" className="flex flex-col items-center space-y-1 px-3 py-2 mx-auto rounded-lg text-white/80 hover:text-white hover:bg-white/10">
-          <span className="material-icons text-2xl">home</span>
-          <span className="text-xs font-medium">Home</span>
-        </Link>
-      </div>
-
-      {/* Main Navigation */}
-      <nav className={`fixed top-0 right-0 h-16 z-40 transition-all duration-300 ${isActivitiesExpanded ? 'left-96' : 'left-36'}`}>
-        <div className="h-full flex items-center justify-between px-6">
-          <div className="flex-1 flex justify-center">
-            <div className="flex items-center space-x-8">
-              <Link href="/forums" className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10">
-                <span className="material-icons text-2xl">forum</span>
-                <span className="text-xs font-medium">Forums</span>
-              </Link>
-              <Link href="/services" className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg bg-white/20 text-white">
-                <span className="material-icons text-2xl">build</span>
-                <span className="text-xs font-medium">Services</span>
-              </Link>
-              <Link href="/policies" className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10">
-                <span className="material-icons text-2xl">account_balance</span>
-                <span className="text-xs font-medium">Policies</span>
-              </Link>
-              <Link href="/users" className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg text-white/80 hover:text-white hover:bg-white/10">
-                <span className="material-icons text-2xl">people_alt</span>
-                <span className="text-xs font-medium">Users</span>
-              </Link>
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-4">
-            <Link href="/cart" className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 relative">
-              <span className="material-icons text-2xl">shopping_cart</span>
-              {cartItems.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                  {cartItems.length}
-                </span>
-              )}
-            </Link>
-
-            <div className="relative user-menu-container">
-              <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="flex items-center space-x-2 text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10">
-                <span className="material-icons text-2xl">account_circle</span>
-                <span className="text-sm font-medium uppercase">{getUserInitials()}</span>
-                <span className="material-icons text-lg">{isUserMenuOpen ? 'expand_less' : 'expand_more'}</span>
-              </button>
-
-              {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-2xl border border-gray-200 py-2 z-[200]">
-                  <div className="px-4 py-3 border-b border-gray-200">
-                    <p className="text-sm font-semibold text-gray-900">{user?.profile?.name || 'User'}</p>
-                    <p className="text-xs text-gray-500">{user?.email}</p>
-                  </div>
-                  <div className="py-1">
-                    <Link href="/profile" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setIsUserMenuOpen(false)}>
-                      <span className="material-icons text-lg mr-3">person</span>Profile
-                    </Link>
-                    <Link href="/policies" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setIsUserMenuOpen(false)}>
-                      <span className="material-icons text-lg mr-3">account_balance</span>My Policies ({user?.profile?.activities?.policies?.length || 0})
-                    </Link>
-                    <Link href="/services" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setIsUserMenuOpen(false)}>
-                      <span className="material-icons text-lg mr-3">build</span>My Services ({user?.profile?.activities?.services?.length || 0})
-                    </Link>
-                    <Link href="/forums" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setIsUserMenuOpen(false)}>
-                      <span className="material-icons text-lg mr-3">forum</span>My Forums ({user?.profile?.activities?.forums?.length || 0})
-                    </Link>
-                    <Link href="/cart" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" onClick={() => setIsUserMenuOpen(false)}>
-                      <span className="material-icons text-lg mr-3">shopping_cart</span>Shopping Cart ({cartItems.length})
-                    </Link>
-                    <div className="border-t border-gray-200 my-1"></div>
-                    <button onClick={handleLogout} className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
-                      <span className="material-icons text-lg mr-3">logout</span>Logout
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <main className={`transition-all duration-300 ${isActivitiesExpanded ? 'ml-80' : 'ml-16'} pt-16 p-6 min-h-screen bg-gray-50`}>
+      <Navigation />
+      <main className="ml-16 pt-16 p-6 min-h-screen bg-gray-50">
         <div className="max-w-4xl mx-auto">
           {/* Breadcrumb */}
           <div className="mb-6 mt-8">

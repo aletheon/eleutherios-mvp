@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { doc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import Navigation from '@/components/Navigation';
 
 interface ForumForm {
   title: string;
@@ -169,7 +170,9 @@ export default function CreateForumPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
+    <>
+      <Navigation />
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8 ml-16 pt-16">
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -333,5 +336,6 @@ export default function CreateForumPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
