@@ -43,6 +43,7 @@ export default function CreateServicePage() {
   const [success, setSuccess] = useState(false);
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loadingPolicies, setLoadingPolicies] = useState(true);
+  const [policyError, setPolicyError] = useState<string | null>(null);
   const { user } = useAuth();
   const router = useRouter();
 
@@ -73,6 +74,7 @@ export default function CreateServicePage() {
   const fetchPolicies = async () => {
     try {
       setLoadingPolicies(true);
+      setPolicyError(null);
       const response = await fetch(
         'https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/policies.json'
       );
@@ -96,11 +98,17 @@ export default function CreateServicePage() {
           setPolicies([]);
         }
       } else {
-        console.error('Failed to fetch policies');
+        const errorMsg = response.status === 403
+          ? 'Access denied. Please deploy Firebase database rules to enable policy access.'
+          : `Failed to fetch policies (Status: ${response.status})`;
+        console.error(errorMsg);
+        setPolicyError(errorMsg);
         setPolicies([]);
       }
     } catch (error) {
+      const errorMsg = 'Unable to connect to policy database. Please check your connection.';
       console.error('Error fetching policies:', error);
+      setPolicyError(errorMsg);
       setPolicies([]);
     } finally {
       setLoadingPolicies(false);
@@ -515,6 +523,24 @@ export default function CreateServicePage() {
                 Select one or more policies that stakeholders or end users can consume through this service.
               </p>
 
+              {policyError && (
+                <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <span className="material-icons text-yellow-600 mt-0.5">warning</span>
+                    <div className="flex-1">
+                      <p className="text-yellow-800 font-medium mb-1">Unable to load policies</p>
+                      <p className="text-yellow-700 text-sm mb-3">{policyError}</p>
+                      <button
+                        onClick={fetchPolicies}
+                        className="text-sm text-yellow-800 hover:text-yellow-900 font-medium underline"
+                      >
+                        Try again
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {loadingPolicies ? (
                 <div className="space-y-2">
                   {[1, 2, 3].map(i => (
@@ -524,10 +550,16 @@ export default function CreateServicePage() {
                     </div>
                   ))}
                 </div>
-              ) : policies.length === 0 ? (
+              ) : policies.length === 0 && !policyError ? (
                 <div className="border border-gray-200 rounded-lg p-6 text-center">
                   <span className="material-icons text-gray-400 text-4xl mb-2">account_balance</span>
                   <p className="text-gray-600">No policies available. Create a policy first to link it to this service.</p>
+                </div>
+              ) : policies.length === 0 ? (
+                <div className="border border-gray-200 rounded-lg p-6 text-center">
+                  <span className="material-icons text-gray-400 text-4xl mb-2">info</span>
+                  <p className="text-gray-600 mb-2">You can still create a service without linking policies.</p>
+                  <p className="text-gray-500 text-sm">Policies can be added later once they are available.</p>
                 </div>
               ) : (
                 <div className="space-y-2 max-h-80 overflow-y-auto border border-gray-200 rounded-lg p-4">

@@ -1,0 +1,13 @@
+{
+  "rules": {
+    "policies": {
+      ".read": true,
+      ".write": "auth != null",
+      "$policyId": {
+        ".validate": "newData.hasChildren(['title', 'createdAt', 'status'])"
+      }
+    },
+    ".read": false,
+    ".write": false
+  }
+}
