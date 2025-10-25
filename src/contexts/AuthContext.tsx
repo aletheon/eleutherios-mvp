@@ -19,15 +19,43 @@ import {
 } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase'; // You'll need to create this config file
 
+// Cart item interface
+export interface CartItem {
+  id: string;
+  serviceId: string;
+  serviceName: string;
+  description: string;
+  price: number;
+  currency: string;
+  provider: string;
+  providerId: string;
+  category: string;
+  quantity: number;
+  addedBy: string; // User ID who added the item (doctor, patient, etc.)
+  addedByName: string;
+  addedAt: string;
+  forumId?: string; // Link to forum where this was prescribed
+  policyId?: string; // Link to governing policy
+  permissions: {
+    canRemove: string[]; // User IDs who can remove this item
+    canModify: string[]; // User IDs who can modify quantity
+  };
+  metadata?: {
+    dosage?: string;
+    frequency?: string;
+    duration?: string;
+    notes?: string;
+  };
+}
+
 // Extended user interface that includes Firestore profile data
 interface User extends FirebaseUser {
   profile?: {
     name: string;
-    role: 'person' | 'caseworker' | 'housing-officer' | 'healthcare-provider' | 'admin';
-    organization?: string;
     bio?: string;
     location?: string;
     website?: string;
+    verified?: boolean;
     certScore: {
       cooperation: number;
       engagement: number;
@@ -39,6 +67,8 @@ interface User extends FirebaseUser {
       forums: string[];
       services: string[];
     };
+    shoppingCart?: CartItem[];
+    consumedPolicies?: string[]; // Policies the user has consumed
     createdAt: string;
     updatedAt: string;
   };
@@ -54,6 +84,11 @@ interface AuthContextType {
   updateUserProfile: (profileData: Partial<User['profile']>) => Promise<void>;
   error: string | null;
   clearError: () => void;
+  // Cart management functions
+  addToCart: (item: Omit<CartItem, 'id' | 'addedAt'>) => Promise<void>;
+  removeFromCart: (itemId: string) => Promise<void>;
+  updateCartItem: (itemId: string, updates: Partial<CartItem>) => Promise<void>;
+  clearCart: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -86,10 +121,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Create default profile if it doesn't exist
         const defaultProfile: User['profile'] = {
           name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
-          role: 'person',
           bio: '',
           location: '',
           website: '',
+          verified: false,
           certScore: {
             cooperation: 0,
             engagement: 0,
@@ -101,6 +136,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             forums: [],
             services: []
           },
+          shoppingCart: [],
+          consumedPolicies: [],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
@@ -117,6 +154,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error('Failed to load user profile');
     }
   };
+
 
   // Register new user
   const register = async (email: string, password: string, profileData: Partial<User['profile']>) => {
@@ -135,11 +173,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Create Firestore profile
       const userProfile: User['profile'] = {
         name: profileData.name || firebaseUser.displayName || email.split('@')[0],
-        role: profileData.role || 'person',
-        organization: profileData.organization || '',
         bio: profileData.bio || '',
         location: profileData.location || '',
         website: profileData.website || '',
+        verified: false,
         certScore: {
           cooperation: 0,
           engagement: 0,
@@ -151,6 +188,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           forums: [],
           services: []
         },
+        shoppingCart: [],
+        consumedPolicies: [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
@@ -253,6 +292,189 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
   };
 
+  // Add item to cart
+  const addToCart = async (item: Omit<CartItem, 'id' | 'addedAt'>) => {
+    if (!user) {
+      throw new Error('No user logged in');
+    }
+
+    try {
+      setError(null);
+
+      const newCartItem: CartItem = {
+        ...item,
+        id: `cart-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        addedAt: new Date().toISOString()
+      };
+
+      const currentCart = user.profile?.shoppingCart || [];
+      const updatedCart = [...currentCart, newCartItem];
+
+      const userDocRef = doc(db, 'users', user.uid);
+      await updateDoc(userDocRef, {
+        shoppingCart: updatedCart,
+        updatedAt: new Date().toISOString()
+      });
+
+      // Update local state
+      setUser(prevUser => {
+        if (!prevUser) return null;
+        return {
+          ...prevUser,
+          profile: {
+            ...prevUser.profile!,
+            shoppingCart: updatedCart,
+            updatedAt: new Date().toISOString()
+          }
+        };
+      });
+
+      console.log('✓ Item added to cart:', newCartItem);
+    } catch (error: any) {
+      console.error('Add to cart error:', error);
+      setError(error.message || 'Failed to add item to cart');
+      throw error;
+    }
+  };
+
+  // Remove item from cart
+  const removeFromCart = async (itemId: string) => {
+    if (!user) {
+      throw new Error('No user logged in');
+    }
+
+    try {
+      setError(null);
+
+      const currentCart = user.profile?.shoppingCart || [];
+      const itemToRemove = currentCart.find(item => item.id === itemId);
+
+      if (!itemToRemove) {
+        throw new Error('Item not found in cart');
+      }
+
+      // Check permissions
+      if (!itemToRemove.permissions.canRemove.includes(user.uid)) {
+        throw new Error('You do not have permission to remove this item');
+      }
+
+      const updatedCart = currentCart.filter(item => item.id !== itemId);
+
+      const userDocRef = doc(db, 'users', user.uid);
+      await updateDoc(userDocRef, {
+        shoppingCart: updatedCart,
+        updatedAt: new Date().toISOString()
+      });
+
+      // Update local state
+      setUser(prevUser => {
+        if (!prevUser) return null;
+        return {
+          ...prevUser,
+          profile: {
+            ...prevUser.profile!,
+            shoppingCart: updatedCart,
+            updatedAt: new Date().toISOString()
+          }
+        };
+      });
+
+      console.log('✓ Item removed from cart:', itemId);
+    } catch (error: any) {
+      console.error('Remove from cart error:', error);
+      setError(error.message || 'Failed to remove item from cart');
+      throw error;
+    }
+  };
+
+  // Update cart item
+  const updateCartItem = async (itemId: string, updates: Partial<CartItem>) => {
+    if (!user) {
+      throw new Error('No user logged in');
+    }
+
+    try {
+      setError(null);
+
+      const currentCart = user.profile?.shoppingCart || [];
+      const itemToUpdate = currentCart.find(item => item.id === itemId);
+
+      if (!itemToUpdate) {
+        throw new Error('Item not found in cart');
+      }
+
+      // Check permissions
+      if (!itemToUpdate.permissions.canModify.includes(user.uid)) {
+        throw new Error('You do not have permission to modify this item');
+      }
+
+      const updatedCart = currentCart.map(item =>
+        item.id === itemId ? { ...item, ...updates } : item
+      );
+
+      const userDocRef = doc(db, 'users', user.uid);
+      await updateDoc(userDocRef, {
+        shoppingCart: updatedCart,
+        updatedAt: new Date().toISOString()
+      });
+
+      // Update local state
+      setUser(prevUser => {
+        if (!prevUser) return null;
+        return {
+          ...prevUser,
+          profile: {
+            ...prevUser.profile!,
+            shoppingCart: updatedCart,
+            updatedAt: new Date().toISOString()
+          }
+        };
+      });
+
+      console.log('✓ Cart item updated:', itemId);
+    } catch (error: any) {
+      console.error('Update cart item error:', error);
+      setError(error.message || 'Failed to update cart item');
+      throw error;
+    }
+  };
+
+  // Clear entire cart
+  const clearCart = async () => {
+    if (!user) {
+      throw new Error('No user logged in');
+    }
+
+    try {
+      setError(null);
+
+      const userDocRef = doc(db, 'users', user.uid);
+      await updateDoc(userDocRef, {
+        shoppingCart: [],
+        updatedAt: new Date().toISOString()
+      });
+
+      // Update local state
+      setUser(prevUser => {
+        if (!prevUser) return null;
+        return {
+          ...prevUser,
+          profile: {
+            ...prevUser.profile!,
+            shoppingCart: [],
+            updatedAt: new Date().toISOString()
+          }
+        };
+      });
+
+      console.log('✓ Cart cleared');
+    } catch (error: any) {
+      console.error('Clear cart error:', error);
+      setError(error.message || 'Failed to clear cart');
+      throw error;
+    }
+  };
+
   // Listen for auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -286,7 +508,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     resetPassword,
     updateUserProfile,
     error,
-    clearError
+    clearError,
+    addToCart,
+    removeFromCart,
+    updateCartItem,
+    clearCart
   };
 
   return (

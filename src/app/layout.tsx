@@ -1,8 +1,12 @@
 // src/app/layout.tsx
-import { DashboardProvider } from '@/contexts/DashboardContext'
-import { ActivitiesProvider } from '@/contexts/ActivitiesContext'
+import { Providers } from '@/components/Providers'
 import './globals.css'
-import { AuthProvider } from '@/contexts/AuthContext'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Eleutherios - Policy and Service Marketplace',
+  description: 'Join the policy and service marketplace',
+}
 
 export default function RootLayout({
   children,
@@ -12,19 +16,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link 
-          href="https://fonts.googleapis.com/icon?family=Material+Icons" 
-          rel="stylesheet" 
+        <link
+          href="https://fonts.googleapis.com/icon?family=Material+Icons"
+          rel="stylesheet"
         />
       </head>
       <body>
-        <AuthProvider>
-          <ActivitiesProvider>
-            <DashboardProvider>
-              {children}
-            </DashboardProvider>
-          </ActivitiesProvider>
-        </AuthProvider>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   )

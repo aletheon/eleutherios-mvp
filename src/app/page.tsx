@@ -2,11 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 const DashboardPage = () => {
   const [isActivitiesExpanded, setIsActivitiesExpanded] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const router = useRouter();
 
-  // ADD THESE CLICK HANDLERS
+  // Click handlers
   const handleCreatePolicy = () => {
     console.log('Create Policy clicked from root page');
     window.location.href = '/policies/create';
@@ -16,6 +21,37 @@ const DashboardPage = () => {
     console.log('Create Service clicked from root page');
     window.location.href = '/services/create';
   };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  const getUserInitials = () => {
+    if (!user?.profile?.name) return '?';
+    const names = user.profile.name.split(' ');
+    if (names.length >= 2) {
+      return names[0][0] + names[names.length - 1][0];
+    }
+    return names[0][0];
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (isUserMenuOpen && !target.closest('.user-menu-container')) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isUserMenuOpen]);
 
   // Mock activities data
   const activities = [
@@ -126,7 +162,7 @@ const DashboardPage = () => {
       <div className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-purple-600 to-blue-600 z-30"></div>
 
       {/* Home Icon - Left Edge */}
-      <div 
+      <div
         className={`fixed top-0 h-16 z-40 transition-all duration-300 flex items-center ${
           isActivitiesExpanded ? 'left-80 w-20' : 'left-16 w-20'
         }`}
@@ -138,7 +174,7 @@ const DashboardPage = () => {
       </div>
 
       {/* Main Navigation Bar */}
-      <nav 
+      <nav
         className={`fixed top-0 right-0 h-16 z-40 transition-all duration-300 ${
           isActivitiesExpanded ? 'left-96' : 'left-36'
         }`}
@@ -171,13 +207,93 @@ const DashboardPage = () => {
 
           {/* Right Side - Shopping Cart and User Menu */}
           <div className="flex items-center space-x-4">
-            <button className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10">
+            <Link href="/cart" className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10">
               <span className="material-icons text-2xl">shopping_cart</span>
-            </button>
+            </Link>
 
-            <div className="flex items-center space-x-2 text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10">
-              <span className="material-icons text-2xl">account_circle</span>
-              <span className="text-sm font-medium">RK</span>
+            {/* User Dropdown Menu */}
+            <div className="relative user-menu-container">
+              <button
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center space-x-2 text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10"
+              >
+                <span className="material-icons text-2xl">account_circle</span>
+                <span className="text-sm font-medium uppercase">{getUserInitials()}</span>
+                <span className="material-icons text-lg">
+                  {isUserMenuOpen ? 'expand_less' : 'expand_more'}
+                </span>
+              </button>
+
+              {/* Dropdown Menu */}
+              {isUserMenuOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-2xl border border-gray-200 py-2 z-[200]" style={{ boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)' }}>
+                  {/* User Info Header */}
+                  <div className="px-4 py-3 border-b border-gray-200">
+                    <p className="text-sm font-semibold text-gray-900">
+                      {user?.profile?.name || 'User'}
+                    </p>
+                    <p className="text-xs text-gray-500">{user?.email}</p>
+                  </div>
+
+                  {/* Menu Items */}
+                  <div className="py-1">
+                    <Link
+                      href="/profile"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <span className="material-icons text-lg mr-3">person</span>
+                      Profile
+                    </Link>
+
+                    <Link
+                      href="/policies"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <span className="material-icons text-lg mr-3">account_balance</span>
+                      My Policies ({user?.profile?.activities?.policies?.length || 0})
+                    </Link>
+
+                    <Link
+                      href="/services"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <span className="material-icons text-lg mr-3">build</span>
+                      My Services ({user?.profile?.activities?.services?.length || 0})
+                    </Link>
+
+                    <Link
+                      href="/forums"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <span className="material-icons text-lg mr-3">forum</span>
+                      My Forums ({user?.profile?.activities?.forums?.length || 0})
+                    </Link>
+
+                    <Link
+                      href="/cart"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <span className="material-icons text-lg mr-3">shopping_cart</span>
+                      Shopping Cart ({user?.profile?.shoppingCart?.length || 0})
+                    </Link>
+
+                    <div className="border-t border-gray-200 my-1"></div>
+
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <span className="material-icons text-lg mr-3">logout</span>
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -233,10 +349,9 @@ const DashboardPage = () => {
                     </button>
                   </div>
                   {/* FIXED: Added onClick handler */}
-                  <button 
+                  <button
                     onClick={handleCreatePolicy}
                     className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center space-x-2"
-                    style={{ zIndex: 999 }}
                   >
                     <span>+</span>
                     <span>Create Policy</span>
@@ -248,10 +363,9 @@ const DashboardPage = () => {
             <div className="p-12 text-center">
               <p className="text-gray-500 mb-4">No policies created yet</p>
               {/* FIXED: Added onClick handler */}
-              <button 
+              <button
                 onClick={handleCreatePolicy}
                 className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
-                style={{ zIndex: 999 }}
               >
                 + Create Your First Policy
               </button>
@@ -273,10 +387,9 @@ const DashboardPage = () => {
                     </button>
                   </div>
                   {/* FIXED: Added onClick handler */}
-                  <button 
+                  <button
                     onClick={handleCreateService}
                     className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center space-x-2"
-                    style={{ zIndex: 999 }}
                   >
                     <span>+</span>
                     <span>Create Service</span>
@@ -288,10 +401,9 @@ const DashboardPage = () => {
             <div className="p-12 text-center">
               <p className="text-gray-500 mb-4">No services created yet</p>
               {/* FIXED: Added onClick handler */}
-              <button 
+              <button
                 onClick={handleCreateService}
                 className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
-                style={{ zIndex: 999 }}
               >
                 + Create Your First Service
               </button>

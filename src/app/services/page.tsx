@@ -1,49 +1,44 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function ServicesPage() {
   const [isActivitiesExpanded, setIsActivitiesExpanded] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [services, setServices] = useState<any[]>([]);
+  const [loadingServices, setLoadingServices] = useState(true);
+  const { user, logout } = useAuth();
+  const router = useRouter();
 
-  const mockServices = [
-    {
-      id: 'stripe-payment',
-      title: 'Stripe Payment Service',
-      description: 'Secure payment processing for housing and healthcare services',
-      provider: 'System',
-      price: 'Free',
-      category: 'Payment',
-      status: 'active'
-    },
-    {
-      id: 'housing-grants',
-      title: 'Emergency Housing Grants',
-      description: 'Financial assistance for temporary accommodation',
-      provider: 'Housing Department',
-      price: '$500-2000',
-      category: 'Housing',
-      status: 'active'
-    },
-    {
-      id: 'healthcare-enrollment',
-      title: 'Healthcare Enrollment',
-      description: 'Assistance with healthcare system registration and access',
-      provider: 'Health Services',
-      price: 'Free',
-      category: 'Healthcare',
-      status: 'active'
-    },
-    {
-      id: 'food-assistance',
-      title: 'Food Bank Services',
-      description: 'Weekly food distribution and nutrition support',
-      provider: 'Community Food Bank',
-      price: 'Free',
-      category: 'Food Security',
-      status: 'active'
-    }
-  ];
+  // Fetch services from Firestore
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const servicesRef = collection(db, 'services');
+        const q = query(servicesRef, orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+
+        const fetchedServices = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        setServices(fetchedServices);
+        console.log('✓ Loaded services:', fetchedServices.length);
+      } catch (error) {
+        console.error('Error fetching services:', error);
+      } finally {
+        setLoadingServices(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
 
   // Mock activities data
   const activities = [
@@ -62,6 +57,37 @@ export default function ServicesPage() {
   const handleLogoClick = () => {
     setIsActivitiesExpanded(!isActivitiesExpanded);
   };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  const getUserInitials = () => {
+    if (!user?.profile?.name) return '?';
+    const names = user.profile.name.split(' ');
+    if (names.length >= 2) {
+      return names[0][0] + names[names.length - 1][0];
+    }
+    return names[0][0];
+  };
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (isUserMenuOpen && !target.closest('.user-menu-container')) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isUserMenuOpen]);
 
   const getActivityIcon = (type: string) => {
     switch (type) {
@@ -218,13 +244,93 @@ export default function ServicesPage() {
 
           {/* Right Side - Shopping Cart and User Menu */}
           <div className="flex items-center space-x-4">
-            <button className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10">
+            <Link href="/cart" className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10">
               <span className="material-icons text-2xl">shopping_cart</span>
-            </button>
+            </Link>
 
-            <div className="flex items-center space-x-2 text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10">
-              <span className="material-icons text-2xl">account_circle</span>
-              <span className="text-sm font-medium">RK</span>
+            {/* User Dropdown Menu */}
+            <div className="relative user-menu-container">
+              <button
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center space-x-2 text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10"
+              >
+                <span className="material-icons text-2xl">account_circle</span>
+                <span className="text-sm font-medium uppercase">{getUserInitials()}</span>
+                <span className="material-icons text-lg">
+                  {isUserMenuOpen ? 'expand_less' : 'expand_more'}
+                </span>
+              </button>
+
+              {/* Dropdown Menu */}
+              {isUserMenuOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-2xl border border-gray-200 py-2 z-[200]" style={{ boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2)' }}>
+                  {/* User Info Header */}
+                  <div className="px-4 py-3 border-b border-gray-200">
+                    <p className="text-sm font-semibold text-gray-900">
+                      {user?.profile?.name || 'User'}
+                    </p>
+                    <p className="text-xs text-gray-500">{user?.email}</p>
+                  </div>
+
+                  {/* Menu Items */}
+                  <div className="py-1">
+                    <Link
+                      href="/profile"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <span className="material-icons text-lg mr-3">person</span>
+                      Profile
+                    </Link>
+
+                    <Link
+                      href="/policies"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <span className="material-icons text-lg mr-3">account_balance</span>
+                      My Policies ({user?.profile?.activities?.policies?.length || 0})
+                    </Link>
+
+                    <Link
+                      href="/services"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <span className="material-icons text-lg mr-3">build</span>
+                      My Services ({user?.profile?.activities?.services?.length || 0})
+                    </Link>
+
+                    <Link
+                      href="/forums"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <span className="material-icons text-lg mr-3">forum</span>
+                      My Forums ({user?.profile?.activities?.forums?.length || 0})
+                    </Link>
+
+                    <Link
+                      href="/cart"
+                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <span className="material-icons text-lg mr-3">shopping_cart</span>
+                      Shopping Cart ({user?.profile?.shoppingCart?.length || 0})
+                    </Link>
+
+                    <div className="border-t border-gray-200 my-1"></div>
+
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <span className="material-icons text-lg mr-3">logout</span>
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -245,51 +351,82 @@ export default function ServicesPage() {
                 Services represent the functional components that deliver value within the PFSD model. They can be connected to Policies and instantiate behavior.
               </p>
             </div>
-            <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
+            <Link href="/services/create" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
               <span className="material-icons text-lg">add</span>
               <span>Create Service</span>
-            </button>
+            </Link>
           </div>
 
           {/* Services Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {mockServices.map((service) => (
-              <div key={service.id} className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="text-3xl">{getCategoryIcon(service.category)}</div>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(service.category)}`}>
-                    {service.category}
-                  </span>
-                </div>
-                
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{service.title}</h3>
-                <p className="text-gray-600 text-sm mb-4">{service.description}</p>
-                
-                <div className="space-y-2 text-sm text-gray-500 mb-4">
-                  <div className="flex justify-between">
-                    <span>Provider:</span>
-                    <span className="font-medium">{service.provider}</span>
+          {loadingServices ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-gray-500">Loading services...</div>
+            </div>
+          ) : services.length === 0 ? (
+            <div className="bg-white rounded-lg shadow p-12 text-center">
+              <div className="text-6xl mb-4">🔧</div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No services available yet</h3>
+              <p className="text-gray-600 mb-6">
+                Be the first to create a service! Healthcare providers can create medications and services for patients.
+              </p>
+              <Link
+                href="/services/create"
+                className="inline-flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+              >
+                <span className="material-icons">add</span>
+                <span>Create First Service</span>
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {services.map((service) => (
+                <div key={service.id} className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="text-3xl">{getCategoryIcon(service.category)}</div>
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(service.category)}`}>
+                      {service.category}
+                    </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Price:</span>
-                    <span className="font-medium text-green-600">{service.price}</span>
+
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{service.serviceName || service.title}</h3>
+                  <p className="text-gray-600 text-sm mb-4">{service.description}</p>
+
+                  <div className="space-y-2 text-sm text-gray-500 mb-4">
+                    <div className="flex justify-between">
+                      <span>Provider:</span>
+                      <span className="font-medium">{service.provider}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Price:</span>
+                      <span className="font-medium text-green-600">
+                        {typeof service.price === 'number'
+                          ? `$${service.price.toFixed(2)} ${service.currency || 'NZD'}`
+                          : service.price}
+                      </span>
+                    </div>
+                    {service.stock !== undefined && (
+                      <div className="flex justify-between">
+                        <span>Stock:</span>
+                        <span className="font-medium">{service.stock} {service.unit}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex space-x-2">
+                    <Link
+                      href={`/services/${service.id}`}
+                      className="flex-1 bg-blue-600 text-white text-center py-2 rounded-lg hover:bg-blue-700 text-sm"
+                    >
+                      View Details
+                    </Link>
+                    <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
+                      Request
+                    </button>
                   </div>
                 </div>
-                
-                <div className="flex space-x-2">
-                  <Link 
-                    href={`/services/${service.id}`}
-                    className="flex-1 bg-blue-600 text-white text-center py-2 rounded-lg hover:bg-blue-700 text-sm"
-                  >
-                    View Details
-                  </Link>
-                  <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
-                    Request
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Service Categories */}
           <div className="bg-white rounded-lg shadow p-6 mb-8">
