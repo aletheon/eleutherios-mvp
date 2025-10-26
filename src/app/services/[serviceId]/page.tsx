@@ -135,8 +135,6 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ servic
     );
   }
 
-  const cartItems = user?.profile?.shoppingCart || [];
-
   return (
     <>
       <Navigation />
