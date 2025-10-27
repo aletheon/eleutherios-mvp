@@ -119,7 +119,7 @@ export default function CreateServicePage() {
     const { name, value, type } = e.target;
 
     if (name.startsWith('metadata.')) {
-      const metadataKey = name.split('.')[1];
+      const metadataKey = name.split('.')[1] as string;
       setFormData(prev => ({
         ...prev,
         metadata: {
