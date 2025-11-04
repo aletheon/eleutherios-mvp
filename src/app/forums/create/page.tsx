@@ -91,7 +91,7 @@ export default function CreateForumPage() {
     }
 
     if (!user || (user.profile?.role !== 'doctor' && user.profile?.role !== 'admin')) {
-      setError('Only doctors can create consultation forums');
+      setError('Only doctors can create forums');
       return;
     }
 
@@ -177,7 +177,7 @@ export default function CreateForumPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-            Create Consultation Forum
+            Create Forum
           </h1>
           <p className="mt-2 text-gray-600">
             Start a new healthcare coordination space with your patient
@@ -196,7 +196,7 @@ export default function CreateForumPage() {
             {/* Forum Title */}
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                Consultation Title
+                Forum Title
               </label>
               <input
                 id="title"
@@ -207,7 +207,7 @@ export default function CreateForumPage() {
                 className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
                   validationErrors.title ? 'border-red-300' : 'border-gray-300'
                 }`}
-                placeholder="e.g., Diabetes Management Consultation"
+                placeholder="e.g., Diabetes Management Forum"
               />
               {validationErrors.title && (
                 <p className="mt-1 text-sm text-red-600">{validationErrors.title}</p>
@@ -228,7 +228,7 @@ export default function CreateForumPage() {
                 className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
                   validationErrors.description ? 'border-red-300' : 'border-gray-300'
                 }`}
-                placeholder="Describe the purpose of this consultation..."
+                placeholder="Describe the purpose of this forum..."
               />
               {validationErrors.description && (
                 <p className="mt-1 text-sm text-red-600">{validationErrors.description}</p>
@@ -247,7 +247,7 @@ export default function CreateForumPage() {
                 onChange={handleInputChange}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               >
-                <option value="healthcare">Healthcare - Medical consultation</option>
+                <option value="healthcare">Healthcare - Medical coordination</option>
                 <option value="housing">Housing - Accommodation coordination</option>
                 <option value="food">Food - Nutrition support</option>
                 <option value="general">General - Other coordination</option>
@@ -306,7 +306,7 @@ export default function CreateForumPage() {
                 disabled={loading || (user?.profile?.role !== 'doctor' && user?.profile?.role !== 'admin')}
                 className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
               >
-                {loading ? 'Creating Forum...' : 'Create Consultation Forum'}
+                {loading ? 'Creating Forum...' : 'Create Forum'}
               </button>
             </div>
           </form>
