@@ -1,20 +1,28 @@
 // src/app/forums/create/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { doc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, setDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Navigation from '@/components/Navigation';
+
+interface Service {
+  id: string;
+  serviceName?: string;
+  title?: string;
+  description: string;
+  provider: string;
+  category?: string;
+}
 
 interface ForumForm {
   title: string;
   description: string;
-  category: 'healthcare' | 'housing' | 'food' | 'general';
-  patientEmail: string;
-  additionalStakeholders: string[];
+  tags: string[];
+  selectedServices: Service[];
 }
 
 export default function CreateForumPage() {
@@ -23,13 +31,60 @@ export default function CreateForumPage() {
   const [formData, setFormData] = useState<ForumForm>({
     title: '',
     description: '',
-    category: 'healthcare',
-    patientEmail: '',
-    additionalStakeholders: []
+    tags: [],
+    selectedServices: []
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [tagInput, setTagInput] = useState('');
+  const [services, setServices] = useState<Service[]>([]);
+  const [filteredServices, setFilteredServices] = useState<Service[]>([]);
+  const [serviceSearchTerm, setServiceSearchTerm] = useState('');
+  const [showServiceDropdown, setShowServiceDropdown] = useState(false);
+
+  // Fetch services on component mount
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const servicesRef = collection(db, 'services');
+        const q = query(servicesRef, orderBy('createdAt', 'desc'));
+        const querySnapshot = await getDocs(q);
+
+        const fetchedServices = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          serviceName: doc.data().serviceName,
+          title: doc.data().title,
+          description: doc.data().description,
+          provider: doc.data().provider,
+          category: doc.data().category
+        })) as Service[];
+
+        setServices(fetchedServices);
+        setFilteredServices(fetchedServices);
+      } catch (error) {
+        console.error('Error fetching services:', error);
+      }
+    };
+
+    fetchServices();
+  }, []);
+
+  // Filter services based on search term
+  useEffect(() => {
+    if (serviceSearchTerm.trim() === '') {
+      setFilteredServices(services);
+    } else {
+      const filtered = services.filter(service => {
+        const serviceName = service.serviceName || service.title || '';
+        const searchLower = serviceSearchTerm.toLowerCase();
+        return serviceName.toLowerCase().includes(searchLower) ||
+               service.description.toLowerCase().includes(searchLower) ||
+               service.provider.toLowerCase().includes(searchLower);
+      });
+      setFilteredServices(filtered);
+    }
+  }, [serviceSearchTerm, services]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -46,6 +101,44 @@ export default function CreateForumPage() {
     }
   };
 
+  const handleAddTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && tagInput.trim()) {
+      e.preventDefault();
+      if (!formData.tags.includes(tagInput.trim())) {
+        setFormData(prev => ({
+          ...prev,
+          tags: [...prev.tags, tagInput.trim()]
+        }));
+      }
+      setTagInput('');
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
+  };
+
+  const handleAddService = (service: Service) => {
+    if (!formData.selectedServices.find(s => s.id === service.id)) {
+      setFormData(prev => ({
+        ...prev,
+        selectedServices: [...prev.selectedServices, service]
+      }));
+    }
+    setServiceSearchTerm('');
+    setShowServiceDropdown(false);
+  };
+
+  const handleRemoveService = (serviceId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      selectedServices: prev.selectedServices.filter(s => s.id !== serviceId)
+    }));
+  };
+
   const validateForm = () => {
     const errors: Record<string, string> = {};
 
@@ -57,29 +150,8 @@ export default function CreateForumPage() {
       errors.description = 'Description must be at least 10 characters';
     }
 
-    if (!formData.patientEmail) {
-      errors.patientEmail = 'Patient email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.patientEmail)) {
-      errors.patientEmail = 'Invalid email address';
-    }
-
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
-  };
-
-  const findUserByEmail = async (email: string) => {
-    const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('email', '==', email));
-    const querySnapshot = await getDocs(q);
-
-    if (querySnapshot.empty) {
-      return null;
-    }
-
-    return {
-      id: querySnapshot.docs[0].id,
-      ...querySnapshot.docs[0].data()
-    };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -90,59 +162,50 @@ export default function CreateForumPage() {
       return;
     }
 
-    if (!user || (user.profile?.role !== 'doctor' && user.profile?.role !== 'admin')) {
-      setError('Only doctors can create forums');
+    if (!user) {
+      setError('You must be logged in to create a forum');
       return;
     }
 
     try {
       setLoading(true);
 
-      // Find patient by email
-      const patient = await findUserByEmail(formData.patientEmail);
-      if (!patient) {
-        setError(`No patient found with email: ${formData.patientEmail}`);
-        setLoading(false);
-        return;
-      }
-
-      if (patient.role !== 'patient') {
-        setError('The specified user is not registered as a patient');
-        setLoading(false);
-        return;
-      }
-
       // Create forum
       const forumId = `forum-${Date.now()}`;
+
+      // Build participants list from creator and selected services
+      const participants = [
+        {
+          userId: user.uid,
+          name: user.profile?.name || 'Unknown User',
+          role: user.profile?.role || 'user',
+          permissions: ['create', 'invite', 'moderate', 'post'],
+          joinedAt: new Date().toISOString()
+        },
+        ...formData.selectedServices.map(service => ({
+          userId: service.id,
+          name: service.serviceName || service.title || 'Unknown Service',
+          role: 'service',
+          permissions: ['view', 'post'],
+          joinedAt: new Date().toISOString()
+        }))
+      ];
+
       const forum = {
         id: forumId,
         title: formData.title,
         description: formData.description,
-        category: formData.category,
+        tags: formData.tags,
         createdBy: user.uid,
-        createdByName: user.profile?.name || 'Unknown Doctor',
-        createdByRole: user.profile?.role || 'doctor',
-        patientId: patient.id,
-        patientName: patient.name,
-        participants: [
-          {
-            userId: user.uid,
-            name: user.profile?.name || 'Unknown',
-            role: 'doctor',
-            permissions: ['create', 'invite', 'prescribe', 'add_to_cart'],
-            joinedAt: new Date().toISOString()
-          },
-          {
-            userId: patient.id,
-            name: patient.name,
-            role: 'patient',
-            permissions: ['view', 'approve', 'request'],
-            joinedAt: new Date().toISOString()
-          }
-        ],
-        stakeholders: ['Doctor', 'Patient'],
+        createdByName: user.profile?.name || 'Unknown User',
+        createdByRole: user.profile?.role || 'user',
+        participants,
+        serviceMembers: formData.selectedServices.map(s => ({
+          id: s.id,
+          name: s.serviceName || s.title,
+          provider: s.provider
+        })),
         status: 'active',
-        policyId: patient.defaultPolicies?.[0] || null, // Link to patient's default policy
         rules: [],
         messages: [],
         createdAt: new Date().toISOString(),
@@ -164,11 +227,6 @@ export default function CreateForumPage() {
     }
   };
 
-  // Auto-fill for doctors
-  if (user?.profile?.role === 'doctor') {
-    // Could pre-populate from recent patients
-  }
-
   return (
     <>
       <Navigation />
@@ -180,7 +238,7 @@ export default function CreateForumPage() {
             Create Forum
           </h1>
           <p className="mt-2 text-gray-600">
-            Start a new healthcare coordination space with your patient
+            Create a new coordination space for collaboration
           </p>
         </div>
 
@@ -207,7 +265,7 @@ export default function CreateForumPage() {
                 className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
                   validationErrors.title ? 'border-red-300' : 'border-gray-300'
                 }`}
-                placeholder="e.g., Diabetes Management Forum"
+                placeholder="e.g., Project Coordination Forum"
               />
               {validationErrors.title && (
                 <p className="mt-1 text-sm text-red-600">{validationErrors.title}</p>
@@ -235,47 +293,116 @@ export default function CreateForumPage() {
               )}
             </div>
 
-            {/* Category */}
+            {/* Tags */}
             <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700">
-                Category
-              </label>
-              <select
-                id="category"
-                name="category"
-                value={formData.category}
-                onChange={handleInputChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              >
-                <option value="healthcare">Healthcare - Medical coordination</option>
-                <option value="housing">Housing - Accommodation coordination</option>
-                <option value="food">Food - Nutrition support</option>
-                <option value="general">General - Other coordination</option>
-              </select>
-            </div>
-
-            {/* Patient Email */}
-            <div>
-              <label htmlFor="patientEmail" className="block text-sm font-medium text-gray-700">
-                Patient Email Address
+              <label htmlFor="tags" className="block text-sm font-medium text-gray-700">
+                Tags
               </label>
               <input
-                id="patientEmail"
-                name="patientEmail"
-                type="email"
-                value={formData.patientEmail}
-                onChange={handleInputChange}
-                className={`mt-1 block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm ${
-                  validationErrors.patientEmail ? 'border-red-300' : 'border-gray-300'
-                }`}
-                placeholder="patient@example.com"
+                id="tags"
+                name="tags"
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleAddTag}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                placeholder="Type a tag and press Enter"
               />
-              {validationErrors.patientEmail && (
-                <p className="mt-1 text-sm text-red-600">{validationErrors.patientEmail}</p>
-              )}
               <p className="mt-1 text-xs text-gray-500">
-                Patient must be registered on the platform
+                Press Enter to add tags
               </p>
+              {formData.tags.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {formData.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
+                    >
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTag(tag)}
+                        className="ml-2 text-blue-600 hover:text-blue-800"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Service Selection */}
+            <div>
+              <label htmlFor="serviceSearch" className="block text-sm font-medium text-gray-700">
+                Add Services as Members
+              </label>
+              <div className="relative">
+                <input
+                  id="serviceSearch"
+                  type="text"
+                  value={serviceSearchTerm}
+                  onChange={(e) => {
+                    setServiceSearchTerm(e.target.value);
+                    setShowServiceDropdown(true);
+                  }}
+                  onFocus={() => setShowServiceDropdown(true)}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder="Search for services..."
+                />
+
+                {/* Service Dropdown */}
+                {showServiceDropdown && filteredServices.length > 0 && (
+                  <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base overflow-auto focus:outline-none sm:text-sm border border-gray-300">
+                    {filteredServices.slice(0, 10).map((service) => (
+                      <div
+                        key={service.id}
+                        onClick={() => handleAddService(service)}
+                        className="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-blue-50"
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-medium text-gray-900">
+                            {service.serviceName || service.title}
+                          </span>
+                          <span className="text-sm text-gray-500 truncate">
+                            {service.provider} • {service.description?.substring(0, 60)}...
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Search and select services to add as forum members
+              </p>
+
+              {/* Selected Services */}
+              {formData.selectedServices.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-sm font-medium text-gray-700">Selected Services:</p>
+                  {formData.selectedServices.map((service) => (
+                    <div
+                      key={service.id}
+                      className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-md"
+                    >
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-900">
+                          {service.serviceName || service.title}
+                        </p>
+                        <p className="text-xs text-gray-500">{service.provider}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveService(service.id)}
+                        className="ml-2 text-red-600 hover:text-red-800"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Info Box */}
@@ -284,11 +411,11 @@ export default function CreateForumPage() {
                 <strong>✓ This forum will include:</strong>
               </p>
               <ul className="mt-2 text-xs text-blue-700 space-y-1 ml-4">
-                <li>• You (doctor) with full coordination permissions</li>
-                <li>• The patient with view and approval permissions</li>
-                <li>• Patient's default healthcare policy as governance framework</li>
-                <li>• Ability to invite pharmacists via EleuScript rules</li>
-                <li>• Shopping cart for medication coordination</li>
+                <li>• You as the forum creator with full moderation permissions</li>
+                <li>• Selected services as forum members with participation permissions</li>
+                <li>• Real-time messaging and collaboration features</li>
+                <li>• Ability to add custom rules and governance policies</li>
+                <li>• Options to invite additional members and services</li>
               </ul>
             </div>
 
@@ -303,7 +430,7 @@ export default function CreateForumPage() {
 
               <button
                 type="submit"
-                disabled={loading || (user?.profile?.role !== 'doctor' && user?.profile?.role !== 'admin')}
+                disabled={loading}
                 className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-lg hover:from-purple-700 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
               >
                 {loading ? 'Creating Forum...' : 'Create Forum'}
@@ -318,19 +445,19 @@ export default function CreateForumPage() {
           <ol className="space-y-2 text-sm text-gray-700">
             <li className="flex items-start">
               <span className="font-bold text-blue-600 mr-2">1.</span>
-              <span>Forum will be created with you and the patient as participants</span>
+              <span>Forum will be created with you and your selected services as initial members</span>
             </li>
             <li className="flex items-start">
               <span className="font-bold text-blue-600 mr-2">2.</span>
-              <span>Use EleuScript rules to invite pharmacists: <code className="bg-gray-100 px-1 rounded text-xs">rule add pharmacy -&gt; Policy(...)</code></span>
+              <span>Use EleuScript rules to define governance and add policies as needed</span>
             </li>
             <li className="flex items-start">
               <span className="font-bold text-blue-600 mr-2">3.</span>
-              <span>Coordinate care through real-time messaging and service activation</span>
+              <span>Collaborate through real-time messaging and coordinate service activation</span>
             </li>
             <li className="flex items-start">
               <span className="font-bold text-blue-600 mr-2">4.</span>
-              <span>Add medications to patient's shopping cart with governance controls</span>
+              <span>Invite additional members and configure permissions based on your needs</span>
             </li>
           </ol>
         </div>
