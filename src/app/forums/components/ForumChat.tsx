@@ -4,13 +4,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/auth';
 import { db } from '@/lib/firebase';
-import { 
-  collection, 
-  addDoc, 
-  query, 
-  orderBy, 
-  onSnapshot, 
-  serverTimestamp 
+import {
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  onSnapshot,
+  serverTimestamp,
+  doc,
+  getDoc
 } from 'firebase/firestore';
 import { EleuScriptParser } from '@/lib/eleuScript/parser';
 import { PolicyExecutor } from '@/lib/eleuScript/policyExecutor';
@@ -35,6 +37,8 @@ export default function ForumChat({ forumId }: ForumChatProps) {
   const [input, setInput] = useState('');
   const [isExecuting, setIsExecuting] = useState(false);
   const [rulePreview, setRulePreview] = useState<any>(null);
+  const [canPost, setCanPost] = useState(false);
+  const [permissionCheckLoading, setPermissionCheckLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,13 +52,56 @@ export default function ForumChat({ forumId }: ForumChatProps) {
         id: doc.id,
         ...doc.data()
       } as Message));
-      
+
       setMessages(messageData);
       setTimeout(scrollToBottom, 100);
     });
 
     return () => unsubscribe();
   }, [forumId]);
+
+  // Check if user has permission to post
+  useEffect(() => {
+    const checkPostPermission = async () => {
+      if (!user) {
+        setCanPost(false);
+        setPermissionCheckLoading(false);
+        return;
+      }
+
+      try {
+        const forumDoc = await getDoc(doc(db, 'forums', forumId));
+
+        if (!forumDoc.exists()) {
+          setCanPost(false);
+          setPermissionCheckLoading(false);
+          return;
+        }
+
+        const forumData = forumDoc.data();
+        const participants = forumData.participants || [];
+
+        // Find current user in participants
+        const userParticipant = participants.find(
+          (p: any) => p.userId === user.uid
+        );
+
+        // Check if user is a participant and has 'post' permission
+        const hasPostPermission = userParticipant &&
+          Array.isArray(userParticipant.permissions) &&
+          userParticipant.permissions.includes('post');
+
+        setCanPost(hasPostPermission);
+        setPermissionCheckLoading(false);
+      } catch (error) {
+        console.error('Error checking post permission:', error);
+        setCanPost(false);
+        setPermissionCheckLoading(false);
+      }
+    };
+
+    checkPostPermission();
+  }, [forumId, user]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -77,6 +124,12 @@ export default function ForumChat({ forumId }: ForumChatProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || !user) return;
+
+    // Check if user has permission to post
+    if (!canPost) {
+      console.warn('User does not have permission to post in this forum');
+      return;
+    }
 
     const messageText = input.trim();
     setInput('');
@@ -256,34 +309,48 @@ This forum can now coordinate additional governance functions through the new po
 
       {/* Input Form */}
       <form onSubmit={handleSubmit} className="border-t p-4">
+        {!canPost && !permissionCheckLoading && (
+          <div className="mb-3 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-2 rounded-lg text-sm">
+            <strong>⚠️ Posting Restricted:</strong> You are not a member of this forum. Only forum members with posting permissions can send messages.
+          </div>
+        )}
+
         <div className="flex gap-2">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type a message or EleuScript rule (e.g., rule AddHealthcare -> Policy('HealthcareAccess'))"
+            placeholder={
+              canPost
+                ? "Type a message or EleuScript rule (e.g., rule AddHealthcare -> Policy('HealthcareAccess'))"
+                : "You do not have permission to post in this forum"
+            }
             className={`flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 ${
-              rulePreview 
-                ? rulePreview.isValid 
-                  ? 'border-purple-300 focus:ring-purple-500 bg-purple-50' 
-                  : 'border-red-300 focus:ring-red-500 bg-red-50'
-                : 'border-gray-300 focus:ring-blue-500'
+              !canPost
+                ? 'border-gray-200 bg-gray-100 cursor-not-allowed'
+                : rulePreview
+                  ? rulePreview.isValid
+                    ? 'border-purple-300 focus:ring-purple-500 bg-purple-50'
+                    : 'border-red-300 focus:ring-red-500 bg-red-50'
+                  : 'border-gray-300 focus:ring-blue-500'
             }`}
-            disabled={isExecuting}
+            disabled={isExecuting || !canPost || permissionCheckLoading}
           />
           <button
             type="submit"
-            disabled={!input.trim() || isExecuting}
+            disabled={!input.trim() || isExecuting || !canPost || permissionCheckLoading}
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isExecuting ? 'Executing...' : 'Send'}
+            {isExecuting ? 'Executing...' : permissionCheckLoading ? 'Loading...' : 'Send'}
           </button>
         </div>
-        
+
         {/* Helper text */}
-        <div className="text-xs text-gray-500 mt-2">
-          💡 Type EleuScript rules like: <code>rule AddHealthcare → Policy("HealthcareAccess")</code>
-        </div>
+        {canPost && (
+          <div className="text-xs text-gray-500 mt-2">
+            💡 Type EleuScript rules like: <code>rule AddHealthcare → Policy("HealthcareAccess")</code>
+          </div>
+        )}
       </form>
     </div>
   );
