@@ -13,24 +13,23 @@ service cloud.firestore {
     }
 
     // Helper function: Check if user is a forum participant
+    // Note: This assumes participants structure uses userId as key or has a participantIds array
     function isForumParticipant(forumId) {
       let forum = getForumData(forumId);
       return isAuthenticated() &&
-             request.auth.uid in forum.participants.map(p => p.userId);
-    }
-
-    // Helper function: Get user's participant data from forum
-    function getUserParticipant(forumId) {
-      let forum = getForumData(forumId);
-      return forum.participants.filter(p => p.userId == request.auth.uid)[0];
+             (request.auth.uid in forum.participantIds);
     }
 
     // Helper function: Check if user has specific permission in forum
+    // Note: This assumes permissions are stored in a map structure: forum.participants[userId].permissions[permission]
     function hasForumPermission(forumId, permission) {
-      let participant = getUserParticipant(forumId);
-      return participant != null &&
-             participant.permissions != null &&
-             participant.permissions.hasAny([permission]);
+      let forum = getForumData(forumId);
+      return isAuthenticated() &&
+             request.auth.uid in forum.participantIds &&
+             forum.participants[request.auth.uid] != null &&
+             forum.participants[request.auth.uid].permissions != null &&
+             permission in forum.participants[request.auth.uid].permissions &&
+             forum.participants[request.auth.uid].permissions[permission] == true;
     }
 
     // Forums collection
