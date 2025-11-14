@@ -10,21 +10,22 @@ export default function CreatePolicyPage() {
     <>
       <Navigation />
       <main className="ml-16 pt-16 p-6 min-h-screen bg-gray-50">
-      {/* Back to Policies Link */}
-      <div className="mb-6">
-        <Link href="/policies" className="text-blue-600 hover:text-blue-700 flex items-center">
-          <span className="material-icons mr-2">arrow_back</span>
-          Back to Policies
-        </Link>
-      </div>
+      <div className="max-w-4xl mx-auto">
+        {/* Back to Policies Link */}
+        <div className="mb-6">
+          <Link href="/policies" className="text-blue-600 hover:text-blue-700 flex items-center">
+            <span className="material-icons mr-2">arrow_back</span>
+            Back to Policies
+          </Link>
+        </div>
 
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Create Policy</h1>
-      </div>
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Create Policy</h1>
+        </div>
 
-      {/* Create Policy Form */}
-      <div className="max-w-4xl">
+        {/* Create Policy Form */}
+        <div>
         {/* Policy Information Section */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Policy Information</h2>
@@ -158,6 +159,7 @@ export default function CreatePolicyPage() {
           <button className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
             Create Policy
           </button>
+        </div>
         </div>
       </div>
     </main>
