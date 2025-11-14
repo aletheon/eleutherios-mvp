@@ -394,7 +394,7 @@ export default function CartPage() {
               <div className="text-6xl mb-4">🛒</div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">Your cart is empty</h3>
               <p className="text-gray-600 mb-6">
-                Healthcare providers can add prescribed medications and services to your cart through consultation forums.
+                Authorized providers can add services and items to your cart through forums.
               </p>
               <Link
                 href="/forums"
@@ -430,7 +430,7 @@ export default function CartPage() {
                           {/* Metadata (dosage, frequency, etc.) */}
                           {item.metadata && (
                             <div className="bg-blue-50 rounded-lg p-3 mb-3">
-                              <h4 className="text-xs font-semibold text-blue-900 mb-2">Prescription Details:</h4>
+                              <h4 className="text-xs font-semibold text-blue-900 mb-2">Delivery Details:</h4>
                               <div className="grid grid-cols-2 gap-2 text-xs text-blue-800">
                                 {item.metadata.dosage && (
                                   <div><span className="font-medium">Dosage:</span> {item.metadata.dosage}</div>
@@ -462,7 +462,7 @@ export default function CartPage() {
                               <div className="flex items-center space-x-2">
                                 <span className="material-icons text-sm">forum</span>
                                 <Link href={`/forums/${item.forumId}`} className="text-blue-600 hover:underline">
-                                  View consultation forum
+                                  View forum
                                 </Link>
                               </div>
                             )}
@@ -567,8 +567,8 @@ export default function CartPage() {
               <div className="bg-blue-50 rounded-lg p-6">
                 <h3 className="text-lg font-semibold text-blue-900 mb-2">About Governance-Enabled Cart</h3>
                 <p className="text-blue-800 text-sm mb-3">
-                  Your shopping cart is governed by the policies and permissions established in your consultation forums.
-                  Healthcare providers can add prescribed items, and you can approve or request changes through the forum.
+                  Your shopping cart is governed by the policies and permissions established in your forums.
+                  Authorized providers can add items, and you can approve or request changes through the forum.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                   <div className="bg-white p-3 rounded border">
@@ -581,7 +581,7 @@ export default function CartPage() {
                   </div>
                   <div className="bg-white p-3 rounded border">
                     <div className="font-medium text-blue-800 mb-1">💬 Forum-Linked</div>
-                    <div className="text-gray-600">Trace items back to consultation forums</div>
+                    <div className="text-gray-600">Trace items back to forums</div>
                   </div>
                 </div>
               </div>

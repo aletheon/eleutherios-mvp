@@ -245,10 +245,10 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ servic
                       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                         <div className="flex items-center space-x-2">
                           <span className="material-icons text-red-600">warning</span>
-                          <p className="text-red-800 font-medium">Prescription Required</p>
+                          <p className="text-red-800 font-medium">Authorization Required</p>
                         </div>
                         <p className="text-red-700 text-sm mt-1">
-                          This medication requires a valid prescription from a licensed healthcare provider.
+                          This service requires authorization from a licensed provider.
                         </p>
                       </div>
                     )}

@@ -190,7 +190,7 @@ export default function CreateServicePage() {
         unit: formData.unit,
         provider: user.profile?.name || 'Unknown',
         providerId: user.uid,
-        providerRole: user.profile?.role || 'healthcare-provider',
+        providerRole: user.profile?.role || 'service-provider',
         providerOrganization: user.profile?.organization || '',
         policies: formData.selectedPolicies,
         metadata: formData.metadata,
@@ -262,7 +262,7 @@ export default function CreateServicePage() {
             </div>
             <h1 className="text-3xl font-bold text-gray-900">Create New Service</h1>
             <p className="text-gray-600 mt-2">
-              Create a new medication or healthcare service that can be prescribed to patients through consultation forums.
+              Create a new service that can be made available to stakeholders through forums and policy workflows.
             </p>
           </div>
 
@@ -633,8 +633,8 @@ export default function CreateServicePage() {
           <div className="mt-6 bg-blue-50 rounded-lg p-6">
             <h3 className="text-lg font-semibold text-blue-900 mb-2">About Service Creation</h3>
             <p className="text-blue-800 text-sm mb-3">
-              Services you create can be prescribed to patients through consultation forums. Once added to a forum,
-              doctors can add services to patient carts with proper dosage and frequency instructions.
+              Services you create can be made available to stakeholders through forums. Once added to a forum,
+              authorized users can add services with appropriate delivery instructions and requirements.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div className="bg-white p-3 rounded border">
@@ -643,7 +643,7 @@ export default function CreateServicePage() {
               </div>
               <div className="bg-white p-3 rounded border">
                 <div className="font-medium text-blue-800 mb-1">💬 Forum-Integrated</div>
-                <div className="text-gray-600">Prescribe through consultation forums</div>
+                <div className="text-gray-600">Available through forums and workflows</div>
               </div>
               <div className="bg-white p-3 rounded border">
                 <div className="font-medium text-blue-800 mb-1">🔒 Permission-Based</div>

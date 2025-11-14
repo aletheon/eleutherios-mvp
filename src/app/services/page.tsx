@@ -84,7 +84,7 @@ export default function ServicesPage() {
               <div className="text-6xl mb-4">🔧</div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">No services available yet</h3>
               <p className="text-gray-600 mb-6">
-                Be the first to create a service! Healthcare providers can create medications and services for patients.
+                Be the first to create a service! Authorized providers can create services for stakeholders.
               </p>
               <Link
                 href="/services/create"

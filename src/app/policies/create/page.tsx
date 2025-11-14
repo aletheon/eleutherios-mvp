@@ -36,7 +36,7 @@ export default function CreatePolicyPage() {
               </label>
               <input
                 type="text"
-                placeholder="e.g., Social Housing, Tenancy Takeover, Housing Policy"
+                placeholder="e.g., Service Delivery Policy, Stakeholder Coordination Policy"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -90,7 +90,7 @@ export default function CreatePolicyPage() {
               </label>
               <input
                 type="text"
-                placeholder="e.g., Emergency Housing Coordination"
+                placeholder="e.g., Stakeholder Coordination Forum"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -103,7 +103,7 @@ export default function CreatePolicyPage() {
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="e.g., Caseworker, Housing Officer, Person"
+                placeholder="e.g., Coordinator, Provider, Recipient"
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
               <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
@@ -145,8 +145,8 @@ export default function CreatePolicyPage() {
         {/* Help Text */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <p className="text-blue-800 text-sm">
-            After creating this policy, you'll be able to invite other policymakers (like MSD case workers or homeless individuals) to 
-            collaborate. The EleuScript rules you've added will enable automatic forum creation and stakeholder coordination.
+            After creating this policy, you'll be able to invite other stakeholders to collaborate.
+            The EleuScript rules you've added will enable automatic forum creation and stakeholder coordination.
           </p>
         </div>
 
