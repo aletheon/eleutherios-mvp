@@ -255,9 +255,12 @@ const Navigation: React.FC = () => {
 
           {/* Right Side - Shopping Cart and User Menu */}
           <div className="flex items-center space-x-4">
-            <button className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors">
+            <Link
+              href="/cart"
+              className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
+            >
               <span className="material-icons text-2xl">shopping_cart</span>
-            </button>
+            </Link>
 
             {user ? (
               <div className="relative user-menu-container">
