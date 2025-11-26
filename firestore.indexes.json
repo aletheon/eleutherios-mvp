@@ -145,9 +145,10 @@
       ]
     },
     {
-      "collectionGroup": "messages",
-      "queryScope": "COLLECTION_GROUP",
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "targetUserId", "order": "ASCENDING" },
         { "fieldPath": "timestamp", "order": "DESCENDING" }
       ]
     }
@@ -188,6 +189,14 @@
     {
       "collectionGroup": "actions",
       "fieldPath": "createdAt",
+      "indexes": [
+        { "order": "ASCENDING", "queryScope": "COLLECTION" },
+        { "order": "DESCENDING", "queryScope": "COLLECTION" }
+      ]
+    },
+    {
+      "collectionGroup": "notifications",
+      "fieldPath": "timestamp",
       "indexes": [
         { "order": "ASCENDING", "queryScope": "COLLECTION" },
         { "order": "DESCENDING", "queryScope": "COLLECTION" }

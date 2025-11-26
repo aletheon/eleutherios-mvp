@@ -4,6 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useDashboard } from '@/contexts/DashboardContext';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface Activity {
   id: string;
@@ -16,12 +19,13 @@ interface Activity {
 
 const Navigation: React.FC = () => {
   const { user, logout } = useAuth();
+  const { activities, markActivityAsRead, deleteActivity } = useDashboard();
   const router = useRouter();
   const pathname = usePathname();
   const [panelWidth, setPanelWidth] = useState(0); // 0 = closed, max = 320
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [activities, setActivities] = useState<Activity[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [forumCount, setForumCount] = useState(0);
   const dragStartX = useRef(0);
   const dragStartWidth = useRef(0);
 
@@ -31,34 +35,6 @@ const Navigation: React.FC = () => {
     if (savedWidth) {
       setPanelWidth(parseInt(savedWidth, 10));
     }
-
-    // Load mock activities (replace with real data)
-    setActivities([
-      {
-        id: '1',
-        type: 'forum',
-        title: 'Emergency Housing Coordination',
-        description: 'Active discussion about temporary accommodation',
-        timestamp: '2 hours ago',
-        status: 'active'
-      },
-      {
-        id: '2',
-        type: 'policy',
-        title: 'Healthcare Access Policy',
-        description: 'Review pending for policy amendments',
-        timestamp: '5 hours ago',
-        status: 'pending'
-      },
-      {
-        id: '3',
-        type: 'service',
-        title: 'Food Bank Services',
-        description: 'Weekly delivery completed successfully',
-        timestamp: '1 day ago',
-        status: 'completed'
-      }
-    ]);
   }, []);
 
   // Save activities panel state to localStorage
@@ -84,9 +60,72 @@ const Navigation: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isUserMenuOpen]);
 
+  // Fetch user's forum count
+  useEffect(() => {
+    const fetchForumCount = async () => {
+      if (!user?.uid) {
+        setForumCount(0);
+        return;
+      }
+
+      try {
+        // Fetch all forums and filter client-side for ones where user is a participant
+        const forumsRef = collection(db, 'forums');
+        const querySnapshot = await getDocs(forumsRef);
+
+        const userForums = querySnapshot.docs.filter(doc => {
+          const data = doc.data();
+          // Check if user created the forum
+          if (data.created_by === user.uid) return true;
+
+          // Check if user is in participants array
+          if (data.participants && Array.isArray(data.participants)) {
+            return data.participants.some((p: any) => p.userId === user.uid);
+          }
+
+          return false;
+        });
+
+        setForumCount(userForums.length);
+      } catch (error) {
+        console.error('Error fetching forum count:', error);
+        setForumCount(0);
+      }
+    };
+
+    fetchForumCount();
+  }, [user]);
+
   const handleLogoClick = () => {
     // Toggle between closed (0) and open (280)
     setPanelWidth(panelWidth === 0 ? 280 : 0);
+  };
+
+  const handleActivityClick = (activity: any) => {
+    console.log('🔗 Activity clicked:', activity.title);
+    console.log('📊 Current panel width:', panelWidth);
+
+    // Mark as read
+    markActivityAsRead(activity.id);
+
+    // Navigate to the appropriate page (panel should stay open)
+    if (activity.forumId) {
+      console.log('➡️ Navigating to forum:', activity.forumId);
+      router.push(`/forums/${activity.forumId}`);
+    } else if (activity.serviceId) {
+      console.log('➡️ Navigating to service:', activity.serviceId);
+      router.push(`/services/${activity.serviceId}`);
+    } else if (activity.policyId) {
+      console.log('➡️ Navigating to policy:', activity.policyId);
+      router.push(`/policies/${activity.policyId}`);
+    }
+
+    console.log('✓ Navigation triggered, panel width unchanged:', panelWidth);
+  };
+
+  const handleDeleteActivity = (e: React.MouseEvent, activityId: string) => {
+    e.stopPropagation(); // Prevent activity click
+    deleteActivity(activityId);
   };
 
   const handleDragStart = (e: React.MouseEvent) => {
@@ -136,29 +175,36 @@ const Navigation: React.FC = () => {
   };
 
   const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'forum':
-        return '💬';
-      case 'policy':
-        return '📋';
-      case 'service':
-        return '🔧';
-      default:
-        return '📄';
-    }
+    if (type.includes('forum')) return '💬';
+    if (type.includes('policy')) return '📋';
+    if (type.includes('service') || type.includes('status') || type.includes('price')) return '🔧';
+    if (type.includes('purchase')) return '🛒';
+    if (type.includes('receipt')) return '🧾';
+    if (type.includes('rule')) return '⚖️';
+    return '📄';
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-500';
-      case 'pending':
-        return 'bg-yellow-500';
-      case 'completed':
-        return 'bg-blue-500';
-      default:
-        return 'bg-gray-500';
-    }
+  const getStatusColor = (priority: string, isRead: boolean) => {
+    if (isRead) return 'bg-gray-400';
+    if (priority === 'high') return 'bg-red-500';
+    if (priority === 'medium') return 'bg-yellow-500';
+    if (priority === 'low') return 'bg-blue-500';
+    return 'bg-gray-500';
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return date.toLocaleDateString();
   };
 
   const isActiveRoute = (route: string) => {
@@ -255,9 +301,12 @@ const Navigation: React.FC = () => {
 
           {/* Right Side - Shopping Cart and User Menu */}
           <div className="flex items-center space-x-4">
-            <button className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors">
+            <Link
+              href="/cart"
+              className="text-white/80 hover:text-white p-2 rounded-lg hover:bg-white/10 transition-colors"
+            >
               <span className="material-icons text-2xl">shopping_cart</span>
-            </button>
+            </Link>
 
             {user ? (
               <div className="relative user-menu-container">
@@ -318,7 +367,7 @@ const Navigation: React.FC = () => {
                         onClick={() => setIsUserMenuOpen(false)}
                       >
                         <span className="material-icons text-lg mr-3">forum</span>
-                        My Forums ({user?.profile?.activities?.forums?.length || 0})
+                        My Forums ({forumCount})
                       </Link>
 
                       <Link
@@ -378,40 +427,74 @@ const Navigation: React.FC = () => {
             {panelWidth > 150 ? (
               <div className="p-4">
                 <h3 className="text-sm font-semibold text-gray-600 mb-3">Recent Activities</h3>
-                <div className="space-y-3">
-                  {activities.map((activity) => (
-                    <div key={activity.id} className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 cursor-pointer">
-                      <div className="flex items-start space-x-3">
-                        <div className="text-lg">{getActivityIcon(activity.type)}</div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-2">
-                            <h4 className="text-sm font-medium text-gray-900 truncate">
-                              {activity.title}
-                            </h4>
-                            <div className={`w-2 h-2 rounded-full ${getStatusColor(activity.status)}`}></div>
+                {activities.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="text-4xl mb-2">🔔</div>
+                    <p className="text-xs text-gray-500">No activities yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {activities.slice(0, 10).map((activity) => (
+                      <div
+                        key={activity.id}
+                        onClick={() => handleActivityClick(activity)}
+                        className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-start space-x-3">
+                          <div className="text-lg">{getActivityIcon(activity.type)}</div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center space-x-2 min-w-0 flex-1">
+                                <h4 className="text-sm font-medium text-gray-900 truncate">
+                                  {activity.title}
+                                </h4>
+                                <div className={`w-2 h-2 rounded-full ${getStatusColor(activity.priority, activity.isRead)}`}></div>
+                              </div>
+                              <button
+                                onClick={(e) => handleDeleteActivity(e, activity.id)}
+                                className="p-1 rounded hover:bg-red-100 text-gray-400 hover:text-red-600 transition-colors flex-shrink-0"
+                                title="Delete activity"
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M3 6h18"/>
+                                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                                  <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                </svg>
+                              </button>
+                            </div>
+                            <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                              {activity.description}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {formatTimestamp(activity.timestamp)}
+                            </p>
                           </div>
-                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                            {activity.description}
-                          </p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            {activity.timestamp}
-                          </p>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
-              <div className="py-4">
-                {activities.slice(0, 3).map((activity) => (
-                  <div key={activity.id} className="flex justify-center py-2">
-                    <div className="relative">
-                      <div className="text-lg">{getActivityIcon(activity.type)}</div>
-                      <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${getStatusColor(activity.status)}`}></div>
-                    </div>
+              <div className="py-4 flex flex-col items-center space-y-2">
+                {activities.length === 0 ? (
+                  <div className="flex justify-center py-2">
+                    <div className="text-2xl">🔔</div>
                   </div>
-                ))}
+                ) : (
+                  activities.map((activity) => (
+                    <div
+                      key={activity.id}
+                      onClick={() => handleActivityClick(activity)}
+                      className="flex justify-center cursor-pointer hover:bg-gray-100 rounded p-1 transition-colors"
+                    >
+                      <div className="relative">
+                        <div className="text-lg">{getActivityIcon(activity.type)}</div>
+                        <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${getStatusColor(activity.priority, activity.isRead)}`}></div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </div>

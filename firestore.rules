@@ -1,9 +1,140 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Temporarily allow all reads and writes for development/seeding
+
+    // Helper function: Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function: Get forum data
+    function getForumData(forumId) {
+      return get(/databases/$(database)/documents/forums/$(forumId)).data;
+    }
+
+    // Helper function: Check if user is a forum participant
+    // Note: This assumes participants structure uses userId as key or has a participantIds array
+    function isForumParticipant(forumId) {
+      let forum = getForumData(forumId);
+      return isAuthenticated() &&
+             (request.auth.uid in forum.participantIds);
+    }
+
+    // Helper function: Check if user has specific permission in forum
+    // Note: This assumes permissions are stored in a map structure: forum.participants[userId].permissions[permission]
+    function hasForumPermission(forumId, permission) {
+      let forum = getForumData(forumId);
+      return isAuthenticated() &&
+             request.auth.uid in forum.participantIds &&
+             forum.participants[request.auth.uid] != null &&
+             forum.participants[request.auth.uid].permissions != null &&
+             permission in forum.participants[request.auth.uid].permissions &&
+             forum.participants[request.auth.uid].permissions[permission] == true;
+    }
+
+    // Forums collection
+    match /forums/{forumId} {
+      // Anyone can read forums (for now - can be restricted later)
+      allow read: if isAuthenticated();
+
+      // Only authenticated users can create forums
+      allow create: if isAuthenticated();
+
+      // Only forum participants with 'moderate' permission can update/delete
+      allow update, delete: if isForumParticipant(forumId) &&
+                               hasForumPermission(forumId, 'moderate');
+
+      // Forum messages subcollection
+      match /messages/{messageId} {
+        // Forum participants can read messages
+        allow read: if isForumParticipant(forumId);
+
+        // Only participants with 'post' permission can create messages
+        allow create: if isForumParticipant(forumId) &&
+                        hasForumPermission(forumId, 'post') &&
+                        request.resource.data.senderId == request.auth.uid;
+
+        // Users can update their own messages (for edits)
+        allow update: if isAuthenticated() &&
+                        resource.data.senderId == request.auth.uid;
+
+        // Only participants with 'moderate' permission can delete messages
+        allow delete: if isForumParticipant(forumId) &&
+                        (hasForumPermission(forumId, 'moderate') ||
+                         resource.data.senderId == request.auth.uid);
+      }
+    }
+
+    // Services collection
+    match /services/{serviceId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() &&
+                              resource.data.provider == request.auth.uid;
+    }
+
+    // Policies collection
+    match /policies/{policyId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() &&
+                              resource.data.createdBy == request.auth.uid;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && userId == request.auth.uid;
+    }
+
+    // Actions collection
+    match /actions/{actionId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Governance events collection
+    match /governance_events/{eventId} {
+      allow read, write: if isAuthenticated();
+    }
+
+    // Orders collection
+    match /orders/{orderId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() &&
+                              resource.data.userId == request.auth.uid;
+    }
+
+    // Marketplace services collection
+    match /marketplaceServices/{serviceId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() &&
+                              resource.data.provider == request.auth.uid;
+    }
+
+    // Notifications collection
+    match /notifications/{notificationId} {
+      // Users can read their own notifications
+      allow read: if isAuthenticated() &&
+                    resource.data.targetUserId == request.auth.uid;
+
+      // System can create notifications (any authenticated user can trigger notifications)
+      allow create: if isAuthenticated();
+
+      // Users can only update their own notifications (e.g., mark as read)
+      allow update: if isAuthenticated() &&
+                      resource.data.targetUserId == request.auth.uid;
+
+      // Users can delete their own notifications
+      allow delete: if isAuthenticated() &&
+                      resource.data.targetUserId == request.auth.uid;
+    }
+
+    // Default: Allow authenticated users for other collections (for MVP development)
+    // TODO: Tighten security rules for production
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if isAuthenticated();
     }
   }
 }

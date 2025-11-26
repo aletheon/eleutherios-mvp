@@ -5,6 +5,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Navigation from '@/components/Navigation';
+import { doc, getDoc, updateDoc, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface ForumRule {
   ruleName: string;
@@ -68,40 +70,36 @@ export default function EditPolicyPage() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(
-        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/policies/${policyId}.json`
-      );
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch policy');
-      }
+      // Fetch policy from Firestore
+      const policyRef = doc(db, 'policies', policyId);
+      const policySnap = await getDoc(policyRef);
 
-      const policyData = await response.json();
-      
-      if (!policyData) {
+      if (!policySnap.exists()) {
         throw new Error('Policy not found');
       }
 
+      const policyData = policySnap.data();
+
       // Check ownership
-      if (policyData.creatorId !== user?.uid && policyData.authorId !== user?.uid) {
+      if (policyData.created_by !== user?.uid && policyData.creatorId !== user?.uid && policyData.authorId !== user?.uid) {
         setError('You do not have permission to edit this policy');
         return;
       }
 
       const fetchedPolicy: Policy = {
         id: policyId,
-        title: policyData.title || '',
+        title: policyData.name || policyData.title || '',
         description: policyData.description || '',
         category: policyData.category || 'housing',
         status: policyData.status || 'draft',
-        createdAt: policyData.createdAt || new Date().toISOString(),
-        authorId: policyData.creatorId || policyData.authorId,
+        createdAt: policyData.created_at?.toDate?.()?.toISOString() || policyData.createdAt || new Date().toISOString(),
+        authorId: policyData.created_by || policyData.creatorId || policyData.authorId,
         rules: policyData.rules || [],
         eleuscript: policyData.eleuscript || ''
       };
 
       setPolicy(fetchedPolicy);
-      
+
       // Set form data
       setFormData({
         title: fetchedPolicy.title,
@@ -112,7 +110,7 @@ export default function EditPolicyPage() {
 
       // Set rules
       setRules(fetchedPolicy.rules || []);
-      
+
       // Generate EleuScript
       if (fetchedPolicy.rules && fetchedPolicy.rules.length > 0) {
         const script = generateEleuScript(fetchedPolicy.rules);
@@ -197,32 +195,23 @@ ${ruleStrings.join('\n')}
       setSaving(true);
       setError(null);
 
-      const updatedPolicy = {
-        ...policy,
-        ...formData,
+      const policyRef = doc(db, 'policies', policyId);
+
+      const updateData = {
+        name: formData.title,
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        status: formData.status,
         rules: rules,
         eleuscript: generatedEleuScript,
-        updatedAt: new Date().toISOString()
+        updated_at: Timestamp.now()
       };
 
-      const token = (user as any).accessToken;
+      await updateDoc(policyRef, updateData);
 
-      const response = await fetch(
-        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/policies/${policyId}.json?auth=${token}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedPolicy),
-        }
-      );
-
-      if (response.ok) {
-        alert('Policy updated successfully!');
-        router.push(`/policies/${policyId}`);
-      } else {
-        const errorData = await response.json();
-        setError(errorData.error || 'Failed to update policy');
-      }
+      alert('Policy updated successfully!');
+      router.push(`/policies/${policyId}`);
     } catch (err) {
       console.error('Error updating policy:', err);
       setError('An error occurred while saving');

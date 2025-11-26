@@ -56,6 +56,8 @@ interface User extends FirebaseUser {
     location?: string;
     website?: string;
     verified?: boolean;
+    role?: string;
+    organization?: string;
     certScore: {
       cooperation: number;
       engagement: number;

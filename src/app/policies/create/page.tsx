@@ -2,27 +2,30 @@
 'use client';
 
 import React from 'react';
-import DashboardLayout from '@/components/DashboardLayout';
 import Link from 'next/link';
+import Navigation from '@/components/Navigation';
 
 export default function CreatePolicyPage() {
   return (
-    <DashboardLayout>
-      {/* Back to Policies Link */}
-      <div className="mb-6">
-        <Link href="/policies" className="text-blue-600 hover:text-blue-700 flex items-center">
-          <span className="material-icons mr-2">arrow_back</span>
-          Back to Policies
-        </Link>
-      </div>
+    <>
+      <Navigation />
+      <main className="ml-16 pt-16 p-6 min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto">
+        {/* Back to Policies Link */}
+        <div className="mb-6">
+          <Link href="/policies" className="text-blue-600 hover:text-blue-700 flex items-center">
+            <span className="material-icons mr-2">arrow_back</span>
+            Back to Policies
+          </Link>
+        </div>
 
-      {/* Page Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Create Policy</h1>
-      </div>
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Create Policy</h1>
+        </div>
 
-      {/* Create Policy Form */}
-      <div className="max-w-4xl">
+        {/* Create Policy Form */}
+        <div>
         {/* Policy Information Section */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Policy Information</h2>
@@ -34,7 +37,7 @@ export default function CreatePolicyPage() {
               </label>
               <input
                 type="text"
-                placeholder="e.g., Social Housing, Tenancy Takeover, Housing Policy"
+                placeholder="e.g., Service Delivery Policy, Stakeholder Coordination Policy"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -88,7 +91,7 @@ export default function CreatePolicyPage() {
               </label>
               <input
                 type="text"
-                placeholder="e.g., Emergency Housing Coordination"
+                placeholder="e.g., Stakeholder Coordination Forum"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -101,7 +104,7 @@ export default function CreatePolicyPage() {
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="e.g., Caseworker, Housing Officer, Person"
+                placeholder="e.g., Coordinator, Provider, Recipient"
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
               <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
@@ -143,8 +146,8 @@ export default function CreatePolicyPage() {
         {/* Help Text */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <p className="text-blue-800 text-sm">
-            After creating this policy, you'll be able to invite other policymakers (like MSD case workers or homeless individuals) to 
-            collaborate. The EleuScript rules you've added will enable automatic forum creation and stakeholder coordination.
+            After creating this policy, you'll be able to invite other stakeholders to collaborate.
+            The EleuScript rules you've added will enable automatic forum creation and stakeholder coordination.
           </p>
         </div>
 
@@ -157,7 +160,9 @@ export default function CreatePolicyPage() {
             Create Policy
           </button>
         </div>
+        </div>
       </div>
-    </DashboardLayout>
+    </main>
+    </>
   );
 }

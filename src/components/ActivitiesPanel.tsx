@@ -4,23 +4,33 @@ import { useDashboard } from '@/contexts/DashboardContext';
 import { useRouter } from 'next/navigation';
 
 export function ActivitiesPanel() {
-  const { 
-    activitiesPanelOpen, 
-    setActivitiesPanelOpen, 
-    activities, 
+  const {
+    activitiesPanelOpen,
+    setActivitiesPanelOpen,
+    activities,
     markActivityAsRead,
-    unreadCount 
+    deleteActivity,
+    clearAllActivities,
+    unreadCount
   } = useDashboard();
   const router = useRouter();
 
   const handleActivityClick = (activity: any) => {
     markActivityAsRead(activity.id);
-    
-    if (activity.type === 'forum_post' && activity.forumId) {
+
+    // Handle different activity types and navigate appropriately
+    if (activity.forumId) {
       router.push(`/forums/${activity.forumId}`);
-    } else if (activity.type === 'service_update' && activity.serviceId) {
+    } else if (activity.serviceId) {
       router.push(`/services/${activity.serviceId}`);
+    } else if (activity.policyId) {
+      router.push(`/policies/${activity.policyId}`);
     }
+  };
+
+  const handleDeleteActivity = (e: React.MouseEvent, activityId: string) => {
+    e.stopPropagation(); // Prevent activity click
+    deleteActivity(activityId);
   };
 
   return (
@@ -40,15 +50,36 @@ export function ActivitiesPanel() {
                 </span>
               )}
             </div>
-            <button
-              onClick={() => setActivitiesPanelOpen(false)}
-              className="p-1 rounded-lg hover:bg-gray-200 text-gray-600"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="m18 6-12 12"/>
-                <path d="m6 6 12 12"/>
-              </svg>
-            </button>
+            <div className="flex items-center gap-2">
+              {activities.length > 0 && (
+                <button
+                  onClick={() => {
+                    if (confirm('Clear all activities? This cannot be undone.')) {
+                      clearAllActivities();
+                    }
+                  }}
+                  className="p-1 rounded-lg hover:bg-gray-200 text-gray-600"
+                  title="Clear all activities"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 6h18"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    <path d="M10 11v6"/>
+                    <path d="M14 11v6"/>
+                  </svg>
+                </button>
+              )}
+              <button
+                onClick={() => setActivitiesPanelOpen(false)}
+                className="p-1 rounded-lg hover:bg-gray-200 text-gray-600"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="m18 6-12 12"/>
+                  <path d="m6 6 12 12"/>
+                </svg>
+              </button>
+            </div>
           </div>
 
           {/* Activities List */}
@@ -57,11 +88,19 @@ export function ActivitiesPanel() {
               <div className="p-6 text-center text-gray-500">
                 <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 rounded-full flex items-center justify-center">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                   </svg>
                 </div>
-                <p className="text-sm">No activities yet</p>
-                <p className="text-xs mt-1">Your forum posts, messages, and updates will appear here</p>
+                <p className="text-sm font-medium">No activities yet</p>
+                <p className="text-xs mt-1 text-gray-400">You'll see notifications here for:</p>
+                <ul className="text-xs mt-2 space-y-1 text-left max-w-xs mx-auto text-gray-400">
+                  <li>• Forum activities and messages</li>
+                  <li>• Policy and rule updates</li>
+                  <li>• Service status changes</li>
+                  <li>• Purchases and receipts</li>
+                  <li>• Favorites and subscriptions</li>
+                </ul>
               </div>
             ) : (
               <div className="p-2">
@@ -87,14 +126,34 @@ export function ActivitiesPanel() {
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-gray-500">
                         {new Date(activity.timestamp).toLocaleDateString()} at{' '}
-                        {new Date(activity.timestamp).toLocaleTimeString([], { 
-                          hour: '2-digit', 
-                          minute: '2-digit' 
+                        {new Date(activity.timestamp).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit'
                         })}
                       </span>
-                      <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
-                        {activity.priority}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          activity.type.includes('forum') ? 'bg-purple-100 text-purple-700' :
+                          activity.type.includes('policy') || activity.type.includes('rule') ? 'bg-green-100 text-green-700' :
+                          activity.type.includes('service') || activity.type.includes('price') || activity.type.includes('status') ? 'bg-blue-100 text-blue-700' :
+                          activity.type.includes('purchase') ? 'bg-orange-100 text-orange-700' :
+                          activity.type.includes('receipt') ? 'bg-teal-100 text-teal-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {activity.type.replace(/_/g, ' ')}
+                        </span>
+                        <button
+                          onClick={(e) => handleDeleteActivity(e, activity.id)}
+                          className="p-1 rounded hover:bg-red-100 text-gray-400 hover:text-red-600 transition-colors"
+                          title="Delete activity"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M3 6h18"/>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                            <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
