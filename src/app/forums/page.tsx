@@ -1,36 +1,47 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navigation from '@/components/Navigation';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+
+interface Forum {
+  id: string;
+  title: string;
+  description: string;
+  participants?: any[];
+  created_at?: any;
+  updated_at?: any;
+  status: string;
+}
 
 export default function ForumsPage() {
+  const [forums, setForums] = useState<Forum[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const mockForums = [
-    {
-      id: 'coordination',
-      title: 'Emergency Housing Coordination',
-      description: 'Multi-stakeholder coordination for emergency housing situations',
-      participants: 4,
-      lastActivity: '2 hours ago',
-      status: 'active'
-    },
-    {
-      id: 'healthcare',
-      title: 'Healthcare Policy Discussion',
-      description: 'Community discussion on healthcare access policies',
-      participants: 7,
-      lastActivity: '5 hours ago',
-      status: 'active'
-    },
-    {
-      id: 'food-security',
-      title: 'Food Security Forum',
-      description: 'Coordination of food distribution and nutrition support',
-      participants: 12,
-      lastActivity: '1 day ago',
-      status: 'archived'
-    }
-  ];
+  useEffect(() => {
+    const fetchForums = async () => {
+      try {
+        const forumsRef = collection(db, 'forums');
+        const q = query(forumsRef, orderBy('created_at', 'desc'));
+        const querySnapshot = await getDocs(q);
+
+        const fetchedForums = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Forum[];
+
+        setForums(fetchedForums);
+      } catch (error) {
+        console.error('Error fetching forums:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchForums();
+  }, []);
 
   const getForumStatusColor = (status: string) => {
     switch (status) {
@@ -39,6 +50,21 @@ export default function ForumsPage() {
       case 'archived': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const getTimeAgo = (timestamp: any) => {
+    if (!timestamp) return 'Unknown';
+
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
   };
 
   return (
@@ -61,40 +87,56 @@ export default function ForumsPage() {
           </div>
 
           {/* Forums List */}
-          <div className="space-y-6">
-            {mockForums.map((forum) => (
-              <div key={forum.id} className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <Link 
+          {loading ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500">Loading forums...</p>
+            </div>
+          ) : forums.length === 0 ? (
+            <div className="bg-white rounded-lg shadow p-12 text-center">
+              <p className="text-gray-500 mb-4">No forums found. Create your first forum to get started!</p>
+              <Link
+                href="/forums/create"
+                className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+              >
+                Create Forum
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {forums.map((forum) => (
+                <div key={forum.id} className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <Link
+                          href={`/forums/${forum.id}`}
+                          className="text-xl font-semibold text-gray-900 hover:text-blue-600"
+                        >
+                          {forum.title}
+                        </Link>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getForumStatusColor(forum.status)}`}>
+                          {forum.status}
+                        </span>
+                      </div>
+                      <p className="text-gray-600 mb-4">{forum.description}</p>
+                      <div className="flex items-center space-x-6 text-sm text-gray-500">
+                        <span>👥 {forum.participants?.length || 0} participants</span>
+                        <span>🕒 {getTimeAgo(forum.updated_at || forum.created_at)}</span>
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <Link
                         href={`/forums/${forum.id}`}
-                        className="text-xl font-semibold text-gray-900 hover:text-blue-600"
+                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
                       >
-                        {forum.title}
+                        Join Discussion
                       </Link>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getForumStatusColor(forum.status)}`}>
-                        {forum.status}
-                      </span>
                     </div>
-                    <p className="text-gray-600 mb-4">{forum.description}</p>
-                    <div className="flex items-center space-x-6 text-sm text-gray-500">
-                      <span>👥 {forum.participants} participants</span>
-                      <span>🕒 {forum.lastActivity}</span>
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <Link 
-                      href={`/forums/${forum.id}`}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
-                    >
-                      Join Discussion
-                    </Link>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Forum Info */}
           <div className="mt-8 bg-blue-50 rounded-lg p-6">

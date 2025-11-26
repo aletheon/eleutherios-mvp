@@ -5,7 +5,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { doc, setDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { useDashboard } from '@/contexts/DashboardContext';
+import { doc, setDoc, collection, getDocs, query, orderBy, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Navigation from '@/components/Navigation';
 
@@ -28,6 +29,7 @@ interface ForumForm {
 export default function CreateForumPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { notifyForumCreated } = useDashboard();
   const [formData, setFormData] = useState<ForumForm>({
     title: '',
     description: '',
@@ -196,7 +198,7 @@ export default function CreateForumPage() {
         title: formData.title,
         description: formData.description,
         tags: formData.tags,
-        createdBy: user.uid,
+        created_by: user.uid,
         createdByName: user.profile?.name || 'Unknown User',
         createdByRole: user.profile?.role || 'user',
         participants,
@@ -208,14 +210,18 @@ export default function CreateForumPage() {
         status: 'active',
         rules: [],
         messages: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        created_at: Timestamp.now(),
+        updated_at: Timestamp.now()
       };
 
       const forumRef = doc(db, 'forums', forumId);
       await setDoc(forumRef, forum);
 
       console.log('✓ Created forum:', forumId);
+
+      // Create notifications for forum creator and members
+      const serviceMemberIds = formData.selectedServices.map(s => s.id);
+      await notifyForumCreated(forumId, formData.title, user.uid, serviceMemberIds);
 
       // Redirect to forum page
       router.push(`/forums/${forumId}`);

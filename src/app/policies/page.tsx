@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface Policy {
   id: string;
@@ -32,36 +34,25 @@ export default function PoliciesPage() {
   const fetchPolicies = async () => {
     try {
       setLoadingPolicies(true);
-      // Fetch all policies from Firebase Realtime Database
-      const response = await fetch(
-        'https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/policies.json'
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data) {
-          const policiesArray: Policy[] = Object.keys(data).map(key => ({
-            id: key,
-            title: data[key].title || 'Untitled Policy',
-            description: data[key].description || '',
-            category: data[key].category || 'General',
-            status: data[key].status || 'draft',
-            createdAt: data[key].createdAt || new Date().toISOString(),
-            authorId: data[key].creatorId || data[key].authorId,
-            rules: data[key].rules || [],
-            eleuscript: data[key].eleuscript || ''
-          }));
-          
-          // Sort by creation date (newest first)
-          policiesArray.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          setPolicies(policiesArray);
-        } else {
-          setPolicies([]);
-        }
-      } else {
-        console.error('Failed to fetch policies');
-        setPolicies([]);
-      }
+
+      // Fetch policies from Firestore
+      const policiesRef = collection(db, 'policies');
+      const policiesQuery = query(policiesRef, orderBy('created_at', 'desc'));
+      const snapshot = await getDocs(policiesQuery);
+
+      const policiesArray: Policy[] = snapshot.docs.map(doc => ({
+        id: doc.id,
+        title: doc.data().name || doc.data().title || 'Untitled Policy',
+        description: doc.data().description || '',
+        category: doc.data().category || 'General',
+        status: doc.data().status || 'draft',
+        createdAt: doc.data().created_at?.toDate?.()?.toISOString() || doc.data().createdAt || new Date().toISOString(),
+        authorId: doc.data().created_by || doc.data().creatorId || doc.data().authorId,
+        rules: doc.data().rules || [],
+        eleuscript: doc.data().eleuscript || ''
+      }));
+
+      setPolicies(policiesArray);
     } catch (error) {
       console.error('Error fetching policies:', error);
       setPolicies([]);

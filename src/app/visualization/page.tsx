@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { Logo } from '@/components/Logo';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface Policy {
   id: string;
@@ -43,40 +45,35 @@ export default function VisualizationPage() {
 
   const fetchData = async () => {
     try {
-      const token = await user?.getIdToken();
+      // Fetch policies from Firestore
+      const policiesSnapshot = await getDocs(collection(db, 'policies'));
+      const policiesData: Policy[] = policiesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        title: doc.data().name || doc.data().title || 'Untitled Policy',
+        rules: doc.data().rules || []
+      }));
+      setPolicies(policiesData);
 
-      // Fetch policies
-      const policiesRes = await fetch(
-        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/policies.json?auth=${token}`
-      );
-      if (policiesRes.ok) {
-        const data = await policiesRes.json();
-        if (data) {
-          setPolicies(Object.entries(data).map(([id, p]: [string, any]) => ({ id, ...p })));
-        }
-      }
+      // Fetch forums from Firestore
+      const forumsSnapshot = await getDocs(collection(db, 'forums'));
+      const forumsData: Forum[] = forumsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        title: doc.data().title || 'Untitled Forum',
+        policyId: doc.data().policyId || '',
+        ruleId: doc.data().ruleId || '',
+        assignedServices: doc.data().assignedServices || [],
+        postCount: doc.data().postCount || 0
+      }));
+      setForums(forumsData);
 
-      // Fetch forums
-      const forumsRes = await fetch(
-        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/forums.json?auth=${token}`
-      );
-      if (forumsRes.ok) {
-        const data = await forumsRes.json();
-        if (data) {
-          setForums(Object.entries(data).map(([id, f]: [string, any]) => ({ id, ...f })));
-        }
-      }
-
-      // Fetch services
-      const servicesRes = await fetch(
-        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/services.json?auth=${token}`
-      );
-      if (servicesRes.ok) {
-        const data = await servicesRes.json();
-        if (data) {
-          setServices(Object.entries(data).map(([id, s]: [string, any]) => ({ id, ...s })));
-        }
-      }
+      // Fetch services from Firestore
+      const servicesSnapshot = await getDocs(collection(db, 'services'));
+      const servicesData: Service[] = servicesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        name: doc.data().serviceName || doc.data().name || 'Untitled Service',
+        type: doc.data().serviceType || doc.data().type || 'unknown'
+      }));
+      setServices(servicesData);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {

@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation';
 import { Users, Settings, ChevronRight, Code, Zap, Clock, CheckCircle, XCircle, Send, AlertCircle } from 'lucide-react';
 import { EleuScriptParser, RuleExecutionEngine } from '@/lib/eleuScript/parser';
 import Navigation from '@/components/Navigation';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 // Interface definitions
 interface PolicyRule {
@@ -338,121 +340,79 @@ export default function ForumDetailPage() {
   }, [messages]);
 
   useEffect(() => {
-    const loadForumData = () => {
-      const mockForum: ForumData = {
-        id: forumId,
-        title: "Emergency Housing Coordination",
-        description: "Coordinating emergency housing for Alex Chen through MSD and Kainga Ora",
-        parentPolicyId: "emergency_housing_policy",
-        participants: [
-          {
-            stakeholder: "alex.chen",
-            role: "Person",
-            permissions: ["join", "message", "view_status"]
-          },
-          {
-            stakeholder: "sarah.williams",
-            role: "MSD Caseworker",
-            permissions: ["join", "message", "approve_funding", "activate_services", "create_sub_policies"]
-          },
-          {
-            stakeholder: "mike.thompson",
-            role: "Kainga Ora Officer",
-            permissions: ["join", "message", "reserve_housing", "share_docs"]
-          }
-        ],
-        rules: [
-          {
-            id: "rule_1",
-            name: "CreateCoordinationSpace",
-            target: "Forum",
-            targetName: "Emergency Housing Coordination",
-            status: "executed",
-            executedBy: "system",
-            timestamp: "2025-10-04T10:00:00Z"
-          },
-          {
-            id: "rule_2", 
-            name: "ProcessApplication",
-            target: "Service",
-            targetName: "EligibilityCheck",
-            status: "executed",
-            executedBy: "sarah.williams",
-            timestamp: "2025-10-04T10:15:00Z"
-          },
-          {
-            id: "rule_3",
-            name: "ProvideFinancialSupport",
-            target: "Service", 
-            targetName: "EmergencyPayment",
-            status: "executed",
-            executedBy: "system",
-            timestamp: "2025-10-04T10:20:00Z"
-          },
-          {
-            id: "rule_4",
-            name: "ReserveHousing",
-            target: "Service",
-            targetName: "HousingReservation", 
-            status: "executing",
-            executedBy: "mike.thompson",
-            timestamp: "2025-10-04T10:25:00Z"
-          }
-        ],
-        serviceStatus: [
-          {
-            name: "Eligibility Check",
-            status: "completed",
-            description: "Homeless status verified, urgent need confirmed"
-          },
-          {
-            name: "Emergency Payment",
-            status: "completed", 
-            description: "$200 emergency payment approved and transferred"
-          },
-          {
-            name: "Housing Reservation",
-            status: "active",
-            description: "Unit 15B at Wellington Housing complex reserved"
-          },
-          {
-            name: "Transport Coordination",
-            status: "pending",
-            description: "Transport to housing unit arrangement"
-          }
-        ]
-      };
-      
-      setForum(mockForum);
-      
-      const mockMessages: Message[] = [
-        {
-          id: "msg_1",
-          content: "Emergency housing forum created. Coordinating support for Alex Chen.",
-          stakeholder: "system",
-          timestamp: "2025-10-04T10:00:00Z",
-          type: "system"
-        },
-        {
-          id: "msg_2", 
-          content: "Hi Alex, I'm Sarah from MSD. I can see your emergency housing application has been approved. Try typing an EleuScript rule to expand our coordination capabilities!",
-          stakeholder: "sarah.williams",
-          timestamp: "2025-10-04T10:05:00Z",
-          type: "chat"
-        },
-        {
-          id: "msg_3",
-          content: "⚙️ EleuScript Execution Engine\nrule: ProcessApplication → Service(\"EligibilityCheck\")\nEligibility check completed - homeless status verified, urgent need confirmed",
-          stakeholder: "system", 
-          timestamp: "2025-10-04T10:15:00Z",
-          type: "system"
+    const loadForumData = async () => {
+      if (!forumId) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Fetch forum from Firestore
+        const forumRef = doc(db, 'forums', forumId);
+        const forumSnap = await getDoc(forumRef);
+
+        if (!forumSnap.exists()) {
+          console.error('Forum not found:', forumId);
+          setLoading(false);
+          return;
         }
-      ];
-      
-      setMessages(mockMessages);
-      setLoading(false);
+
+        const forumData = forumSnap.data();
+
+        // Map Firestore data to ForumData interface
+        const loadedForum: ForumData = {
+          id: forumSnap.id,
+          title: forumData.title || 'Untitled Forum',
+          description: forumData.description || '',
+          parentPolicyId: forumData.policyId || '',
+          participants: (forumData.participants || []).map((p: any) => ({
+            stakeholder: p.name || p.userId,
+            role: p.role || 'participant',
+            permissions: p.permissions || ['view', 'post']
+          })),
+          rules: forumData.rules || [],
+          serviceStatus: forumData.serviceMembers?.map((s: any) => ({
+            name: s.name,
+            status: 'pending',
+            description: s.provider || ''
+          })) || []
+        };
+
+        setForum(loadedForum);
+
+        // Load messages from forum data
+        const loadedMessages: Message[] = [];
+
+        // Add creation message
+        loadedMessages.push({
+          id: 'msg_created',
+          content: `Forum "${loadedForum.title}" created.`,
+          stakeholder: 'system',
+          timestamp: forumData.created_at?.toDate?.()?.toISOString() || new Date().toISOString(),
+          type: 'system'
+        });
+
+        // Add any stored messages
+        if (forumData.messages && Array.isArray(forumData.messages)) {
+          forumData.messages.forEach((msg: any, idx: number) => {
+            loadedMessages.push({
+              id: msg.id || `msg_${idx}`,
+              content: msg.content || msg.text || '',
+              stakeholder: msg.stakeholder || msg.sender || 'unknown',
+              timestamp: msg.timestamp || new Date().toISOString(),
+              type: msg.type || 'chat'
+            });
+          });
+        }
+
+        setMessages(loadedMessages);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error loading forum:', error);
+        setLoading(false);
+      }
     };
-    
+
     loadForumData();
   }, [forumId]);
 

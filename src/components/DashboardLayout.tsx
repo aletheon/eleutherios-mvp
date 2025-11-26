@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { useDashboard } from '@/contexts/DashboardContext';
 import { useRouter } from 'next/navigation';
 
 interface DashboardLayoutProps {
@@ -14,14 +15,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   const [isActivitiesExpanded, setIsActivitiesExpanded] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const { user, logout } = useAuth();
+  const { activities, deleteActivity, clearAllActivities } = useDashboard();
   const router = useRouter();
-
-  // Mock activities data (same as index page)
-  const activities = [
-    { id: '1', type: 'forum', title: 'Emergency Housing', status: 'active' },
-    { id: '2', type: 'policy', title: 'Healthcare Policy', status: 'pending' },
-    { id: '3', type: 'service', title: 'Food Bank', status: 'completed' }
-  ];
 
   // Mock users for activities panel (same as index page)
   const users = [
@@ -89,20 +84,22 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   };
 
   const getActivityIcon = (type: string) => {
-    switch (type) {
-      case 'forum': return '💬';
-      case 'policy': return '📋';
-      case 'service': return '🔧';
-      default: return '📄';
-    }
+    if (type.includes('forum')) return '💬';
+    if (type.includes('policy') || type.includes('rule')) return '📋';
+    if (type.includes('service') || type.includes('price') || type.includes('status')) return '🔧';
+    if (type.includes('purchase')) return '🛒';
+    if (type.includes('receipt')) return '🧾';
+    return '📄';
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-500';
-      case 'pending': return 'bg-yellow-500';
-      case 'completed': return 'bg-blue-500';
-      default: return 'bg-gray-500';
+  const handleDeleteActivity = (e: React.MouseEvent, activityId: string) => {
+    e.stopPropagation();
+    deleteActivity(activityId);
+  };
+
+  const handleClearAll = () => {
+    if (confirm('Clear all activities? This cannot be undone.')) {
+      clearAllActivities();
     }
   };
 
@@ -126,26 +123,66 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
         <div className="flex-1 overflow-y-auto">
           {isActivitiesExpanded ? (
             <div className="p-4">
-              <h3 className="text-sm font-semibold text-gray-600 mb-3">Recent Activities</h3>
-              <div className="space-y-3">
-                {activities.map((activity) => (
-                  <div key={activity.id} className="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 cursor-pointer">
-                    <div className="flex items-start space-x-3">
-                      <div className="text-lg">{getActivityIcon(activity.type)}</div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <h4 className="text-sm font-medium text-gray-900">{activity.title}</h4>
-                          <div className={`w-2 h-2 rounded-full ${getStatusColor(activity.status)}`}></div>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-gray-600">Recent Activities</h3>
+                {activities.length > 0 && (
+                  <button
+                    onClick={handleClearAll}
+                    className="p-1 rounded hover:bg-red-100 text-gray-400 hover:text-red-600 transition-colors"
+                    title="Clear all activities"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 6h18"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
+                )}
+              </div>
+              {activities.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-sm text-gray-500">No activities yet</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {activities.map((activity) => (
+                    <div key={activity.id} className={`rounded-lg p-3 hover:bg-gray-100 cursor-pointer ${
+                      activity.isRead ? 'bg-gray-50' : 'bg-blue-50'
+                    }`}>
+                      <div className="flex items-start space-x-3">
+                        <div className="text-lg">{getActivityIcon(activity.type)}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center space-x-2 min-w-0 flex-1">
+                              <h4 className="text-sm font-medium text-gray-900 truncate">{activity.title}</h4>
+                              {!activity.isRead && (
+                                <div className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0"></div>
+                              )}
+                            </div>
+                            <button
+                              onClick={(e) => handleDeleteActivity(e, activity.id)}
+                              className="p-1 rounded hover:bg-red-100 text-gray-400 hover:text-red-600 transition-colors flex-shrink-0"
+                              title="Delete activity"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M3 6h18"/>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
+                                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                              </svg>
+                            </button>
+                          </div>
+                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                            {activity.description}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {new Date(activity.timestamp).toLocaleDateString()}
+                          </p>
                         </div>
-                        <p className="text-xs text-gray-600 mt-1">
-                          {activity.type === 'forum' ? 'Active discussion' : 
-                           activity.type === 'policy' ? 'Review pending' : 'Completed successfully'}
-                        </p>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
               
               <h3 className="text-sm font-semibold text-gray-600 mb-3 mt-6">Active Users</h3>
               <div className="space-y-2">

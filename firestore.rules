@@ -113,6 +113,24 @@ service cloud.firestore {
                               resource.data.provider == request.auth.uid;
     }
 
+    // Notifications collection
+    match /notifications/{notificationId} {
+      // Users can read their own notifications
+      allow read: if isAuthenticated() &&
+                    resource.data.targetUserId == request.auth.uid;
+
+      // System can create notifications (any authenticated user can trigger notifications)
+      allow create: if isAuthenticated();
+
+      // Users can only update their own notifications (e.g., mark as read)
+      allow update: if isAuthenticated() &&
+                      resource.data.targetUserId == request.auth.uid;
+
+      // Users can delete their own notifications
+      allow delete: if isAuthenticated() &&
+                      resource.data.targetUserId == request.auth.uid;
+    }
+
     // Default: Allow authenticated users for other collections (for MVP development)
     // TODO: Tighten security rules for production
     match /{document=**} {

@@ -4,24 +4,48 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { doc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, arrayUnion, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Navigation from '@/components/Navigation';
 
 interface ServiceFormData {
   serviceName: string;
   description: string;
+  serviceType: 'api' | 'data' | 'product' | 'service';
   category: string;
-  price: string;
-  currency: string;
-  stock: string;
-  unit: string;
   selectedPolicies: string[];
+
+  // Product-specific fields
+  price?: string;
+  currency?: string;
+  stock?: string;
+  unit?: string;
+  productType?: 'physical' | 'subscription';
+  subscriptionFrequency?: string;
+
+  // API-specific fields
+  apiEndpoint?: string;
+  apiMethods?: string[];
+  authenticationType?: string;
+  requestSchema?: string;
+  responseSchema?: string;
+
+  // Data-specific fields
+  dataSourceType?: string;
+  dataEndpoint?: string;
+  dataFormat?: string;
+  updateFrequency?: string;
+
+  // Service (professional)-specific fields
+  hourlyRate?: string;
+  availability?: string;
+  qualifications?: string;
+
   metadata: {
     dosageForm?: string;
     strength?: string;
     manufacturer?: string;
-    requiresPrescription: boolean;
+    requiresPrescription?: boolean;
     activeIngredient?: string;
     sideEffects?: string;
     contraindications?: string;
@@ -50,20 +74,17 @@ export default function CreateServicePage() {
   const [formData, setFormData] = useState<ServiceFormData>({
     serviceName: '',
     description: '',
-    category: 'medication',
+    serviceType: 'product',
+    category: 'general',
+    selectedPolicies: [],
     price: '',
     currency: 'NZD',
     stock: '',
-    unit: 'tablets',
-    selectedPolicies: [],
+    unit: 'units',
+    productType: 'physical',
+    apiMethods: [],
     metadata: {
-      dosageForm: '',
-      strength: '',
-      manufacturer: '',
-      requiresPrescription: true,
-      activeIngredient: '',
-      sideEffects: '',
-      contraindications: ''
+      requiresPrescription: false
     }
   });
 
@@ -75,38 +96,24 @@ export default function CreateServicePage() {
     try {
       setLoadingPolicies(true);
       setPolicyError(null);
-      const response = await fetch(
-        'https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/policies.json'
-      );
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data) {
-          const policiesArray: Policy[] = Object.keys(data).map(key => ({
-            id: key,
-            title: data[key].title || 'Untitled Policy',
-            description: data[key].description || '',
-            category: data[key].category || 'General',
-            status: data[key].status || 'draft',
-            createdAt: data[key].createdAt || new Date().toISOString()
-          }));
+      // Fetch policies from Firestore
+      const policiesRef = collection(db, 'policies');
+      const policiesQuery = query(policiesRef, orderBy('created_at', 'desc'));
+      const snapshot = await getDocs(policiesQuery);
 
-          // Sort by creation date (newest first)
-          policiesArray.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          setPolicies(policiesArray);
-        } else {
-          setPolicies([]);
-        }
-      } else {
-        const errorMsg = response.status === 403
-          ? 'Access denied. Please deploy Firebase database rules to enable policy access.'
-          : `Failed to fetch policies (Status: ${response.status})`;
-        console.error(errorMsg);
-        setPolicyError(errorMsg);
-        setPolicies([]);
-      }
+      const policiesArray: Policy[] = snapshot.docs.map(doc => ({
+        id: doc.id,
+        title: doc.data().name || doc.data().title || 'Untitled Policy',
+        description: doc.data().description || '',
+        category: doc.data().category || 'General',
+        status: doc.data().status || 'draft',
+        createdAt: doc.data().created_at?.toDate?.()?.toISOString() || doc.data().createdAt || new Date().toISOString()
+      }));
+
+      setPolicies(policiesArray);
     } catch (error) {
-      const errorMsg = 'Unable to connect to policy database. Please check your connection.';
+      const errorMsg = 'Unable to fetch policies. Please check your connection.';
       console.error('Error fetching policies:', error);
       setPolicyError(errorMsg);
       setPolicies([]);
@@ -135,6 +142,15 @@ export default function CreateServicePage() {
     }
   };
 
+  const handleMethodToggle = (method: string) => {
+    setFormData(prev => ({
+      ...prev,
+      apiMethods: prev.apiMethods?.includes(method)
+        ? prev.apiMethods.filter(m => m !== method)
+        : [...(prev.apiMethods || []), method]
+    }));
+  };
+
   const handlePolicyToggle = (policyId: string) => {
     setFormData(prev => ({
       ...prev,
@@ -153,14 +169,42 @@ export default function CreateServicePage() {
       setError('Description is required');
       return false;
     }
-    if (!formData.price || parseFloat(formData.price) < 0) {
-      setError('Valid price is required');
-      return false;
+
+    // Service type-specific validation
+    if (formData.serviceType === 'product') {
+      if (!formData.price || parseFloat(formData.price) < 0) {
+        setError('Valid price is required for products');
+        return false;
+      }
+      if (!formData.stock || parseInt(formData.stock) < 0) {
+        setError('Valid stock quantity is required for products');
+        return false;
+      }
+    } else if (formData.serviceType === 'api') {
+      if (!formData.apiEndpoint?.trim()) {
+        setError('API endpoint is required');
+        return false;
+      }
+      if (!formData.apiMethods || formData.apiMethods.length === 0) {
+        setError('At least one HTTP method is required');
+        return false;
+      }
+    } else if (formData.serviceType === 'data') {
+      if (!formData.dataEndpoint?.trim()) {
+        setError('Data endpoint is required');
+        return false;
+      }
+      if (!formData.dataFormat?.trim()) {
+        setError('Data format is required');
+        return false;
+      }
+    } else if (formData.serviceType === 'service') {
+      if (!formData.hourlyRate || parseFloat(formData.hourlyRate) < 0) {
+        setError('Valid hourly rate is required');
+        return false;
+      }
     }
-    if (!formData.stock || parseInt(formData.stock) < 0) {
-      setError('Valid stock quantity is required');
-      return false;
-    }
+
     return true;
   };
 
@@ -179,26 +223,51 @@ export default function CreateServicePage() {
     try {
       const serviceId = `service-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-      const serviceData = {
+      const serviceData: any = {
         id: serviceId,
         serviceName: formData.serviceName,
         description: formData.description,
+        serviceType: formData.serviceType,
         category: formData.category,
-        price: parseFloat(formData.price),
-        currency: formData.currency,
-        stock: parseInt(formData.stock),
-        unit: formData.unit,
         provider: user.profile?.name || 'Unknown',
         providerId: user.uid,
         providerRole: user.profile?.role || 'service-provider',
         providerOrganization: user.profile?.organization || '',
         policies: formData.selectedPolicies,
-        metadata: formData.metadata,
         status: 'active',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         createdBy: user.uid
       };
+
+      // Add service type-specific fields
+      if (formData.serviceType === 'product') {
+        serviceData.price = parseFloat(formData.price!);
+        serviceData.currency = formData.currency;
+        serviceData.stock = parseInt(formData.stock!);
+        serviceData.unit = formData.unit;
+        serviceData.productType = formData.productType;
+        if (formData.productType === 'subscription') {
+          serviceData.subscriptionFrequency = formData.subscriptionFrequency;
+        }
+        serviceData.metadata = formData.metadata;
+      } else if (formData.serviceType === 'api') {
+        serviceData.apiEndpoint = formData.apiEndpoint;
+        serviceData.apiMethods = formData.apiMethods;
+        serviceData.authenticationType = formData.authenticationType;
+        serviceData.requestSchema = formData.requestSchema;
+        serviceData.responseSchema = formData.responseSchema;
+      } else if (formData.serviceType === 'data') {
+        serviceData.dataSourceType = formData.dataSourceType;
+        serviceData.dataEndpoint = formData.dataEndpoint;
+        serviceData.dataFormat = formData.dataFormat;
+        serviceData.updateFrequency = formData.updateFrequency;
+      } else if (formData.serviceType === 'service') {
+        serviceData.hourlyRate = parseFloat(formData.hourlyRate!);
+        serviceData.currency = formData.currency;
+        serviceData.availability = formData.availability;
+        serviceData.qualifications = formData.qualifications;
+      }
 
       // Save service to Firestore
       const serviceRef = doc(db, 'services', serviceId);
@@ -228,19 +297,80 @@ export default function CreateServicePage() {
     }
   };
 
-  const categories = [
-    { value: 'medication', label: 'Medication', icon: '💊' },
-    { value: 'healthcare', label: 'Healthcare Service', icon: '🏥' },
-    { value: 'dental', label: 'Dental Service', icon: '🦷' },
-    { value: 'mental-health', label: 'Mental Health', icon: '🧠' },
-    { value: 'laboratory', label: 'Laboratory Test', icon: '🔬' },
-    { value: 'imaging', label: 'Medical Imaging', icon: '📷' },
-    { value: 'therapy', label: 'Therapy Service', icon: '💆' },
-    { value: 'consultation', label: 'Consultation', icon: '👨‍⚕️' }
+  const serviceTypes = [
+    {
+      value: 'api',
+      label: 'API',
+      icon: '⚡',
+      description: 'Function or process stream endpoint'
+    },
+    {
+      value: 'data',
+      label: 'Data',
+      icon: '📊',
+      description: 'Data stream or dataset'
+    },
+    {
+      value: 'product',
+      label: 'Product',
+      icon: '📦',
+      description: 'Physical or subscription product'
+    },
+    {
+      value: 'service',
+      label: 'Service',
+      icon: '👨‍💼',
+      description: 'Professional service (e.g., Doctor, Plumber, Consultant)'
+    }
+  ];
+
+  const productCategories = [
+    { value: 'general', label: 'General Product' },
+    { value: 'medication', label: 'Medication' },
+    { value: 'food', label: 'Food & Beverage' },
+    { value: 'equipment', label: 'Equipment' },
+    { value: 'supplies', label: 'Supplies' }
+  ];
+
+  const serviceCategories = [
+    { value: 'healthcare', label: 'Healthcare' },
+    { value: 'dental', label: 'Dental' },
+    { value: 'mental-health', label: 'Mental Health' },
+    { value: 'consultation', label: 'Consultation' },
+    { value: 'technical', label: 'Technical' },
+    { value: 'trade', label: 'Trade' }
   ];
 
   const units = [
-    'tablets', 'capsules', 'ml', 'mg', 'g', 'units', 'doses', 'sessions', 'tests', 'scans'
+    'units', 'tablets', 'capsules', 'ml', 'mg', 'g', 'kg', 'doses', 'sessions', 'tests', 'scans'
+  ];
+
+  const httpMethods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
+
+  const authTypes = [
+    { value: 'none', label: 'None (Public)' },
+    { value: 'api-key', label: 'API Key' },
+    { value: 'oauth', label: 'OAuth 2.0' },
+    { value: 'jwt', label: 'JWT Bearer Token' },
+    { value: 'basic', label: 'Basic Auth' }
+  ];
+
+  const dataFormats = [
+    { value: 'json', label: 'JSON' },
+    { value: 'csv', label: 'CSV' },
+    { value: 'xml', label: 'XML' },
+    { value: 'parquet', label: 'Parquet' },
+    { value: 'avro', label: 'Avro' }
+  ];
+
+  const updateFrequencies = [
+    { value: 'realtime', label: 'Real-time' },
+    { value: 'minute', label: 'Every Minute' },
+    { value: 'hourly', label: 'Hourly' },
+    { value: 'daily', label: 'Daily' },
+    { value: 'weekly', label: 'Weekly' },
+    { value: 'monthly', label: 'Monthly' },
+    { value: 'static', label: 'Static (No Updates)' }
   ];
 
   if (!user) {
@@ -291,21 +421,49 @@ export default function CreateServicePage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 space-y-6">
+            {/* Service Type Selection */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Service Type</h2>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {serviceTypes.map((type) => (
+                  <div
+                    key={type.value}
+                    onClick={() => setFormData(prev => ({ ...prev, serviceType: type.value as any }))}
+                    className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
+                      formData.serviceType === type.value
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    <div className="text-3xl mb-2">{type.icon}</div>
+                    <h3 className="font-semibold text-gray-900 mb-1">{type.label}</h3>
+                    <p className="text-xs text-gray-600">{type.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {/* Basic Information */}
             <div>
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Basic Information</h2>
-
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Service Name <span className="text-red-500">*</span>
+                    {formData.serviceType === 'api' ? 'API Name' :
+                     formData.serviceType === 'data' ? 'Data Source Name' :
+                     formData.serviceType === 'product' ? 'Product Name' : 'Service Name'} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     name="serviceName"
                     value={formData.serviceName}
                     onChange={handleInputChange}
-                    placeholder="e.g., Amoxicillin 500mg"
+                    placeholder={
+                      formData.serviceType === 'api' ? 'e.g., Payment Processing API' :
+                      formData.serviceType === 'data' ? 'e.g., Customer Analytics Dataset' :
+                      formData.serviceType === 'product' ? 'e.g., Amoxicillin 500mg' :
+                      'e.g., Medical Consultation'
+                    }
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
@@ -319,28 +477,95 @@ export default function CreateServicePage() {
                     name="description"
                     value={formData.description}
                     onChange={handleInputChange}
-                    placeholder="Describe the service, its uses, and important information..."
+                    placeholder={
+                      formData.serviceType === 'api' ? 'Describe the API functionality, endpoints, and use cases...' :
+                      formData.serviceType === 'data' ? 'Describe the data source, contents, and update schedule...' :
+                      formData.serviceType === 'product' ? 'Describe the product, its uses, and important information...' :
+                      'Describe the professional service, expertise, and deliverables...'
+                    }
                     rows={4}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {(formData.serviceType === 'product' || formData.serviceType === 'service') && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Category <span className="text-red-500">*</span>
+                      Category
                     </label>
                     <select
                       name="category"
                       value={formData.category}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
                     >
-                      {categories.map(cat => (
+                      {(formData.serviceType === 'product' ? productCategories : serviceCategories).map(cat => (
                         <option key={cat.value} value={cat.value}>
-                          {cat.icon} {cat.label}
+                          {cat.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* API-Specific Fields */}
+            {formData.serviceType === 'api' && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">API Details</h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      API Endpoint URL <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="url"
+                      name="apiEndpoint"
+                      value={formData.apiEndpoint || ''}
+                      onChange={handleInputChange}
+                      placeholder="https://api.example.com/v1/endpoint"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      HTTP Methods <span className="text-red-500">*</span>
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {httpMethods.map((method) => (
+                        <button
+                          key={method}
+                          type="button"
+                          onClick={() => handleMethodToggle(method)}
+                          className={`px-4 py-2 rounded-lg border-2 transition-all ${
+                            formData.apiMethods?.includes(method)
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          {method}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Authentication Type
+                    </label>
+                    <select
+                      name="authenticationType"
+                      value={formData.authenticationType || 'none'}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      {authTypes.map((auth) => (
+                        <option key={auth.value} value={auth.value}>
+                          {auth.label}
                         </option>
                       ))}
                     </select>
@@ -348,170 +573,343 @@ export default function CreateServicePage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Unit Type <span className="text-red-500">*</span>
+                      Request Schema (JSON)
+                    </label>
+                    <textarea
+                      name="requestSchema"
+                      value={formData.requestSchema || ''}
+                      onChange={handleInputChange}
+                      placeholder='{"field": "type", ...}'
+                      rows={4}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Response Schema (JSON)
+                    </label>
+                    <textarea
+                      name="responseSchema"
+                      value={formData.responseSchema || ''}
+                      onChange={handleInputChange}
+                      placeholder='{"result": "type", ...}'
+                      rows={4}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Data-Specific Fields */}
+            {formData.serviceType === 'data' && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Data Source Details</h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Data Source Type
+                    </label>
+                    <input
+                      type="text"
+                      name="dataSourceType"
+                      value={formData.dataSourceType || ''}
+                      onChange={handleInputChange}
+                      placeholder="e.g., Database, API, File Storage, Stream"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Data Endpoint URL <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="url"
+                      name="dataEndpoint"
+                      value={formData.dataEndpoint || ''}
+                      onChange={handleInputChange}
+                      placeholder="https://data.example.com/dataset"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Data Format <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        name="dataFormat"
+                        value={formData.dataFormat || 'json'}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      >
+                        {dataFormats.map((format) => (
+                          <option key={format.value} value={format.value}>
+                            {format.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Update Frequency
+                      </label>
+                      <select
+                        name="updateFrequency"
+                        value={formData.updateFrequency || 'daily'}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        {updateFrequencies.map((freq) => (
+                          <option key={freq.value} value={freq.value}>
+                            {freq.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Product-Specific Fields */}
+            {formData.serviceType === 'product' && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Product Details</h2>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Product Type
+                    </label>
+                    <div className="grid grid-cols-2 gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, productType: 'physical' }))}
+                        className={`py-3 px-4 rounded-lg border-2 transition-all ${
+                          formData.productType === 'physical'
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="text-2xl mb-1">📦</div>
+                        <div className="font-medium">Physical</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, productType: 'subscription' }))}
+                        className={`py-3 px-4 rounded-lg border-2 transition-all ${
+                          formData.productType === 'subscription'
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="text-2xl mb-1">🔄</div>
+                        <div className="font-medium">Subscription</div>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Price <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="price"
+                        value={formData.price || ''}
+                        onChange={handleInputChange}
+                        placeholder="0.00"
+                        step="0.01"
+                        min="0"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Currency
+                      </label>
+                      <select
+                        name="currency"
+                        value={formData.currency || 'NZD'}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="NZD">NZD</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Stock <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="stock"
+                        value={formData.stock || ''}
+                        onChange={handleInputChange}
+                        placeholder="0"
+                        min="0"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Unit Type
                     </label>
                     <select
                       name="unit"
-                      value={formData.unit}
+                      value={formData.unit || 'units'}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
                     >
                       {units.map(unit => (
                         <option key={unit} value={unit}>{unit}</option>
                       ))}
                     </select>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Price <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleInputChange}
-                      placeholder="0.00"
-                      step="0.01"
-                      min="0"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
+                  {formData.productType === 'subscription' && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Subscription Frequency
+                      </label>
+                      <select
+                        name="subscriptionFrequency"
+                        value={formData.subscriptionFrequency || 'monthly'}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                        <option value="yearly">Yearly</option>
+                      </select>
+                    </div>
+                  )}
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Currency
-                    </label>
-                    <select
-                      name="currency"
-                      value={formData.currency}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="NZD">NZD</option>
-                      <option value="USD">USD</option>
-                      <option value="EUR">EUR</option>
-                      <option value="GBP">GBP</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Stock Quantity <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      name="stock"
-                      value={formData.stock}
-                      onChange={handleInputChange}
-                      placeholder="0"
-                      min="0"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      required
-                    />
-                  </div>
+                  {formData.category === 'medication' && (
+                    <div className="border-t pt-4 mt-4">
+                      <h3 className="text-lg font-medium text-gray-900 mb-3">Medication Information</h3>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Dosage Form
+                            </label>
+                            <input
+                              type="text"
+                              name="metadata.dosageForm"
+                              value={formData.metadata.dosageForm || ''}
+                              onChange={handleInputChange}
+                              placeholder="e.g., Tablet, Capsule"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Strength
+                            </label>
+                            <input
+                              type="text"
+                              name="metadata.strength"
+                              value={formData.metadata.strength || ''}
+                              onChange={handleInputChange}
+                              placeholder="e.g., 500mg"
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* Medication Details */}
-            {formData.category === 'medication' && (
+            {/* Service (Professional)-Specific Fields */}
+            {formData.serviceType === 'service' && (
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Medication Details</h2>
-
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">Professional Service Details</h2>
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Dosage Form
+                        Hourly Rate <span className="text-red-500">*</span>
                       </label>
                       <input
-                        type="text"
-                        name="metadata.dosageForm"
-                        value={formData.metadata.dosageForm}
+                        type="number"
+                        name="hourlyRate"
+                        value={formData.hourlyRate || ''}
                         onChange={handleInputChange}
-                        placeholder="e.g., Tablet, Capsule, Liquid"
+                        placeholder="0.00"
+                        step="0.01"
+                        min="0"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
                       />
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Strength
+                        Currency
                       </label>
-                      <input
-                        type="text"
-                        name="metadata.strength"
-                        value={formData.metadata.strength}
+                      <select
+                        name="currency"
+                        value={formData.currency || 'NZD'}
                         onChange={handleInputChange}
-                        placeholder="e.g., 500mg, 10ml"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Active Ingredient
-                      </label>
-                      <input
-                        type="text"
-                        name="metadata.activeIngredient"
-                        value={formData.metadata.activeIngredient}
-                        onChange={handleInputChange}
-                        placeholder="e.g., Amoxicillin"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Manufacturer
-                      </label>
-                      <input
-                        type="text"
-                        name="metadata.manufacturer"
-                        value={formData.metadata.manufacturer}
-                        onChange={handleInputChange}
-                        placeholder="e.g., Pfizer"
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
+                      >
+                        <option value="NZD">NZD</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="GBP">GBP</option>
+                      </select>
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Side Effects
+                      Availability
                     </label>
-                    <textarea
-                      name="metadata.sideEffects"
-                      value={formData.metadata.sideEffects}
+                    <input
+                      type="text"
+                      name="availability"
+                      value={formData.availability || ''}
                       onChange={handleInputChange}
-                      placeholder="List common side effects..."
-                      rows={3}
+                      placeholder="e.g., Mon-Fri 9am-5pm, Weekends by appointment"
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Contraindications
+                      Qualifications & Certifications
                     </label>
                     <textarea
-                      name="metadata.contraindications"
-                      value={formData.metadata.contraindications}
+                      name="qualifications"
+                      value={formData.qualifications || ''}
                       onChange={handleInputChange}
-                      placeholder="List contraindications and warnings..."
-                      rows={3}
+                      placeholder="List relevant qualifications, certifications, and experience..."
+                      rows={4}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
-
                 </div>
               </div>
             )}

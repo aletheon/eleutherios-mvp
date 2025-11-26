@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Navigation from '@/components/Navigation';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface Policy {
   id: string;
@@ -52,41 +54,37 @@ export default function PolicyDetailPage() {
       setLoading(true);
       setError(null);
 
-      // Fetch policy from Firebase Realtime Database
-      const response = await fetch(
-        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/policies/${policyId}.json`
-      );
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch policy');
-      }
+      // Fetch policy from Firestore
+      const policyRef = doc(db, 'policies', policyId);
+      const policySnap = await getDoc(policyRef);
 
-      const policyData = await response.json();
-      
-      if (!policyData) {
+      if (!policySnap.exists()) {
         throw new Error('Policy not found');
       }
 
+      const policyData = policySnap.data();
+
       const fetchedPolicy: Policy = {
         id: policyId,
-        title: policyData.title ? String(policyData.title) : 'Untitled Policy',
-        category: policyData.category ? String(policyData.category) : 'General',
-        status: policyData.status ? String(policyData.status) : 'draft',
-        createdAt: policyData.createdAt ? String(policyData.createdAt) : new Date().toISOString(),
+        title: policyData.name || policyData.title || 'Untitled Policy',
+        category: policyData.category || 'General',
+        status: policyData.status || 'draft',
+        createdAt: policyData.created_at?.toDate?.()?.toISOString() || policyData.createdAt || new Date().toISOString(),
         ...(policyData.description && { description: String(policyData.description) }),
+        ...(policyData.created_by && { authorId: String(policyData.created_by) }),
         ...(policyData.authorId && { authorId: String(policyData.authorId) }),
-        ...(policyData.creatorId && { authorId: String(policyData.creatorId) }), // Handle both field names
+        ...(policyData.creatorId && { authorId: String(policyData.creatorId) }),
         ...(policyData.content && { content: String(policyData.content) }),
         ...(policyData.rules && Array.isArray(policyData.rules) && { rules: policyData.rules }),
         ...(policyData.eleuscript && { eleuscript: String(policyData.eleuscript) }),
-        ...(policyData.stakeholders && Array.isArray(policyData.stakeholders) && { 
-          stakeholders: policyData.stakeholders.map((s: any) => String(s)) 
+        ...(policyData.stakeholders && Array.isArray(policyData.stakeholders) && {
+          stakeholders: policyData.stakeholders.map((s: any) => String(s))
         }),
-        ...(policyData.connectedServices && Array.isArray(policyData.connectedServices) && { 
-          connectedServices: policyData.connectedServices.map((s: any) => String(s)) 
+        ...(policyData.connectedServices && Array.isArray(policyData.connectedServices) && {
+          connectedServices: policyData.connectedServices.map((s: any) => String(s))
         }),
-        ...(policyData.connectedForums && Array.isArray(policyData.connectedForums) && { 
-          connectedForums: policyData.connectedForums.map((f: any) => String(f)) 
+        ...(policyData.connectedForums && Array.isArray(policyData.connectedForums) && {
+          connectedForums: policyData.connectedForums.map((f: any) => String(f))
         })
       };
 
@@ -107,39 +105,18 @@ export default function PolicyDetailPage() {
 
   const fetchAuthor = async (authorId: string) => {
     try {
-      // Try Firestore first (for user profiles)
-      const firestoreResponse = await fetch(
-        `https://firestore.googleapis.com/v1/projects/eleutherios-mvp-3c717/databases/(default)/documents/users/${authorId}`
-      );
+      // Fetch user from Firestore
+      const userRef = doc(db, 'users', authorId);
+      const userSnap = await getDoc(userRef);
 
-      if (firestoreResponse.ok) {
-        const userData = await firestoreResponse.json();
-        if (userData.fields) {
-          setAuthor({
-            id: authorId,
-            name: userData.fields.displayName?.stringValue || userData.fields.name?.stringValue || 'Unknown User',
-            role: userData.fields.role?.stringValue || 'user',
-            avatar: userData.fields.avatar?.stringValue
-          });
-          return;
-        }
-      }
-
-      // Fallback to Realtime Database
-      const rtdbResponse = await fetch(
-        `https://eleutherios-mvp-3c717-default-rtdb.asia-southeast1.firebasedatabase.app/users/${authorId}.json`
-      );
-
-      if (rtdbResponse.ok) {
-        const userData = await rtdbResponse.json();
-        if (userData) {
-          setAuthor({
-            id: authorId,
-            name: userData.displayName || userData.name || 'Unknown User',
-            role: userData.role || 'user',
-            avatar: userData.avatar
-          });
-        }
+      if (userSnap.exists()) {
+        const userData = userSnap.data();
+        setAuthor({
+          id: authorId,
+          name: userData.displayName || userData.name || 'Unknown User',
+          role: userData.role || 'user',
+          avatar: userData.avatar
+        });
       }
     } catch (error) {
       console.error('Error fetching author:', error);
