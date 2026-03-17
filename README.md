@@ -1,3 +1,18 @@
+## ⚠ Intellectual Property Notice
+
+This repository contains material related to a patent-pending governance system
+developed by Eleutherios Ltd.
+
+Implementation details are intentionally abstracted. No licence is granted for
+reproduction, modification, or commercial use.
+
+**The Apache 2.0 licence previously shown in this repository has been superseded.
+See LICENSE file.**
+
+© 2026 Eleutherios Ltd. All Rights Reserved.
+
+---
+
 # Eleutherios MVP
 
 **SDG Coordination through Multi-Stakeholder Governance**
